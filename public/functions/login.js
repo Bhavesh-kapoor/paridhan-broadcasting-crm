@@ -13,11 +13,10 @@ $("#loginform").on("submit", function (e) {
         data: formData,
         success: function (result) {
             $("#loginbutton").html("Sign In");
-
-            // $('#successfull').html(result.message);
-            // setTimeout(() => {
-            //     window.location.href = '/admin/dashboard';
-            // }, 1000)
+            const to =
+                result && result.redirect ? result.redirect : "/dashboard";
+                console.log(to);
+            window.location.replace(to); // hard redirect so session is used
         },
         error: function (xhr, status, error) {
             $("#loginbutton").html("Sign In");
