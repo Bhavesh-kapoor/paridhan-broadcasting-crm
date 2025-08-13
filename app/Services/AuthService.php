@@ -11,7 +11,7 @@ class AuthService
     public function login($request)
     {
         try {
-            $auth =  Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password]);
+            $auth =  Auth::guard('web')->attempt(['email' => $request->email, 'password' => $request->password],$request->input('remember',false));
             if (!$auth)  throw new \Exception('Invalid Credentials!', Response::HTTP_UNAUTHORIZED);
             //  Auth::login($auth);
 

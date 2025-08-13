@@ -8,7 +8,7 @@
     <!-- Title -->
     <title> Paridhan | Login</title>
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/logo/logo.png') }}">
+    <link rel="shortcut icon" href="{{ config('contants.logo') }}">
     <!-- Bootstrap -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
     <!-- file upload -->
@@ -38,7 +38,7 @@
         <div class="auth-right py-40 px-24 flex-center flex-column">
             <div class="auth-right__inner mx-auto w-100">
                 <a href="{{route('login')}}" class="auth-right__logo">
-                    <img src="{{ asset('assets/logo/logo.png') }}" alt="">
+                    <img src="{{ config('contants.logo') }}" alt="">
                 </a>
                 <h2 class="mb-8">Welcome Back! &#128075;</h2>
 
@@ -69,7 +69,7 @@
                     </div>
                     <div class="mb-32 flex-between flex-wrap gap-8">
                         <div class="form-check mb-0 flex-shrink-0">
-                            <input class="form-check-input flex-shrink-0 rounded-4" type="checkbox" value="" id="remember">
+                            <input class="form-check-input flex-shrink-0 rounded-4" value="1" name="remember" type="checkbox"  id="remember">
                             <label class="form-check-label text-15 flex-grow-1" for="remember">Remember Me </label>
                         </div>
                         <a href="forgot-password.html" class="text-main-600 hover-text-decoration-underline text-15 fw-medium">Forgot Password?</a>

@@ -40,9 +40,9 @@ class AuthController extends Controller
      * validate
      *
      * @param  mixed $authRequest
-     * @return void
+     * @return mixed
      */
-    public function validate(AuthRequest $authRequest)
+    public function validate(AuthRequest $authRequest): mixed
     {
         try {
             $data =   $this->service->login($authRequest);
@@ -53,7 +53,6 @@ class AuthController extends Controller
                     'message' => 'Login Successfully!',
                     'data' => $data,
                     'redirect' => redirect()->intended(route('dashboard'))->getTargetUrl()
-
                 ],
                 200
             );
@@ -64,5 +63,19 @@ class AuthController extends Controller
             }
             return response()->json(["success" => false,  "message" =>  $e->getMessage()], $status ?? Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+
+    /**
+     * logout
+     *
+     * @param  mixed $request
+     * @return void
+     */
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        return redirect()->route('login');
     }
 }
