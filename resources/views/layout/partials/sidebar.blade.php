@@ -16,7 +16,7 @@
     <!-- sidebar close btn -->
 
     <a href="index-2.html" class="sidebar__logo text-center p-20 position-sticky inset-block-start-0 bg-white w-100 z-1 pb-10">
-        <img src="{{ config('contants.logo') }}" alt="Logo">
+        <img src="{{ url(config('contants.logo')) }}" alt="Logo">
     </a>
 
     <div class="sidebar-menu-wrapper overflow-y-auto scroll-sm">
@@ -31,19 +31,22 @@
                 </li>
                 <li class="sidebar-menu__item has-dropdown">
                     <a href="javascript:void(0)" class="sidebar-menu__link">
-                        <span class="icon"><i class="ph ph-graduation-cap"></i></span>
+                        <span class="icon"><i class="ph ph-users"></i></span>
                         <span class="text">Employees</span>
                     </a>
                     <!-- Submenu start -->
                     <ul class="sidebar-submenu">
                         <li class="sidebar-submenu__item">
-                            <a href="student-courses.html" class="sidebar-submenu__link"> Student Courses </a>
+                            <a href="{{ route('employees.index') }}" class="sidebar-submenu__link"> All Employees </a>
                         </li>
                         <li class="sidebar-submenu__item">
-                            <a href="mentor-courses.html" class="sidebar-submenu__link"> Mentor Courses </a>
+                            <a href="{{ route('employees.index', ['status' => 'active']) }}" class="sidebar-submenu__link"> Active Employees </a>
                         </li>
                         <li class="sidebar-submenu__item">
-                            <a href="create-course.html" class="sidebar-submenu__link"> Create Course </a>
+                            <a href="{{ route('employees.index', ['status' => 'inactive']) }}" class="sidebar-submenu__link"> Inactive Employees </a>
+                        </li>
+                        <li class="sidebar-submenu__item">
+                            <a href="{{ route('employees.create') }}" class="sidebar-submenu__link"> Add Employee </a>
                         </li>
                     </ul>
                     <!-- Submenu End -->

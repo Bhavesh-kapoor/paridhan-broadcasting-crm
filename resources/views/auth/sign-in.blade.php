@@ -8,7 +8,7 @@
     <!-- Title -->
     <title> Paridhan | Login</title>
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ config('contants.logo') }}">
+    <link rel="shortcut icon" href="{{ url(config('contants.logo')) }}">
     <!-- Bootstrap -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
     <!-- file upload -->
@@ -38,7 +38,7 @@
         <div class="auth-right py-40 px-24 flex-center flex-column">
             <div class="auth-right__inner mx-auto w-100">
                 <a href="{{route('login')}}" class="auth-right__logo">
-                    <img src="{{ config('contants.logo') }}" alt="">
+                    <img src="{{ url(config('contants.logo')) }}" alt="">
                 </a>
                 <h2 class="mb-8">Welcome Back! &#128075;</h2>
 

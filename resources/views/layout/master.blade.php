@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Title -->
     <title> @yield('title','Paridhan Dashboard')</title>
     <!-- Favicon -->
@@ -38,13 +39,14 @@
     @include('layout.partials.sidebar')
     <div class="dashboard-main-wrapper">
         @include('layout.partials.header')
+        @include('layout.partials.notifications')
 
 
         <div class="dashboard-body">
             @yield("content")
 
 
-            <div class="dashboard-footer">
+            <!-- <div class="dashboard-footer">
                 <div class="flex-between flex-wrap gap-16">
                     <p class="text-gray-300 text-13 fw-normal"> &copy; Copyright Edmate 2024, All Right Reserverd</p>
                     <div class="flex-align flex-wrap gap-16">
@@ -54,7 +56,7 @@
                         <a href="#" class="text-gray-300 text-13 fw-normal hover-text-main-600 hover-text-decoration-underline">Support</a>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Jquery js -->
@@ -530,6 +532,7 @@
             // ============================= Calendar Js End =================================
         </script>
 
+        @stack('scripts')
 
 </body>
 

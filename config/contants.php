@@ -2,5 +2,5 @@
 
 
 return [
-    'logo' => asset('assets/logo/logo.png')
+    'logo' => 'assets/logo/logo.png'
 ];

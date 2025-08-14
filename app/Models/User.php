@@ -11,7 +11,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasUlids ,HasFactory;
+    use HasUlids, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +22,14 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'address',
+        'role',
+        'date_of_birth',
+        'status',
+        'position',
+        'salary',
+        'hire_date',
     ];
 
     /**
@@ -44,6 +52,49 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'date_of_birth' => 'date',
+            'hire_date' => 'date',
+            'salary' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Scope to get only employees
+     */
+    public function scopeEmployees($query)
+    {
+        return $query->where('role', 'employee');
+    }
+
+    /**
+     * Scope to get active employees
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('role', 'employee')->where('status', 'active');
+    }
+
+    /**
+     * Scope to get inactive employees
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('role', 'employee')->where('status', 'inactive');
+    }
+
+    /**
+     * Check if user is an employee
+     */
+    public function isEmployee(): bool
+    {
+        return $this->role === 'employee';
+    }
+
+    /**
+     * Check if employee is active
+     */
+    public function isActive(): bool
+    {
+        return $this->isEmployee() && $this->status === 'active';
     }
 }
