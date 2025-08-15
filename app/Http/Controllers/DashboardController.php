@@ -2,20 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\EmployeeService;
+use App\Models\User;
+use App\Models\Contacts;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    protected $employeeService;
-    
-    public function __construct(EmployeeService $employeeService)
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        $this->employeeService = $employeeService;
-    }
-    
-    public function index(){
-        $employeeStats = $this->employeeService->getEmployeeStats();
-        return view("dashboard", compact('employeeStats'));
+        $totalEmployees = User::count();
+        $activeEmployees = User::where('status', 'active')->count();
+        $inactiveEmployees = User::where('status', 'inactive')->count();
+        
+        // Add contact counts
+        $totalExhibitors = Contacts::where('type', 'exhibitor')->count();
+        $totalVisitors = Contacts::where('type', 'visitor')->count();
+        
+        // Recent employees
+        $recentEmployees = User::latest()->take(5)->get();
+        
+        // Recent contacts
+        $recentExhibitors = Contacts::where('type', 'exhibitor')->latest()->take(3)->get();
+        $recentVisitors = Contacts::where('type', 'visitor')->latest()->take(3)->get();
+        
+        return view('dashboard', compact(
+            'totalEmployees', 
+            'activeEmployees', 
+            'inactiveEmployees',
+            'totalExhibitors',
+            'totalVisitors',
+            'recentEmployees',
+            'recentExhibitors',
+            'recentVisitors'
+        ));
     }
 }

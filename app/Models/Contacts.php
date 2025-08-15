@@ -2,9 +2,65 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class Contacts extends Model
 {
-    //
+    use HasFactory, HasUlids;
+
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+        'alternate_phone',
+        'location',
+        'product_type',
+        'brand_name',
+        'business_type',
+        'gst_number',
+        'type',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
+     * Get the display name for the contact type
+     */
+    public function getTypeDisplayNameAttribute()
+    {
+        return ucfirst($this->type);
+    }
+
+    /**
+     * Scope to filter by type
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    /**
+     * Check if contact is an exhibitor
+     */
+    public function isExhibitor()
+    {
+        return $this->type === 'exhibitor';
+    }
+
+    /**
+     * Check if contact is a visitor
+     */
+    public function isVisitor()
+    {
+        return $this->type === 'visitor';
+    }
 }

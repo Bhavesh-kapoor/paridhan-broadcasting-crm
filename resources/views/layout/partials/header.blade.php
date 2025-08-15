@@ -125,7 +125,7 @@
                              
 
                               <li class="mb-4">
-                                  <a href="email.html" class="py-12 text-15 px-20 hover-bg-gray-50 text-gray-300 rounded-8 flex-align gap-8 fw-medium text-15">
+                                  <a href="{{route('admin.change-password')}}" class="py-12 text-15 px-20 hover-bg-gray-50 text-gray-300 rounded-8 flex-align gap-8 fw-medium text-15">
                                       <span class="text-2xl text-primary-600 d-flex">    <i class="ph ph-lock-key"></i>
 </span>
                                       <span class="text">Change Password</span>

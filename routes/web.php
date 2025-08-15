@@ -13,6 +13,18 @@ Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
     Route::post('employees/{employee}/change-password', [\App\Http\Controllers\EmployeeController::class, 'changePassword'])->name('employees.change-password.store');
     Route::post('employees/{employee}/toggle-status', [\App\Http\Controllers\EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
 
+    # Contact routes (Exhibitors & Visitors)
+    Route::resource('contacts', \App\Http\Controllers\ContactController::class);
+
+    # Campaign routes
+    Route::resource('campaigns', \App\Http\Controllers\CampaignController::class);
+    Route::post('campaigns/{campaign}/send', [\App\Http\Controllers\CampaignController::class, 'send'])->name('campaigns.send');
+    Route::get('campaigns/contacts/get', [\App\Http\Controllers\CampaignController::class, 'getContacts'])->name('campaigns.contacts.get');
+
+    # Admin change password
+    Route::get('/change-password', [\App\Http\Controllers\AuthController::class, 'showChangePassword'])->name('admin.change-password');
+    Route::post('/change-password', [\App\Http\Controllers\AuthController::class, 'changePassword'])->name('admin.change-password.store');
+
     #auth related routes 
     Route::get('/logout', ["App\Http\Controllers\AuthController", "logout"])->name('logout');
 });
