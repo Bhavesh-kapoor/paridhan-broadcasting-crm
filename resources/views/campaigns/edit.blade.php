@@ -10,12 +10,12 @@
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center" style="margin-left: 20px;padding:10px 2px">
                         <div>
-                            <h5 class="mb-2 fw-bold text-dark">
-                                <i class="ph ph-pencil me-3 text-primary"></i>Edit Campaign
+                            <h5 class="mb-1 fw-bold text-dark">
+                                Edit Campaign
                             </h5>
                             <p class="text-muted mb-0 fs-9">Update campaign information and recipients</p>
                         </div>
-                        <a href="{{ route('campaigns.index') }}" class="btn btn-secondary btn-lg shadow-sm">
+                        <a href="{{ route('campaigns.index') }}" class="py-12 text-15 px-20 hover-bg-gray-50 text-gray-300 rounded-8 flex-align gap-8 fw-medium text-15">
                             <i class="ph ph-arrow-left me-2"></i>Back to Campaigns
                         </a>
                     </div>
@@ -28,21 +28,21 @@
     <form id="campaignForm" action="{{ route('campaigns.update', $campaign->id) }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="row">
+        <div class="row mt-8">
             <!-- Campaign Details Section -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-3">
+                    <div class="card-header bg-light border-0 py-10">
                         <h6 class="mb-0 fw-semibold text-dark">
                             <i class="ph ph-megaphone me-2 text-primary"></i>Campaign Information
                         </h6>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row g-3">
+                        <div class="row g-3" style="padding: 10px;">
                             <!-- Campaign Name -->
                             <div class="col-12">
                                 <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>Campaign Name <span class="text-danger">*</span>
+                                    <i class="ph ph-tag me-2 text-muted"></i>&nbsp;Campaign Name <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" name="name" value="{{ $campaign->name }}" placeholder="Enter campaign name" required>
                             </div>
@@ -50,7 +50,7 @@
                             <!-- Campaign Subject -->
                             <div class="col-12">
                                 <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-envelope me-2 text-muted"></i>Campaign Subject <span class="text-danger">*</span>
+                                    <i class="ph ph-envelope me-2 text-muted"></i>&nbsp;Campaign Subject <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" name="subject" value="{{ $campaign->subject }}" placeholder="Enter campaign subject" required>
                             </div>
@@ -58,9 +58,9 @@
                             <!-- Campaign Type -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>Campaign Type <span class="text-danger">*</span>
+                                    <i class="ph ph-tag me-2 text-muted"></i>&nbsp;Campaign Type <span class="text-danger">*</span>
                                 </label>
-                                <select class="form-select" name="type" required>
+                                <select class="form-select form-control" name="type" required>
                                     <option value="">Select campaign type</option>
                                     <option value="email" {{ $campaign->type === 'email' ? 'selected' : '' }}>Email Campaign</option>
                                     <option value="sms" {{ $campaign->type === 'sms' ? 'selected' : '' }}>SMS Campaign</option>
@@ -71,16 +71,16 @@
                             <!-- Scheduled Date -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-calendar me-2 text-muted"></i>Schedule Date (Optional)
+                                    <i class="ph ph-calendar me-2 text-muted"></i>&nbsp;Schedule Date (Optional)
                                 </label>
-                                <input type="datetime-local" class="form-control" name="scheduled_at" 
+                                <input type="datetime-local" class="form-control" name="scheduled_at"
                                        value="{{ $campaign->scheduled_at ? $campaign->scheduled_at->format('Y-m-d\TH:i') : '' }}">
                             </div>
 
                             <!-- Campaign Message -->
                             <div class="col-12">
                                 <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-chat-circle-text me-2 text-muted"></i>Campaign Message <span class="text-danger">*</span>
+                                    <i class="ph ph-chat-circle-text me-2 text-muted"></i>&nbsp;Campaign Message <span class="text-danger">*</span>
                                 </label>
                                 <textarea class="form-control" name="message" rows="8" placeholder="Enter your campaign message..." required>{{ $campaign->message }}</textarea>
                                 <div class="form-text">
@@ -95,7 +95,7 @@
             <!-- Recipients Selection Section -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-3">
+                    <div class="card-header bg-light border-0 py-10">
                         <h6 class="mb-0 fw-semibold text-dark">
                             <i class="ph ph-users me-2 text-primary"></i>Select Recipients
                         </h6>
@@ -105,12 +105,12 @@
                         <ul class="nav nav-tabs nav-fill mb-3" id="recipientTabs" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="exhibitors-tab" data-bs-toggle="tab" data-bs-target="#exhibitors" type="button" role="tab">
-                                    <i class="ph ph-storefront me-1"></i>Exhibitors
+                                    <i class="ph ph-storefront me-1"></i>&nbsp;Exhibitors
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="visitors-tab" data-bs-toggle="tab" data-bs-target="#visitors" type="button" role="tab">
-                                    <i class="ph ph-user me-1"></i>Visitors
+                                    <i class="ph ph-user me-1"></i>&nbsp;Visitors
                                 </button>
                             </li>
                         </ul>
@@ -129,8 +129,8 @@
                                     <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
                                         @forelse($exhibitors as $exhibitor)
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox" 
-                                                   name="recipients[]" value="{{ $exhibitor->id }}" 
+                                            <input class="form-check-input recipient-checkbox" type="checkbox"
+                                                   name="recipients[]" value="{{ $exhibitor->id }}"
                                                    id="exhibitor_{{ $exhibitor->id }}"
                                                    {{ in_array($exhibitor->id, $campaign->recipients->pluck('contact_id')->toArray()) ? 'checked' : '' }}>
                                             <label class="form-check-label small" for="exhibitor_{{ $exhibitor->id }}">
@@ -162,8 +162,8 @@
                                     <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
                                         @forelse($visitors as $visitor)
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox" 
-                                                   name="recipients[]" value="{{ $visitor->id }}" 
+                                            <input class="form-check-input recipient-checkbox" type="checkbox"
+                                                   name="recipients[]" value="{{ $visitor->id }}"
                                                    id="visitor_{{ $visitor->id }}"
                                                    {{ in_array($visitor->id, $campaign->recipients->pluck('contact_id')->toArray()) ? 'checked' : '' }}>
                                             <label class="form-check-label small" for="visitor_{{ $visitor->id }}">
@@ -185,7 +185,7 @@
                         </div>
 
                         <!-- Recipient Summary -->
-                        <div class="border-top pt-3">
+                        <div class="border-top pt-3"  style="padding: 10px;">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="fw-semibold text-dark">Selected Recipients:</span>
                                 <span class="badge bg-primary" id="selectedCount">0</span>
@@ -198,14 +198,14 @@
                 </div>
 
                 <!-- Campaign Actions -->
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm mt-8">
                     <div class="card-body p-4">
-                        <div class="d-grid gap-2">
+                        <div class="d-flex justify-content-between align-content-center">
                             <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                                <i class="ph ph-check-circle me-2"></i>Update Campaign
+                                <i class="ph ph-check-circle me-2"></i>&nbsp;Update Campaign
                             </button>
-                            <a href="{{ route('campaigns.index') }}" class="btn btn-secondary">
-                                <i class="ph ph-x me-2"></i>Cancel
+                            <a href="{{ route('campaigns.index') }}" class="py-12 text-15 px-20 hover-bg-danger-50 text-gray-300 hover-text-danger-600 rounded-8 flex-align gap-8 fw-medium text-15">
+                                <i class="ph ph-x me-2"></i>&nbsp;Cancel
                             </a>
                         </div>
                     </div>
@@ -241,7 +241,7 @@ function selectAllVisitors() {
 // Form submission
 $('#campaignForm').on('submit', function(e) {
     e.preventDefault();
-    
+
     const selectedRecipients = $('.recipient-checkbox:checked').length;
     if (selectedRecipients === 0) {
         showNotification('error', 'Please select at least one recipient for the campaign.');
