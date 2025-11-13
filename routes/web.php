@@ -21,16 +21,21 @@ Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
     Route::post('campaigns/{campaign}/send', [\App\Http\Controllers\CampaignController::class, 'send'])->name('campaigns.send');
     Route::get('campaigns/contacts/get', [\App\Http\Controllers\CampaignController::class, 'getContacts'])->name('campaigns.contacts.get');
 
+
     # Admin change password
     Route::get('/change-password', [\App\Http\Controllers\AuthController::class, 'showChangePassword'])->name('admin.change-password');
     Route::post('/change-password', [\App\Http\Controllers\AuthController::class, 'changePassword'])->name('admin.change-password.store');
 
-    #auth related routes 
+    #auth related routes
     Route::get('/logout', ["App\Http\Controllers\AuthController", "logout"])->name('logout');
+
+    # Location routes
+    Route::resource('locations', \App\Http\Controllers\LocationController::class);
+    Route::get('/get/locations/datatable', [\App\Http\Controllers\LocationController::class, 'getLocations'])->name('get.locations.data');
 });
 
 
-#auth routes 
+#auth routes
 Route::middleware(['web', 'guest'])->group(function () {
     Route::get('/', function () {
         return redirect()->route('login');

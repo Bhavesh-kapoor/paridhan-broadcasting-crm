@@ -7,31 +7,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Title -->
-    <title> @yield('title','Paridhan Dashboard')</title>
+    <title> @yield('title', 'Paridhan Dashboard')</title>
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ config('contants.logo')}}">
+    <link rel="shortcut icon" href="{{ config('contants.logo') }}">
     <!-- Bootstrap -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/bootstrap.min.css') }}">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <!-- file upload -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/file-upload.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/file-upload.css') }}">
     <!-- file upload -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/plyr.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/plyr.css') }}">
     <!-- DataTables -->
     <link rel="stylesheet" href="../../cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
     <!-- full calendar -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/full-calendar.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/full-calendar.css') }}">
     <!-- jquery Ui -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/jquery-ui.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/jquery-ui.css') }}">
     <!-- editor quill Ui -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/editor-quill.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/editor-quill.css') }}">
     <!-- apex charts Css -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/apexcharts.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/apexcharts.css') }}">
     <!-- calendar Css -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/calendar.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/calendar.css') }}">
     <!-- jvector map Css -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/jquery-jvectormap-2.0.5.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/jquery-jvectormap-2.0.5.css') }}">
     <!-- Main css -->
-    <link rel="stylesheet" href="{{ asset('/assets/css/main.css')}}">
+    <link rel="stylesheet" href="{{ asset('/assets/css/main.css') }}">
 </head>
 
 <body>
@@ -43,7 +45,7 @@
 
 
         <div class="dashboard-body">
-            @yield("content")
+            @yield('content')
 
 
             <!-- <div class="dashboard-footer">
@@ -60,32 +62,38 @@
         </div>
 
         <!-- Jquery js -->
-        <script src="{{ asset('/assets/js/jquery-3.7.1.min.js')}}"></script>
+        <script src="{{ asset('/assets/js/jquery-3.7.1.min.js') }}"></script>
         <!-- Bootstrap Bundle Js -->
-        <script src="{{ asset('/assets/js/boostrap.bundle.min.js')}}"></script>
+        <script src="{{ asset('/assets/js/boostrap.bundle.min.js') }}"></script>
+        <!-- DataTables JS -->
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
         <!-- Phosphor Js -->
-        <script src="{{ asset('/assets/js/phosphor-icon.js')}}"></script>
+        <script src="{{ asset('/assets/js/phosphor-icon.js') }}"></script>
         <!-- file upload -->
-        <script src="{{ asset('/assets/js/file-upload.js')}}"></script>
+        <script src="{{ asset('/assets/js/file-upload.js') }}"></script>
         <!-- file upload -->
-        <script src="{{ asset('/assets/js/plyr.js')}}"></script>
+        <script src="{{ asset('/assets/js/plyr.js') }}"></script>
         <!-- dataTables -->
         <script src="../../cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
         <!-- full calendar -->
-        <script src="{{ asset('/assets/js/full-calendar.js')}}"></script>
+        <script src="{{ asset('/assets/js/full-calendar.js') }}"></script>
         <!-- jQuery UI -->
-        <script src="{{ asset('/assets/js/jquery-ui.js')}}"></script>
+        <script src="{{ asset('/assets/js/jquery-ui.js') }}"></script>
         <!-- jQuery UI -->
-        <script src="{{ asset('/assets/js/editor-quill.js')}}"></script>
+        <script src="{{ asset('/assets/js/editor-quill.js') }}"></script>
         <!-- apex charts -->
-        <script src="{{ asset('/assets/js/apexcharts.min.js')}}"></script>
+        <script src="{{ asset('/assets/js/apexcharts.min.js') }}"></script>
         <!-- jvectormap Js -->
-        <script src="{{ asset('/assets/js/jquery-jvectormap-2.0.5.min.js')}}"></script>
+        <script src="{{ asset('/assets/js/jquery-jvectormap-2.0.5.min.js') }}"></script>
         <!-- jvectormap world Js -->
-        <script src="{{ asset('/assets/js/jquery-jvectormap-world-mill-en.js')}}"></script>
+        <script src="{{ asset('/assets/js/jquery-jvectormap-world-mill-en.js') }}"></script>
+        {{-- swal fire --}}
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
         <!-- main js -->
-        <script src="{{ asset('/assets/js/main.js')}}"></script>
+        <script src="{{ asset('/assets/js/main.js') }}"></script>
 
 
 
@@ -184,7 +192,10 @@
                         labels: {
                             show: false
                         },
-                        categories: [`Jan ${currentYear}`, `Feb ${currentYear}`, `Mar ${currentYear}`, `Apr ${currentYear}`, `May ${currentYear}`, `Jun ${currentYear}`, `Jul ${currentYear}`, `Aug ${currentYear}`, `Sep ${currentYear}`, `Oct ${currentYear}`, `Nov ${currentYear}`, `Dec ${currentYear}`],
+                        categories: [`Jan ${currentYear}`, `Feb ${currentYear}`, `Mar ${currentYear}`, `Apr ${currentYear}`,
+                            `May ${currentYear}`, `Jun ${currentYear}`, `Jul ${currentYear}`, `Aug ${currentYear}`,
+                            `Sep ${currentYear}`, `Oct ${currentYear}`, `Nov ${currentYear}`, `Dec ${currentYear}`
+                        ],
                         tooltip: {
                             enabled: false,
                         },
