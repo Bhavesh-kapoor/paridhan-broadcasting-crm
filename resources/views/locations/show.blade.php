@@ -37,18 +37,18 @@
 
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold text-muted">Location Name</label>
+                            <label class="form-label fw-semibold ">Location Name</label>
                             <input type="text" class="form-control form-control" value="{{ $location->loc_name }}"
                                 readonly>
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold text-muted">Type</label>
+                            <label class="form-label fw-semibold ">Type</label>
                             <input type="text" class="form-control form-control" value="{{ $location->type }}" readonly>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-muted">Address</label>
+                            <label class="form-label fw-semibold ">Address</label>
                             <textarea class="form-control form-control" rows="1" readonly>{{ $location->address }}</textarea>
                         </div>
 
@@ -60,6 +60,20 @@
                                     {{ ucfirst($location->status) }}
                                 </span>
                             </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Location Image</label>
+
+                            @if ($location->image)
+                                <div class="mt-2">
+                                    <a href="{{ asset('uploads/location_images/' . $location->image) }}" target="_blank">
+                                        <img src="{{ asset('uploads/location_images/' . $location->image) }}"
+                                            alt="Location Image" width="100" height="100"
+                                            style="border-radius:5px; object-fit:cover; border:1px solid #ccc;">
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
