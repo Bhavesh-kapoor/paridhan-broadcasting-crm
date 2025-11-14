@@ -135,6 +135,25 @@
                     <!-- Submenu End -->
                 </li>
 
+                <!-- lead Management Section -->
+                <li class="sidebar-menu__item has-dropdown">
+                    <a href="javascript:void(0)" class="sidebar-menu__link">
+                        <span class="icon"><i class="ph ph-crown"></i></span>
+                        <span class="text">lead Management</span>
+                    </a>
+                    <!-- Submenu start -->
+                    <ul class="sidebar-submenu">
+                        <li class="sidebar-submenu__item">
+                            <a href="{{ route('leads.index') }}" class="sidebar-submenu__link"> All leads </a>
+                        </li>
+                        <li class="sidebar-submenu__item">
+                            <a href="{{ route('leads.create') }}" class="sidebar-submenu__link"> Create lead
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- Submenu End -->
+                </li>
+
 
 
                 <li class="sidebar-menu__item">

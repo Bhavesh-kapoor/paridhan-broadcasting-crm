@@ -32,6 +32,11 @@ Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
     # Location routes
     Route::resource('locations', \App\Http\Controllers\LocationController::class);
     Route::get('/get/locations/datatable', [\App\Http\Controllers\LocationController::class, 'getLocations'])->name('get.locations.data');
+
+    Route::resource('leads', \App\Http\Controllers\LeadController::class);
+    Route::get('/get/leads/datatable', [\App\Http\Controllers\LeadController::class, 'getLeads'])->name('get.leads.data');
+    Route::post('/follow-up/store', [App\Http\Controllers\LeadController::class, 'store'])
+        ->name('followup.store');
 });
 
 
@@ -42,4 +47,8 @@ Route::middleware(['web', 'guest'])->group(function () {
     });
     Route::get('sign-in', ["App\Http\Controllers\AuthController", 'signin'])->name('login');
     Route::post('sign-in', ["App\Http\Controllers\AuthController", 'validate'])->name('login.validate');
+
+
+
+    // Lead routes
 });
