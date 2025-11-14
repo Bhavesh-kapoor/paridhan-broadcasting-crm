@@ -26,6 +26,8 @@ class LocationRequest extends FormRequest
             'type'     => ['required', 'string', 'max:50'],
             'address'  => ['nullable', 'string'],
             'status'   => ['required', 'in:active,inactive'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'], // 5MB
+
 
             //  Table validation
             'tables'                => ['nullable', 'array'],
@@ -50,6 +52,10 @@ class LocationRequest extends FormRequest
             'address.string' => 'Address must be a valid text string.',
             'status.required' => 'Status is required.',
             'status.in' => 'Status must be either active or inactive.',
+
+            'image.image' => 'Uploaded file must be an image.',
+            'image.mimes' => 'Image must be a file of type: JPG, JPEG, or PNG.',
+            'image.max'   => 'Image size must not exceed 5 MB.',
 
             //  Table messages
             'tables.*.table_no.required_with'   => 'Table number is required when adding table details.',

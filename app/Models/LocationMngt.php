@@ -26,6 +26,7 @@ class LocationMngt extends Model
         'type',
         'address',
         'status',
+        'image',
     ];
 
     /**

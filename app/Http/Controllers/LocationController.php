@@ -34,7 +34,8 @@ class LocationController extends Controller
     public function getLocations(Request $request)
     {
         if ($request->ajax()) {
-            $query = LocationMngt::select(['id', 'loc_name', 'type', 'status', 'address']);
+            $query = LocationMngt::select(['id', 'loc_name', 'type', 'status', 'address', 'image']);
+
 
             //  Apply filter if status selected
             if (!empty($request->status)) {
@@ -49,6 +50,22 @@ class LocationController extends Controller
                         ($row->status == 'active' ? 'success' : 'danger') .
                         '">' . ucfirst($row->status) . '</span>';
                 })
+                ->addColumn('image', function ($row) {
+
+                    // If image exists, use it — otherwise use dummy image
+                    $imagePath = $row->image
+                        ? 'uploads/location_images/' . $row->image
+                        : 'uploads/location_images/dummy.png';   // <--- dummy image
+
+                    $url = asset($imagePath);
+
+                    return '
+                       <a href="' . $url . '" target="_blank">
+                              <img src="' . $url . '" width="50" height="50"
+                                style="border-radius:5px; object-fit:cover;">
+                         </a>
+                    ';
+                })
                 ->addColumn('actions', function ($row) {
                     return '
                       <button class="btn btn-info btn-sm viewLocation" data-id="' . $row->id . '">
@@ -59,7 +76,7 @@ class LocationController extends Controller
                     <button class="btn btn-danger btn-sm deleteLocation" data-id="' . $row->id . '"><i class="ph ph-trash"></i></button>
                 ';
                 })
-                ->rawColumns(['status', 'actions'])
+                ->rawColumns(['status', 'actions', 'image'])
                 ->make(true);
         }
     }
@@ -82,7 +99,7 @@ class LocationController extends Controller
     {
         try {
             // Pass all validated + table data to the service
-            $location = $this->locationService->createLocation($request->all());
+            $location = $this->locationService->createLocation($request);
 
             return response()->json([
                 'success' => true,
@@ -127,7 +144,8 @@ class LocationController extends Controller
     public function update(LocationRequest $request, $id): JsonResponse
     {
         try {
-            $update = $this->locationService->updateLocation($id, $request->validated());
+            // Pass the full $request object, not $request->validated()
+            $update = $this->locationService->updateLocation($id, $request);
 
             if ($update['success']) {
                 return response()->json([
@@ -148,6 +166,7 @@ class LocationController extends Controller
             ], 500);
         }
     }
+
 
 
 

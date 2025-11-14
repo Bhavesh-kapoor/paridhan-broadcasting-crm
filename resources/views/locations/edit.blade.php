@@ -28,7 +28,7 @@
         <!-- Edit Location Form -->
         <div class="card">
             <div class="card-body">
-                <form id="locationEditForm" class="mt-8">
+                <form id="locationEditForm" class="mt-8" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -62,6 +62,26 @@
                                 </option>
                             </select>
                         </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Location Image</label>
+                            <input type="file" name="image" class="form-control shadow-sm"
+                                accept="image/jpeg,image/jpg,image/png">
+                            <small class="text-muted">JPG, JPEG & PNG only. Max size 5MB.</small>
+
+                            @if ($location->image)
+                                <div class="mt-2">
+                                    <label class="form-label fw-semibold">Current Image:</label>
+                                    <br>
+                                    <a href="{{ asset('uploads/location_images/' . $location->image) }}" target="_blank">
+                                        <img src="{{ asset('uploads/location_images/' . $location->image) }}"
+                                            alt="Location Image" width="100" height="100"
+                                            style="border-radius:5px; object-fit:cover; border:1px solid #ccc;">
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
 
                     <hr>

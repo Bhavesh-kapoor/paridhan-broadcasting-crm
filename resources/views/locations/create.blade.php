@@ -28,7 +28,7 @@
         <!-- Campaign Form -->
         <div class="card">
             <div class="card-body">
-                <form id="locationForm" class="mt-8">
+                <form id="locationForm" class="mt-8" enctype="multipart/form-data">
                     @csrf
 
                     <div class="row g-4">
@@ -59,6 +59,13 @@
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Location Image (optional)</label>
+                            <input type="file" name="image" class="form-control shadow-sm"
+                                accept="image/png, image/jpeg, image/jpg">
+                            <small class="text-muted"> JPG, JPEG & PNG allowed. Not mandatory. </small>
                         </div>
                     </div>
 
@@ -116,9 +123,9 @@
                     const row = `
                 <tr>
                     <td>${i}</td>
-                    <td><input type="text" name="tables[${i}][table_no]" class="form-control form-control-sm shadow-sm" placeholder="Enter Table No."></td>
-                    <td><input type="text" name="tables[${i}][table_size]" class="form-control form-control-sm shadow-sm" placeholder="Enter Table Size"></td>
-                    <td><input type="text" name="tables[${i}][price]" class="form-control form-control-sm shadow-sm" placeholder="Enter Price"></td>
+                    <td><input type="text" name="tables[${i}][table_no]" class="form-control form-control-sm shadow-sm table_no" placeholder="Enter Table No."></td>
+                    <td><input type="text" name="tables[${i}][table_size]" class="form-control form-control-sm shadow-sm table_size" placeholder="Enter Table Size"></td>
+                    <td><input type="text" name="tables[${i}][price]" class="form-control form-control-sm shadow-sm price" placeholder="Enter Price"></td>
                 </tr>`;
                     tableBody.insertAdjacentHTML('beforeend', row);
                 }

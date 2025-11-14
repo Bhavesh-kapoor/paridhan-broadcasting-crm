@@ -58,6 +58,7 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th>#</th>
+                                        <th>Image</th>
                                         <th>Location</th>
                                         <th>Type</th>
                                         <th>Address</th>
@@ -97,6 +98,10 @@
                         name: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
+                    },
+                    {
+                        data: 'image',
+                        name: 'image'
                     },
                     {
                         data: 'loc_name',
@@ -160,7 +165,7 @@
                                 if (response.success) {
                                     Swal.fire('Deleted!', response.message, 'success');
                                     $('#locationsTable').DataTable().ajax
-                                .reload(); // refresh table
+                                        .reload(); // refresh table
                                 } else {
                                     Swal.fire('Error', response.message, 'error');
                                 }
