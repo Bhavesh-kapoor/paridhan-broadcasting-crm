@@ -50,7 +50,7 @@ class AuthController extends Controller
             $authRequest->session()->regenerate();
             $dashboard_url = '';
             if (Auth::user()->role === "admin") {
-                $dashboard_url = redirect()->intended(route('admin.dashboard'))->getTargetUrl();
+                $dashboard_url = redirect()->intended(route('dashboard'))->getTargetUrl();
             } else if (Auth::user()->role === "employee") {
                 $dashboard_url = redirect()->intended(route('employee.dashboard'))->getTargetUrl();
             }
