@@ -55,7 +55,8 @@
 
 
         {{-- offcanvas --}}
-        <div class="offcanvas offcanvas-end shadow" tabindex="-1" id="followUpCanvas">
+        <div class="offcanvas offcanvas-end shadow" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            id="followUpCanvas">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title">Add Follow-Up</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
@@ -65,7 +66,7 @@
 
                 <form id="followUpForm">
                     @csrf
-                    <input type="hidden" name="user_id" id="userId" readonly>
+                    <input type="hidden" name="phone" id="phone" readonly>
 
                     <div class="mb-3">
                         <label class="form-label">Status</label>
@@ -79,10 +80,12 @@
 
                     <div class="mb-3" id="busyFields" style="display: none;">
                         <label class="form-label">Next Follow-up Date</label>
-                        <input type="date" name="next_followup_date" class="form-control">
+                        <input type="date" name="next_followup_date" class="form-control"
+                            min="@php echo date('Y-m-d'); @endphp">
 
                         <label class="form-label mt-2">Next Follow-up Time</label>
-                        <input type="time" name="next_followup_time" class="form-control">
+                        <input type="time" name="next_followup_time" class="form-control"
+                            min="@php echo date('H:i'); @endphp">
                     </div>
 
                     <div class="mb-3">
@@ -96,6 +99,19 @@
 
             </div>
         </div>
+
+        {{-- view follow-ups offcanvas --}}
+        <div class="offcanvas offcanvas-end" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            id="ViewfollowUpCanvas" style="width:600px !important;max-width:80%;">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title">Follow Up Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body" id="followUpContent">
+                <!-- follow-up data will load here -->
+            </div>
+        </div>
+
 
 
 
@@ -123,31 +139,42 @@
                 },
                 {
                     data: 'name',
-                    name: 'name'
+                    name: 'name',
+                    className: 'text-center'
                 },
                 {
                     data: 'phone',
-                    name: 'phone'
+                    name: 'phone',
+                    className: 'text-center'
                 },
                 {
                     data: 'location',
-                    name: 'location'
+                    name: 'location',
+                    className: 'text-center'
                 },
                 {
                     data: 'type',
-                    name: 'type'
+                    name: 'type',
+                    className: 'text-center'
                 },
                 {
                     data: 'follow_status_badge',
-                    name: 'follow_status_badge'
+                    name: 'follow_status_badge',
+                    className: 'text-center',
+                    orderable: false,
+                    searchable: false
                 },
                 {
                     data: 'follow_up_status',
-                    name: 'follow_up_status'
+                    name: 'follow_up_status',
+                    className: 'text-center',
+                    orderable: false,
+                    searchable: false
                 },
                 {
                     data: 'actions',
                     name: 'actions',
+                    className: 'text-center',
                     orderable: false,
                     searchable: false
                 },
@@ -158,10 +185,10 @@
         // Open follow-up offcanvas
         $(document).on("click", ".openFollowUp", function() {
 
-            let userId = $(this).data("id");
+            let phone = $(this).data('phone');
 
             // Set user ID
-            $("#userId").val(userId);
+            $("#phone").val(phone);
 
             // Reset form
             $("#followUpForm")[0].reset();
@@ -214,6 +241,9 @@
 
                         // Optional: Reset form
                         $("#followUpForm")[0].reset();
+
+                        // Reload DataTable
+                        $('#leadsTable').DataTable().ajax.reload();
                     }
                 },
 
@@ -225,6 +255,65 @@
                         icon: "error",
                         confirmButtonText: "OK"
                     });
+                }
+            });
+        });
+
+        var followupRoute = "{{ route('get.followups', ['phone' => '__phone__']) }}";
+
+        $(document).on('click', '.viewFollowUp', function() {
+            let phone = $(this).data('phone');
+
+            let url = followupRoute.replace('__phone__', phone);
+
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(res) {
+
+                    let html = "";
+
+                    if (res.data.length === 0) {
+                        html = `<div class="alert alert-warning">No follow-ups found.</div>`;
+                    } else {
+                        res.data.forEach(function(item) {
+                            html += `
+                                   <div class="card border-0 mt-4 mb-4 rounded-3 shadow bg-body-tertiar">
+                                       <div class="card-body p-6">
+
+                                           <div class="d-flex justify-content-between align-items-center mb-2">
+                                               <span class="badge bg-primary px-3 py-2">
+                                                   <i class="ph ph-check-circle me-1"></i> ${item.status}
+                                               </span>
+                                               <small class="text-muted">
+                                                   <i class="ph ph-calendar me-1"></i> ${item.formatted_date}
+                                                   <i class="ph ph-clock me-1 ms-2"></i> ${item.formatted_time}
+                                               </small>
+                                           </div>
+
+                                           <p class="mb-2" style="font-size: 14px;">
+                                               <i class="ph ph-chat-circle-dots me-2 text-info"></i>
+                                               <strong>Comment:</strong> ${item.comment}
+                                           </p>
+
+                                           <div class="d-flex align-items-center mt-2">
+                                               <i class="ph ph-user-circle me-2 text-secondary" style="font-size:20px;"></i>
+                                               <span class="fw-semibold" style="font-size:14px;">${item.users_name}</span>
+                                           </div>
+
+                                       </div>
+                                   </div>
+                                `;
+
+                        });
+                    }
+
+                    $("#followUpContent").html(html);
+
+                    // open offcanvas
+                    var offcanvas = new bootstrap.Offcanvas(document.getElementById(
+                        'ViewfollowUpCanvas'));
+                    offcanvas.show();
                 }
             });
         });

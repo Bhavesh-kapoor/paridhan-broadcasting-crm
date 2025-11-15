@@ -7,8 +7,11 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use App\Services\FollowUpService;
 use App\Http\Requests\FollowUpRequest;
+use App\Models\FollowUp;
 use Illuminate\Container\Attributes\DB;
 use Illuminate\Support\Facades\DB as FacadesDB;
+use Carbon\Carbon;
+
 
 class LeadController extends Controller
 {
@@ -29,6 +32,11 @@ class LeadController extends Controller
     {
         if ($request->ajax()) {
 
+
+            $latestFollowUps = FacadesDB::table('follow_ups')
+                ->select('phone', FacadesDB::raw('MAX(created_at) as max_created_at'))
+                ->groupBy('phone');
+
             $query = Contacts::select([
                 'contacts.id',
                 'contacts.name',
@@ -36,13 +44,22 @@ class LeadController extends Controller
                 'contacts.location',
                 'contacts.type',
                 FacadesDB::raw("CASE
-                            WHEN follow_ups.id IS NOT NULL THEN 'Done'
-                            ELSE 'Pending'
-                        END AS follow_status"),
-                'follow_ups.status as follow_up_status'
+                    WHEN follow_ups.id IS NOT NULL THEN 'Done'
+                    ELSE 'Pending'
+                 END AS follow_status"),
+                'follow_ups.status as follow_up_status',
+                'follow_ups.created_at as follow_up_date'
             ])
-                ->leftJoin('follow_ups', 'contacts.id', '=', 'follow_ups.user_id')
+                ->leftJoinSub($latestFollowUps, 'latest_followup', function ($join) {
+                    $join->on('contacts.phone', '=', 'latest_followup.phone');
+                })
+                ->leftJoin('follow_ups', function ($join) {
+                    $join->on('contacts.phone', '=', 'follow_ups.phone')
+                        ->on('follow_ups.created_at', '=', 'latest_followup.max_created_at');
+                })
                 ->where('contacts.type', 'visitor');
+
+
 
             return DataTables::of($query)
                 ->addIndexColumn()
@@ -57,9 +74,13 @@ class LeadController extends Controller
                 ->addColumn('actions', function ($row) {
 
                     return '
-                    <button class="btn btn-warning btn-sm openFollowUp" data-id="' . $row->id . '">
-                        <i class="ph ph-phone-call"></i> Follow Up
+                    <button class="btn btn-secondary btn-sm openFollowUp" data-phone="' . $row->phone . '">
+                        <i class="ph ph-plus"></i>Add
                     </button>
+                    <button class="btn btn-warning btn-sm viewFollowUp ms-2" data-phone="' . $row->phone . '">
+                        <i class="ph ph-eyes"></i> View
+                    </button>
+
                 ';
                 })
 
@@ -78,6 +99,18 @@ class LeadController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Follow-up added successfully!'
+        ]);
+    }
+
+
+
+    public function getFollowUps($phone, FollowUpService $service)
+    {
+        $data = $service->getFollowUps($phone);
+
+        return response()->json([
+            'status' => true,
+            'data' => $data
         ]);
     }
 }

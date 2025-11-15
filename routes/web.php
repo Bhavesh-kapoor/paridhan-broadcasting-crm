@@ -37,6 +37,7 @@ Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
     Route::get('/get/leads/datatable', [\App\Http\Controllers\LeadController::class, 'getLeads'])->name('get.leads.data');
     Route::post('/follow-up/store', [App\Http\Controllers\LeadController::class, 'store'])
         ->name('followup.store');
+    Route::get('/get-followups/{phone}', [App\Http\Controllers\LeadController::class, 'getFollowUps'])->name('get.followups');
 });
 
 
