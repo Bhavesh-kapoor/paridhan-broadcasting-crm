@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contacts;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\DataTables;
 
 class ContactService
 {
@@ -17,11 +18,11 @@ class ContactService
         // Apply search filter
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
             });
         }
 
@@ -31,6 +32,27 @@ class ContactService
         }
 
         return $query->orderBy('created_at', 'desc')->paginate(10);
+    }
+
+
+    public function getAllContactsList($type = 'visitor')
+    {
+        $result =  DB::table('contacts')
+            ->where('type', $type)
+            ->orderByDesc('id');
+        return DataTables::of($result)
+            ->addIndexColumn()
+            ->addColumn('action', function ($employee) {
+                $id = $employee->id;
+                $button = ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('contacts.edit', $id) . '" updateRoute="' . route('contacts.update', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="Edit Employee">
+                <i class="bx bx-pencil"></i>
+                </button>  <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete Employee">
+                    <i class="bx bx-trash"></i>
+                </button>';
+                return $button;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     /**
@@ -47,7 +69,7 @@ class ContactService
     public function createContact($data)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = Contacts::create([
                 'name' => $data['name'],
@@ -76,10 +98,10 @@ class ContactService
     public function updateContact($id, $data)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = $this->getContactById($id);
-            
+
             $updateData = [
                 'name' => $data['name'],
                 'location' => $data['location'],
@@ -108,11 +130,11 @@ class ContactService
     public function deleteContact($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = $this->getContactById($id);
             $contact->delete();
-            
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -127,7 +149,7 @@ class ContactService
     public function getContactStats($type = null)
     {
         $query = Contacts::query();
-        
+
         if ($type) {
             $query->where('type', $type);
         }
@@ -154,11 +176,11 @@ class ContactService
     public function searchContacts($type, $searchTerm)
     {
         return Contacts::where('type', $type)
-            ->where(function($query) use ($searchTerm) {
+            ->where(function ($query) use ($searchTerm) {
                 $query->where('name', 'like', "%{$searchTerm}%")
-                      ->orWhere('email', 'like', "%{$searchTerm}%")
-                      ->orWhere('phone', 'like', "%{$searchTerm}%")
-                      ->orWhere('location', 'like', "%{$searchTerm}%");
+                    ->orWhere('email', 'like', "%{$searchTerm}%")
+                    ->orWhere('phone', 'like', "%{$searchTerm}%")
+                    ->orWhere('location', 'like', "%{$searchTerm}%");
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10);

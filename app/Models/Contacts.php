@@ -15,6 +15,7 @@ class Contacts extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'name',
         'email',
         'phone',

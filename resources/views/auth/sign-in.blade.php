@@ -1,116 +1,193 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title -->
-    <title> Paridhan | Login</title>
-    <!-- Favicon -->
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--favicon-->
     <link rel="shortcut icon" href="{{ url(config('contants.logo')) }}">
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
-    <!-- file upload -->
-    <link rel="stylesheet" href="{{ asset('assets/css/file-upload.css')}}">
-    <!-- file upload -->
-    <link rel="stylesheet" href="{{ asset('assets/css/plyr.css')}}">
-    <!-- full calendar -->
-    <!-- jquery Ui -->
-    <link rel="stylesheet" href="{{ asset('assets/css/jquery-ui.css')}}">
-    <!-- editor quill Ui -->
-    <!-- Main css -->
-    <link rel="stylesheet" href="{{ asset('assets/css/main.css')}}">
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <!-- loader -->
+    <link href="{{ asset('/assets/css/pace.min.css') }}" rel="stylesheet" />
+    <script src="{{ asset('/assets/js/pace.min.js') }}"></script>
+    <!-- Bootstrap CSS -->
+    <link href="{{ asset('/assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('/assets/css/bootstrap-extended.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="{{ asset('/assets/css/app.css') }}" rel="stylesheet">
+    <link href="{{ asset('/assets/css/icons.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('/assets/plugins/sweetalert2/sweetalert2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/assets/plugins/toastr/toastr.min.css') }}">
+    <title>Paridhan | Login</title>
+    <style>
+        #password-error {
+            position: absolute;
+            top: 95%;
+        }
+    </style>
+    <script>
+        var base_url = "{{ URL('/') }}";
+    </script>
 </head>
 
 <body>
-
-    <!--==================== Sidebar Overlay End ====================-->
-    <div class="side-overlay"></div>
-    <!--==================== Sidebar Overlay End ====================-->
-
-    <section class="auth d-flex">
-        <div class="auth-left bg-main-50 flex-center p-24 ">
-            <img src="{{ asset('assets/logo/banner.jpeg') }}" style="width: 900px; height:700px;object-fit:contain" alt="">
-
-        </div>
-        <div class="auth-right py-40 px-24 flex-center flex-column">
-            <div class="auth-right__inner mx-auto w-100">
-                <a href="{{route('login')}}" class="auth-right__logo">
-                    <img src="{{ url(config('contants.logo')) }}" alt="">
-                </a>
-                <h2 class="mb-8">Welcome Back! &#128075;</h2>
-
-                <form action="{{ route('login.validate') }}" method="post" id="loginform">
-                    @csrf()
-                    <div class="mb-24">
-                        <label for="email" class="form-label mb-8 h6">Email or Username</label>
-                        <div class="position-relative">
-                            <input type="text" name="email" class="form-control py-11 ps-40" id="email" placeholder="Type your username">
-                            <span class="position-absolute top-50 translate-middle-y ms-16 text-gray-600 d-flex"><i class="ph ph-user"></i></span>
-
+    <!--wrapper-->
+    <div class="wrapper">
+        <div class="section-authentication-cover">
+            <div class="">
+                <div class="row g-0">
+                    <div
+                        class="col-12 col-xl-7 col-xxl-8 auth-cover-left align-items-center justify-content-center d-none d-xl-flex">
+                        <div class="card shadow-none bg-transparent shadow-none rounded-0 mb-0">
+                            <div class="card-body">
+                                <img src="{{ asset('assets/logo/banner.jpeg') }}"
+                                    class="img-fluid auth-img-cover-login" width="650" alt="" />
+                            </div>
                         </div>
-                        <div class="error text-danger" id="email-error"></div>
-
                     </div>
-                    <div class="mb-24">
-                        <label for="password" class="form-label mb-8 h6"> Password</label>
-                        <div class="position-relative">
-                            <input type="password" name="password" class="form-control py-11 ps-40" id="password" placeholder="Enter  Password" value="">
-                            <span class="toggle-password position-absolute top-50 inset-inline-end-0 me-16 translate-middle-y ph ph-eye-slash" id="#current-password"></span>
-                            <span class="position-absolute top-50 translate-middle-y ms-16 text-gray-600 d-flex"><i class="ph ph-lock"></i></span>
-
-
+                    <div class="col-12 col-xl-5 col-xxl-4 auth-cover-right align-items-center justify-content-center">
+                        <div class="card rounded-0 m-3 shadow-none bg-transparent mb-0">
+                            <div class="card-body p-sm-5">
+                                <div class="">
+                                    <div class="mb-3 text-center">
+                                        <img src="{{ url(config('contants.logo')) }}" class="img-fluid" alt="">
+                                    </div>
+                                    <div class="text-center mb-4">
+                                        <h2 class="mb-8">Welcome Back! &#128075;</h2>
+                                    </div>
+                                    <div class="form-body">
+                                        <form action="" class="auth_form login_form row g-3" id="login_form"
+                                            autocomplete="off">
+                                            @csrf
+                                            <div class="col-12">
+                                                <label for="email" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    placeholder="jhon@example.com" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label for="password" class="form-label">Password</label>
+                                                <div class="input-group" id="show_hide_password">
+                                                    <input type="password" class="form-control border-end-0"
+                                                        id="password" name="password" placeholder="Enter Password"
+                                                        required>
+                                                    <div>
+                                                        <a href="javascript:;" class="input-group-text bg-transparent">
+                                                            <i class="bx bx-hide"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="d-grid">
+                                                    <button type="submit" class="btn btn-primary submit-btn">Sign
+                                                        in</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="error text-danger" id="password-error"></div>
-                        <div class="error text-danger" id="message-error"></div>
-
                     </div>
-                    <div class="mb-32 flex-between flex-wrap gap-8">
-                        <div class="form-check mb-0 flex-shrink-0">
-                            <input class="form-check-input flex-shrink-0 rounded-4" value="1" name="remember" type="checkbox"  id="remember">
-                            <label class="form-check-label text-15 flex-grow-1" for="remember">Remember Me </label>
-                        </div>
-                        <!-- <a href="forgot-password.html" class="text-main-600 hover-text-decoration-underline text-15 fw-medium">Forgot Password?</a> -->
-                    </div>
-                    <button type="submit" class="btn btn-main rounded-pill w-100" id="loginbutton">Sign In</button>
-
-
-                </form>
+                </div>
+                <!--end row-->
             </div>
         </div>
-    </section>
+    </div>
+    <!--end wrapper-->
+    <!-- Bootstrap JS -->
+    <script src="{{ asset('/assets/js/bootstrap.bundle.min.js') }}"></script>
+    <!-- plugins -->
+    <script src="{{ asset('/assets/js/jquery.min.js') }}"></script>
+    <script src="{{ asset('/assets/plugins/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="{{ asset('/assets/plugins/toastr/toastr.min.js') }}"></script>
+    <script src="{{ asset('/assets/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
+    <!--Password show & hide js -->
+    <script>
+        $(document).ready(function() {
+            // Password show/hide functionality
+            $("#show_hide_password a").on('click', function(event) {
+                event.preventDefault();
+                if ($('#show_hide_password input').attr("type") == "text") {
+                    $('#show_hide_password input').attr('type', 'password');
+                    $('#show_hide_password i').addClass("bx-hide");
+                    $('#show_hide_password i').removeClass("bx-show");
+                } else if ($('#show_hide_password input').attr("type") == "password") {
+                    $('#show_hide_password input').attr('type', 'text');
+                    $('#show_hide_password i').removeClass("bx-hide");
+                    $('#show_hide_password i').addClass("bx-show");
+                }
+            });
 
-    <!-- Jquery js -->
-    <script src="{{ asset('assets/js/jquery-3.7.1.min.js')}}"></script>
-    <!-- Bootstrap Bundle Js -->
-    <script src="{{ asset('assets/js/boostrap.bundle.min.js')}}"></script>
-    <!-- Phosphor Js -->
-    <script src="{{ asset('assets/js/phosphor-icon.js')}}"></script>
-    <!-- file upload -->
-    <script src="{{ asset('assets/js/file-upload.js')}}"></script>
-    <!-- file upload -->
-    <script src="{{ asset('assets/js/plyr.js')}}"></script>
-    <!-- full calendar -->
-    <script src="{{ asset('assets/js/full-calendar.js')}}"></script>
-    <!-- jQuery UI -->
-    <script src="{{ asset('assets/js/jquery-ui.js')}}"></script>
-    <!-- jQuery UI -->
-    <script src="{{ asset('assets/js/editor-quill.js')}}"></script>
-    <!-- apex charts -->
-    <script src="{{ asset('assets/js/apexcharts.min.js')}}"></script>
-    <!-- jvectormap Js -->
-    <script src="{{ asset('assets/js/jquery-jvectormap-2.0.5.min.js')}}"></script>
-    <!-- jvectormap world Js -->
-    <script src="{{ asset('assets/js/jquery-jvectormap-world-mill-en.js')}}"></script>
+            // jQuery Validation setup
+            $("#login_form").validate({
+                errorClass: "text-danger validation-error",
+                rules: {
+                    email: {
+                        required: true,
+                        email: true
+                    },
+                    password: {
+                        required: true
+                    }
+                },
+                messages: {
+                    email: {
+                        required: "Please enter your email",
+                        email: "Please enter a valid email address"
+                    },
+                    password: {
+                        required: "Please enter your password"
+                    }
+                },
+                showErrors: function(errorMap, errorList) {
+                    this.defaultShowErrors();
+                    if ($("#password-error").is(":visible")) {
+                        $(".submit-btn").addClass("mt-3");
+                    } else {
+                        $(".submit-btn").removeClass("mt-3");
+                    }
+                },
+                submitHandler: function(form, event) {
+                    event.preventDefault();
+                    var formData = new FormData(form);
 
-    <!-- main js -->
-    <script src="{{ asset('assets/js/main.js')}}"></script>
-    <script src="{{ asset('functions/login.js')}}"></script>
-
-
-
+                    $.ajax({
+                        url: base_url + '/check-login',
+                        type: 'POST',
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        dataType: "json",
+                        success: function(response) {
+                            if (response.status == true) {
+                                toastr.success(response.message);
+                                window.location.href = response.redirect;
+                            } else if (response.status == 'validation_error') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Validation Error',
+                                    html: response.message
+                                });
+                            } else if (response.status == false) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
+                            } else {
+                                toastr.error('Something went wrong. Please try again.');
+                            }
+                        },
+                        error: function(error) {
+                            toastr.error('Server error. Please try again.');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

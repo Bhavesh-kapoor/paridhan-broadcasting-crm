@@ -30,7 +30,7 @@ class AuthController extends Controller
      */
     public function signin(Request $request): mixed
     {
-        // check if user already login 
+        // check if user already login
         if (Auth::check()) redirect()->route('dashboard');
 
         // if user not logged in then redirect to sign in page
@@ -48,21 +48,26 @@ class AuthController extends Controller
         try {
             $data =   $this->service->login($authRequest);
             $authRequest->session()->regenerate();
+            $dashboard_url = '';
+            if (Auth::user()->role === "admin") {
+                $dashboard_url = redirect()->intended(route('admin.dashboard'))->getTargetUrl();
+            } else if (Auth::user()->role === "employee") {
+                $dashboard_url = redirect()->intended(route('employee.dashboard'))->getTargetUrl();
+            }
             return response()->json(
                 [
-                    'success' => true,
+                    'status' => true,
                     'message' => 'Login Successfully!',
                     'data' => $data,
-                    'redirect' => redirect()->intended(route('dashboard'))->getTargetUrl()
+                    'redirect' => $dashboard_url
                 ],
-                200
+                Response::HTTP_OK
             );
         } catch (\Exception $e) {
-            $status = (int) $e->getCode();
-            if ($status < 400 || $status > 599) {
-                $status = 500;
-            }
-            return response()->json(["success" => false,  "message" =>  $e->getMessage()], $status ?? Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 

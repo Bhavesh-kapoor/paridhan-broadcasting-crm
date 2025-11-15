@@ -6,6 +6,7 @@ use App\Http\Requests\ContactRequest;
 use App\Services\ContactService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class ContactController extends Controller
 {
@@ -19,25 +20,37 @@ class ContactController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $type = $request->get('type', 'visitor');
-        $filters = $request->only(['search', 'location']);
-        $contacts = $this->contactService->getAllContacts($type, $filters);
-        
-        $title = ucfirst($type) . 's';
-        
-        return view('contacts.index', compact('contacts', 'type', 'title'));
+        if ($type=="exhibitor") {
+           return view('exhibitor.index');
+        } else {
+             return view('visitors.index');
+
+        }
     }
+
+    /**
+     * server side rendoring data table
+     */
+
+    public function getAllContactsList(Request $request): JsonResponse
+    {
+        $type = $request->type;
+        return $this->contactService->getAllContactsList($type);
+    }
+
+
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request)
+    public function create(Request $request): View
     {
         $type = $request->get('type', 'visitor');
         $title = 'Add ' . ucfirst($type);
-        
+
         return view('contacts.create', compact('type', 'title'));
     }
 
@@ -48,15 +61,14 @@ class ContactController extends Controller
     {
         try {
             $contact = $this->contactService->createContact($request->validated());
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => ucfirst($contact->type) . ' added successfully!',
-                'redirect' => route('contacts.index', ['type' => $contact->type])
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to create ' . $request->type . ': ' . $e->getMessage()
             ], 500);
         }
@@ -65,24 +77,32 @@ class ContactController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show($id): View
     {
         $contact = $this->contactService->getContactById($id);
         $title = 'View ' . ucfirst($contact->type);
-        
+
         return view('contacts.show', compact('contact', 'title'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit($id): JsonResponse
     {
-        $contact = $this->contactService->getContactById($id);
-        $type = $contact->type;
-        $title = 'Edit ' . ucfirst($type);
-        
-        return view('contacts.edit', compact('contact', 'type', 'title'));
+        try {
+            $contact = $this->contactService->getContactById($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'Data fetched successfully!',
+                'data' => $contact,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to find data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -92,15 +112,14 @@ class ContactController extends Controller
     {
         try {
             $contact = $this->contactService->updateContact($id, $request->validated());
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => ucfirst($contact->type) . ' updated successfully!',
-                'redirect' => route('contacts.index', ['type' => $contact->type])
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to update contact: ' . $e->getMessage()
             ], 500);
         }
@@ -114,16 +133,16 @@ class ContactController extends Controller
         try {
             $contact = $this->contactService->getContactById($id);
             $type = $contact->type;
-            
+
             $this->contactService->deleteContact($id);
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => ucfirst($type) . ' deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to delete contact: ' . $e->getMessage()
             ], 500);
         }
