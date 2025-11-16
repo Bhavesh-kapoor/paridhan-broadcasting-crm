@@ -18,6 +18,18 @@
             <!--end breadcrumb-->
             <!--table wrapper -->
             <div class="card mb-0">
+                <div class="mb-3 filter-col">
+                    <div class="col-md-3 form-group">
+                        <label for="filter_lead_type">Status Lead type</label>
+                        <select class="form-control form-select" name="filter_lead_type" id="filter_lead_type">
+                            <option value="">Select</option>
+                            <option value="visitor">
+                                Visitor</option>
+                            <option value="exhibitor">
+                                Exhibitor</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="card-body pt-0">
                     <div class="table-responsive">
                         <table id="location_table" class="table table-striped table-bordered mt-2" style="width:100%">
@@ -143,8 +155,8 @@
                                                     <select name="amount_status" class="form-select form-control"
                                                         id="amount_status">
                                                         <option value="">-- Select Amount Status --</option>
-                                                        <option value="pending" selected>Pending</option>
-                                                        <option value="fully_paid">Fully Paid</option>
+                                                        <option value="partial" selected>Partial</option>
+                                                        <option value="paid"> Paid</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6 mt-2">
@@ -234,7 +246,7 @@
                     type: 'POST',
                     global: false,
                     data: function(d) {
-                        // d.type = 'visitor';
+                        d.filter_lead_type = $('#filter_lead_type').val();
                     }
                 },
                 columns: [{
@@ -338,7 +350,7 @@
             });
 
             // Filter functionality
-            // $('#filter_status').on('change', () => dataTableList.ajax.reload());
+            $('#filter_lead_type').on('change', () => dataTableList.ajax.reload());
 
 
 
@@ -511,27 +523,26 @@
                         // Build HTML for offcanvas
                         // --------------------
                         let html = `
-                <div class="mb-3">
-                    <h5 class="fw-bold mb-1">${data.contact.name}</h5>
-                    <p class="text-muted mb-0">
-                        <i class="ph ph-phone me-1"></i> ${data.contact.phone}
-                    </p>
-                </div>
+                               <div class="mb-3">
+                                   <h5 class="fw-bold mb-1">${data.contact.name}</h5>
+                                   <p class="text-muted mb-0">
+                                       <i class="ph ph-phone me-1"></i> ${data.contact.phone}
+                                   </p>
+                               </div>
 
-                <hr>
+                               <hr>
 
-                <h6 class="fw-bold text-primary mb-3">
-                    <i class="ph ph-info me-1"></i> Latest Follow-Up
-                </h6>
-                ${buildLatestFollowupCard(data.latest_followup)}
+                               <h6 class="fw-bold text-primary mb-3">
+                                <i class="ph ph-info me-1"></i> Latest Follow-Up
+                               </h6>
+                            ${buildLatestFollowupCard(data.latest_followup)}
 
-                <hr>
+                               <hr>
 
-                <h6 class="fw-bold text-primary mb-3">
-                    <i class="ph ph-clock-counter-clockwise me-1"></i> Follow-Up History
-                </h6>
-                ${buildHistoryCards(data.history)}
-            `;
+                             <h6 class="fw-bold text-primary mb-3">
+                              <i class="ph ph-clock-counter-clockwise me-1"></i> Follow-Up History
+                             </h6>
+                              ${buildHistoryCards(data.history)}`;
 
                         $("#showFollowUpBody").html(html);
 
@@ -563,12 +574,11 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                                                                                                                                                                                                                                                                                                                                                                        <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                                                                                                                                                                                                                                                                                                                                                                        <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
-                                                                                                                                                                                                                                                                                                                                                                                        ` : ""}
-            </div>
-        </div>
-         `;
+                                <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
+                </div>
+              </div>
+             `;
             }
 
 
@@ -582,7 +592,7 @@
 
                 history.forEach(item => {
                     html += `
-            <div class="card border-0 mt-3 mb-3 shadow rounded-3">
+                            <div class="card border-0 mt-3 mb-3 shadow rounded-3">
                 <div class="card-body">
 
                     <div class="d-flex justify-content-between mb-2">
@@ -728,26 +738,26 @@
 
 
 
-            $('#booking_location').select2({
-                // booking.searchLocation
-                ajax: {
-                    url: `${base_url}/api/search-location`,
-                    dataType: 'json',
-                    delay: 250,
-                    data: function(params) {
-                        return {
-                            term: params.term //
-                        };
-                    },
-                    processResults: function(data) {
-                        return {
-                            results: data //
-                        };
-                    }
-                },
-                minimumInputLength: 2,
-                placeholder: 'Location चुनें'
-            });
+            // $('#booking_location').select2({
+            //     // booking.searchLocation
+            //     ajax: {
+            //         url: `${base_url}/api/search-location`,
+            //         dataType: 'json',
+            //         delay: 250,
+            //         data: function(params) {
+            //             return {
+            //                 term: params.term //
+            //             };
+            //         },
+            //         processResults: function(data) {
+            //             return {
+            //                 results: data //
+            //             };
+            //         }
+            //     },
+            //     minimumInputLength: 2,
+            //     placeholder: 'Location चुनें'
+            // });
 
 
 

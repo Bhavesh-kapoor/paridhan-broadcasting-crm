@@ -62,7 +62,7 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
     Route::get('/get-price/{tableId}', [LeadController::class, 'getPrice'])
         ->name('booking.getPrice');
     // search location
-    Route::get('/api/search-location', [LeadController::class, 'searchLocation'])->name('booking.searchLocation');
+    // Route::get('/api/search-location', [LeadController::class, 'searchLocation'])->name('booking.searchLocation');
 });
 
 

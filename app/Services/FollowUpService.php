@@ -46,7 +46,7 @@ class FollowUpService
     }
 
 
-    public function getAllLeadsList()
+    public function getAllLeadsList($filters = [])
     {
         // Step 1: Get the latest follow_up timestamp for each phone
         $latestFollowUps = DB::table('follow_ups')
@@ -77,7 +77,9 @@ class FollowUpService
                 $join->on('contacts.phone', '=', 'follow_ups.phone')
                     ->on('follow_ups.created_at', '=', 'latest_followup.max_created_at');
             })
-            // ->where('contacts.type', 'visitor')
+            ->when(isset($filters['filter_lead_type']) && $filters['filter_lead_type'] !== '', function ($query) use ($filters) {
+                return $query->where('contacts.type', $filters['filter_lead_type']);
+            })
             ->orderByDesc('contacts.id');
 
 
@@ -139,6 +141,7 @@ class FollowUpService
                 'booking_location' => $data['booking_location'],
                 'table_no'         => $data['table_no'],
                 'price'            => $data['price'],
+                'amount_status'    => $data['amount_status'],
                 'amount_paid'      => $data['amount_paid'],
                 'employee_id'      => auth()->id(),
             ]);

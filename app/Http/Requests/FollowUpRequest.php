@@ -27,6 +27,7 @@ class FollowUpRequest extends FormRequest
             'booking_location' => 'required_if:status,materialised|nullable|string',
             'table_no'         => 'required_if:status,materialised|nullable|string',
             'price'            => 'required_if:status,materialised|nullable|numeric',
+            'amount_status' => 'required_if:status,materialised|nullable|in:paid,partial,unpaid',
             'amount_paid'      => 'required_if:status,materialised|nullable|numeric',
         ];
     }

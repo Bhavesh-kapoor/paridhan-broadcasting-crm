@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('table_no');               // Table number
             $table->string('price', 100)->nullable();
             $table->string('amount_paid', 100)->nullable();
+            $table->string('amount_status', 50)->nullable();
             $table->string('employee_id');                // Booked by
             $table->timestamps();                     // created_at & updated_at
 

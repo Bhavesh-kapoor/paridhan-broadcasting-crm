@@ -22,6 +22,7 @@ class Booking extends Model
         'booking_location',
         'table_no',
         'price',
+        'amount_status',
         'amount_paid',
         'employee_id',
     ];

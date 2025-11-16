@@ -26,9 +26,10 @@ class LeadController extends Controller
         return view('leads.index', compact('location'));
     }
 
-    public function getAllLeadsList()
+    public function getAllLeadsList(Request $request)
     {
-        return $this->service->getAllLeadsList();
+        $filters = $request->only(['filter_lead_type']);
+        return $this->service->getAllLeadsList($filters);
     }
 
 
@@ -118,15 +119,15 @@ class LeadController extends Controller
     }
 
 
-    public function searchLocation(Request $request)
-    {
-        $term = $request->get('term');
-        $locations = LocationMngt::where('loc_name', 'like', '%' . $term . '%')
-            ->orWhere('address', 'like', '%' . $term . '%')
-            ->select('id', DB::raw("CONCAT(loc_name, ' - ', address) AS text"))
-            ->limit(20)
-            ->get();
+    // public function searchLocation(Request $request)
+    // {
+    //     $term = $request->get('term');
+    //     $locations = LocationMngt::where('loc_name', 'like', '%' . $term . '%')
+    //         ->orWhere('address', 'like', '%' . $term . '%')
+    //         ->select('id', DB::raw("CONCAT(loc_name, ' - ', address) AS text"))
+    //         ->limit(20)
+    //         ->get();
 
-        return response()->json($locations);
-    }
+    //     return response()->json($locations);
+    // }
 }
