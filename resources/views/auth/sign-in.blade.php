@@ -36,8 +36,7 @@
         <div class="section-authentication-cover">
             <div class="">
                 <div class="row g-0">
-                    <div
-                        class="col-12 col-xl-7 col-xxl-8 auth-cover-left align-items-center justify-content-center d-none d-xl-flex">
+                    <div class="col-12 col-xl-7 col-xxl-8  align-items-center justify-content-center d-none d-xl-flex">
                         <div class="card shadow-none bg-transparent shadow-none rounded-0 mb-0">
                             <div class="card-body">
                                 <img src="{{ asset('assets/logo/banner.jpeg') }}"
