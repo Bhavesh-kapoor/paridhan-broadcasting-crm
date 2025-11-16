@@ -30,112 +30,66 @@ class LocationController extends Controller
         return view('locations.index');
     }
 
-    // datatables ajax function
-    public function getLocations(Request $request)
+
+    public function getAllLocationsList(Request $request): JsonResponse
     {
-        if ($request->ajax()) {
-            $query = LocationMngt::select(['id', 'loc_name', 'type', 'status', 'address', 'image']);
-
-
-            //  Apply filter if status selected
-            if (!empty($request->status)) {
-                $query->where('type', $request->status);
-            }
-
-            // dd($query);
-            return DataTables::of($query)
-                ->addIndexColumn()
-                ->editColumn('status', function ($row) {
-                    return '<span class="badge bg-' .
-                        ($row->status == 'active' ? 'success' : 'danger') .
-                        '">' . ucfirst($row->status) . '</span>';
-                })
-                ->addColumn('image', function ($row) {
-
-                    // If image exists, use it — otherwise use dummy image
-                    $imagePath = $row->image
-                        ? 'uploads/location_images/' . $row->image
-                        : 'uploads/location_images/dummy.png';   // <--- dummy image
-
-                    $url = asset($imagePath);
-
-                    return '
-                       <a href="' . $url . '" target="_blank">
-                              <img src="' . $url . '" width="50" height="50"
-                                style="border-radius:5px; object-fit:cover;">
-                         </a>
-                    ';
-                })
-                ->addColumn('actions', function ($row) {
-                    return '
-                      <button class="btn btn-info btn-sm viewLocation" data-id="' . $row->id . '">
-                        <i class="ph ph-eye"></i>
-                      </button>
-
-                    <a href="' . route('locations.edit', $row->id) . '" class="btn btn-primary btn-sm"><i class="ph ph-pencil"></i></a>
-                    <button class="btn btn-danger btn-sm deleteLocation" data-id="' . $row->id . '"><i class="ph ph-trash"></i></button>
-                ';
-                })
-                ->rawColumns(['status', 'actions', 'image'])
-                ->make(true);
-        }
+        $type = $request->type;
+        return $this->locationService->getAllLocationsList($type);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(Request $request)
-    {
-        $type = $request->get('type', 'visitor');
-        $title = 'Add ' . ucfirst($type);
 
-        return view('locations.create', compact('type', 'title'));
-    }
+
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(LocationRequest $request): JsonResponse
     {
+        // dd($request->all());
         try {
-            // Pass all validated + table data to the service
             $location = $this->locationService->createLocation($request);
 
+            if ($location['status'] === false) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $location['message']
+                ], 500);
+            }
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => 'Location and tables added successfully!',
-                'redirect' => route('locations.index')
+                'data'    => $location['data']
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to create location: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
-    {
-        $location = LocationMngt::findOrFail($id);
-        $tableDetails = LocationMngtTableDetail::where('location_mngt_id', $id)->get();
-        $title = 'View ' . ucfirst($location->type);
 
-        return view('locations.show', compact('location', 'title', 'tableDetails'));
-    }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit($id): JsonResponse
     {
-        $location = $this->locationService->getLocationById($id);
-        $loc_name = $location->loc_name;
-        $title = 'Edit ' . ucfirst($loc_name);
-
-        return view('locations.edit', compact('location', 'loc_name', 'title'));
+        try {
+            $location = $this->locationService->getLocationById($id);
+            // dd($location);
+            return response()->json([
+                'status' => true,
+                'message' => 'Location fetched successfully',
+                'data' => $location
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching location: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -147,21 +101,20 @@ class LocationController extends Controller
             // Pass the full $request object, not $request->validated()
             $update = $this->locationService->updateLocation($id, $request);
 
-            if ($update['success']) {
+            if ($update['status']) {
                 return response()->json([
-                    'success' => true,
+                    'status' => true,
                     'message' => $update['message'],
-                    'redirect' => route('locations.index')
                 ]);
             }
 
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => $update['message']
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Error updating location: ' . $e->getMessage()
             ], 500);
         }
@@ -173,26 +126,21 @@ class LocationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+
     public function destroy($id): JsonResponse
     {
         try {
-            // Find location (throws 404 if not found)
-            $location = LocationMngt::findOrFail($id);
+            $location = $this->locationService->deleteLocation($id);
 
-            // Delete related tables first
-            LocationMngtTableDetail::where('location_mngt_id', $id)->delete();
-
-            // Delete main location
-            $location->delete();
 
             return response()->json([
-                'success' => true,
-                'message' => ucfirst($location->type) . ' deleted successfully!',
+                'status' => true,
+                'message' => 'deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete location: ' . $e->getMessage(),
+                'status' => false,
+                'message' => 'Failed to delete contact: ' . $e->getMessage()
             ], 500);
         }
     }

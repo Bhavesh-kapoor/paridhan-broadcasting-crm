@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/jquery-jvectormap-2.0.5.css') }}">
     <!-- Main css -->
     <link rel="stylesheet" href="{{ asset('/assets/css/main.css') }}">
+    @yield('css')
 </head>
 
 <body>

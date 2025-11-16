@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Contacts;
 use Illuminate\Http\Request;
-use Yajra\DataTables\Facades\DataTables;
 use App\Services\FollowUpService;
 use App\Http\Requests\FollowUpRequest;
-use App\Models\FollowUp;
-use Illuminate\Container\Attributes\DB;
-use Illuminate\Support\Facades\DB as FacadesDB;
-use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+
+
 
 
 class LeadController extends Controller
@@ -27,68 +24,10 @@ class LeadController extends Controller
         return view('leads.index');
     }
 
-
-    public function getLeads(Request $request)
+    public function getAllLeadsList()
     {
-        if ($request->ajax()) {
-
-
-            $latestFollowUps = FacadesDB::table('follow_ups')
-                ->select('phone', FacadesDB::raw('MAX(created_at) as max_created_at'))
-                ->groupBy('phone');
-
-            $query = Contacts::select([
-                'contacts.id',
-                'contacts.name',
-                'contacts.phone',
-                'contacts.location',
-                'contacts.type',
-                FacadesDB::raw("CASE
-                    WHEN follow_ups.id IS NOT NULL THEN 'Done'
-                    ELSE 'Pending'
-                 END AS follow_status"),
-                'follow_ups.status as follow_up_status',
-                'follow_ups.created_at as follow_up_date'
-            ])
-                ->leftJoinSub($latestFollowUps, 'latest_followup', function ($join) {
-                    $join->on('contacts.phone', '=', 'latest_followup.phone');
-                })
-                ->leftJoin('follow_ups', function ($join) {
-                    $join->on('contacts.phone', '=', 'follow_ups.phone')
-                        ->on('follow_ups.created_at', '=', 'latest_followup.max_created_at');
-                })
-                ->where('contacts.type', 'visitor');
-
-
-
-            return DataTables::of($query)
-                ->addIndexColumn()
-
-                ->addColumn('follow_status_badge', function ($row) {
-                    if ($row->follow_status == 'Done') {
-                        return '<span class="badge bg-success">Done</span>';
-                    }
-                    return '<span class="badge bg-danger">Pending</span>';
-                })
-
-                ->addColumn('actions', function ($row) {
-
-                    return '
-                    <button class="btn btn-secondary btn-sm openFollowUp" data-phone="' . $row->phone . '">
-                        <i class="ph ph-plus"></i>Add
-                    </button>
-                    <button class="btn btn-warning btn-sm viewFollowUp ms-2" data-phone="' . $row->phone . '">
-                        <i class="ph ph-eyes"></i> View
-                    </button>
-
-                ';
-                })
-
-                ->rawColumns(['follow_status_badge', 'actions'])
-                ->make(true);
-        }
+        return $this->service->getAllLeadsList();
     }
-
 
 
     // store follow-up
@@ -100,6 +39,24 @@ class LeadController extends Controller
             'status' => true,
             'message' => 'Follow-up added successfully!'
         ]);
+    }
+
+
+    public function edit($phone): JsonResponse
+    {
+        try {
+            $lead = $this->service->getFollowUpData($phone);
+            return response()->json([
+                'status' => true,
+                'message' => 'Lead fetched successfully',
+                'data' => $lead
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching lead: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 

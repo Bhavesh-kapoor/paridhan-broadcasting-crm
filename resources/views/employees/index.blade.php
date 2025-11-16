@@ -1,383 +1,598 @@
-@extends("layout.master")
-@section('title','Employees Management')
+@extends('layouts.app_layout')
+@section('style')
+    <style>
+        #eml_password-error {
+            position: absolute;
+            top: 95%;
+        }
 
-@section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center" style="margin-left: 20px;padding:10px 2px">
-                        <div >
-                            <h5 class="mb-2 fw-bold text-dark">
-                                <i class="ph ph-users me-3 text-primary"></i>Employees Management
-                            </h5>
-                            <p class="text-muted mb-0 fs-9">Manage your team members and their information</p>
-                        </div>
-                        <a href="{{ route('employees.create') }}" class="btn btn-primary btn-lg shadow-sm">
-                            <i class="ph ph-plus-circle me-2"></i>Add New Employee
-                        </a>
-                    </div>
+        #empl_password_confirmation-error {
+            position: absolute;
+            top: 95%;
+        }
+    </style>
+@endsection
+@section('wrapper')
+    <div class="page-wrapper">
+        <div class="page-content">
+            <!--breadcrumb-->
+            <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-2">
+                <div class="breadcrumb-title pe-3">Employees</div>
+                <div class="ps-3">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">All Employees</li>
+                        </ol>
+                    </nav>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Search and Filter Section -->
-    <div class="row mb-4" style="margin-top:20px;">
-        <div class="col-12" >
-            <div class="card border-0 " >
-              
-                <div class="card-body p-3" >
-                    <div class="row g-2 align-items-end" style="padding:10px">
-                        <div class="col-md-5">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-magnifying-glass me-1"></i>Search Employees
-                            </label>
-                            <div class="input-group input-group-sm">
-                                
-                                <input type="text" class="form-control form-control-sm border-start-0 py-1" id="searchInput" 
-                                       placeholder="Search by name or email..." 
-                                       style="border-left: none;">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-check-circle me-1"></i>Status Filter
-                            </label>
-                            <select class="form-select form-select-sm py-1" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                        <!-- <div class="col-md-4">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-gear me-1"></i>Actions
-                            </label>
-                            <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-primary btn-sm py-1 px-2" id="filterBtn">
-                                    <i class="ph ph-funnel me-1 small"></i>Apply Filter
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm py-1 px-2" id="resetBtn">
-                                    <i class="ph ph-arrow-clockwise me-1 small"></i>Reset
-                                </button>
-                            </div>
-                        </div> -->
+            <!--end breadcrumb-->
+            <!--table wrapper -->
+            <div class="card mb-0">
+                <div class="mb-3 filter-col">
+                    <div class="col-md-3 form-group">
+                        <label for="filter_status">Status Filter</label>
+                        <select class="form-control form-select select2" name="filter_status" id="filter_status">
+                            <option value="">Select</option>
+                            <option value="active">
+                                Active</option>
+                            <option value="inactive">
+                                Inactive</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Employees Table Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-0 py-3" style="margin-top: 20px;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-list me-2 text-primary"></i>Employee List
-                        </h6>
-                        <span class="badge bg-primary px-3 py-2">
-                            <i class="ph ph-users me-1"></i>{{ $employees->total() }} Employees
-                        </span>
-                    </div>
-                </div>
-                <div class="card-body p-0">
+                <div class="card-body pt-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="employeesTable">
-                            <thead class="bg-light">
+                        <table id="employee_table" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
                                 <tr>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center" style="width: 60px;">
-                                        <i class="ph ph-hash me-1 text-muted"></i>#
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-user me-2 text-muted"></i>Employee
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-envelope me-2 text-muted"></i>Contact
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-briefcase me-2 text-muted"></i>Position
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-check-circle me-2 text-muted"></i>Status
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center">
-                                        <i class="ph ph-gear me-2 text-muted"></i>Actions
-                                    </th>
+                                    <th>Sl.No</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Position</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @forelse($employees as $index => $employee)
-                                <tr class="border-bottom">
-                                    <td class="px-3 py-3 text-center">
-                                        <span class="badge bg-light text-dark px-2 py-1 fw-semibold">
-                                            {{ $employees->firstItem() + $index }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <div class="d-flex align-items-center">
-                                            
-                                            <div>
-                                                <h6 class="mb-1 fw-semibold text-dark fs-6">{{ $employee->name }}</h6>
-                                                <small class="text-muted">{{ $employee->email }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <div class="d-flex flex-column gap-2">
-                                            <div class="d-flex align-items-center">
-                                                <i class="ph ph-envelope me-2 text-muted"></i>
-                                                <small class="text-dark">{{ $employee->email }}</small>
-                                            </div>
-                                            @if($employee->phone)
-                                            <div class="d-flex align-items-center">
-                                                <i class="ph ph-phone me-2 text-muted"></i>
-                                                <small class="text-dark">{{ $employee->phone }}</small>
-                                            </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        @if($employee->position)
-                                            <span class="badge bg-light text-dark px-3 py-2 border">
-                                                <i class="ph ph-briefcase me-1"></i>{{ $employee->position }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted fst-italic">Not specified</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <span class="badge bg-{{ $employee->status === 'active' ? 'success' : 'warning' }} px-3 py-2">
-                                            <i class="ph ph-{{ $employee->status === 'active' ? 'check-circle' : 'pause-circle' }} me-1"></i>
-                                            {{ ucfirst($employee->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3 text-center">
-                                        <div class="btn-group btn-group-sm shadow-sm" role="group">
-                                            <!-- <a href="{{ route('employees.show', $employee->id) }}" 
-                                               class="btn btn-info btn-sm border" 
-                                               title="View Details"
-                                               style="min-width: 40px;">
-                                                <i class="ph ph-eye"></i>
-                                            </a> -->
-                                            <a href="{{ route('employees.edit', $employee->id) }}" 
-                                               class="btn btn-primary btn-sm border" 
-                                               title="Edit Employee"
-                                               style="min-width: 20px;">
-                                                <i class="ph ph-pencil"></i>
-                                            </a>
-                                            <!-- <a href="{{ route('employees.change-password', $employee->id) }}" 
-                                               class="btn btn-warning btn-sm border" 
-                                               title="Change Password"
-                                               style="min-width: 20px;">
-                                                <i class="ph ph-key"></i>
-                                            </a> -->
-                                            <button type="button" 
-                                                    class="btn btn-{{ $employee->status === 'active' ? 'warning' : 'success' }} btn-sm border" 
-                                                    onclick="toggleStatus('{{ $employee->id }}')"
-                                                    title="{{ $employee->status === 'active' ? 'Deactivate' : 'Activate' }}"
-                                                    style="min-width: 20px;">
-                                                <i class="ph ph-{{ $employee->status === 'active' ? 'pause' : 'play' }}"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-danger btn-sm border" 
-                                               onclick="deleteEmployee('{{ $employee->id }}')"
-                                               title="Delete Employee"
-                                               style="min-width: 20px;">
-                                                <i class="ph ph-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="d-flex flex-column align-items-center">
-                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                                                 style="width: 80px; height: 80px;">
-                                                <i class="ph ph-users text-muted" style="font-size: 2rem;"></i>
-                                            </div>
-                                            <h5 class="text-muted mb-2">No employees found</h5>
-                                            <p class="text-muted mb-3">Get started by adding your first team member</p>
-                                            <a href="{{ route('employees.create') }}" class="btn btn-primary btn-lg shadow-sm">
-                                                <i class="ph ph-plus-circle me-2"></i>Add First Employee
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            <!--end table wrapper-->
 
-    <!-- Pagination Section -->
-    @if($employees->hasPages())
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted">
-                            Showing {{ $employees->firstItem() ?? 0 }} to {{ $employees->lastItem() ?? 0 }} of {{ $employees->total() }} entries
+            <!-- employee entry form  -->
+            <div class="offcanvas offcanvas-end custom-offcanvas-50" tabindex="-1" id="offcanvasEmployeeForm"
+                aria-labelledby="offcanvasEmployeeFormLabel">
+                <div class="offcanvas-header border-bottom">
+                    <h5 id="offcanvasEmployeeFormLabel">Add Employee</h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
+                        aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <form id="employeeForm" method="POST" action="javascript:void(0)">
+                        <input type="hidden" name="operation_type" id="operation_type" value="EDIT">
+                        <input type="hidden" name="hidden_id" id="hidden_id">
+                        <input type="hidden" name="form_action" id="form_action">
+                        <div class="row">
+                            <!-- Personal Information -->
+                            <div class="col-lg-6">
+                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2">
+                                    <i class="bx bx-user-circle"></i>&nbsp;Personal Information
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                        placeholder="Enter employee's full name" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address <span
+                                            class="text-danger">*</span>
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        placeholder="Enter email address" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number
+                                    </label>
+                                    <input type="tel" class="form-control" id="phone" name="phone"
+                                        placeholder="Enter phone number">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="date_of_birth" class="form-label">Date of Birth
+                                    </label>
+                                    <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                                </div>
+                            </div>
+
+                            <!-- Professional Information -->
+                            <div class="col-lg-6">
+                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2">
+                                    <i class="bx bx-briefcase"></i>&nbsp;Professional Information
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="position" class="form-label">Position/Job Title
+                                    </label>
+                                    <input type="text" class="form-control" id="position" name="position"
+                                        placeholder="Enter job position">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select form-control" id="status" name="status" required>
+                                        <option value="">Select Status</option>
+                                        <option value="active">
+                                            Active</option>
+                                        <option value="inactive">
+                                            Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Address Information -->
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2">
+                                    <i class="bx bx-map-pin"></i>&nbsp;Address Information
+                                </h6>
+
+                                <div class="">
+                                    <label for="address" class="form-label">Address
+                                    </label>
+                                    <textarea class="form-control" id="empl_address" name="address" rows="2" placeholder="Enter full address"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Security Information -->
+                            <div class="col-12 mt-2">
+                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2 ">
+                                    <i class="bx bx-shield"></i>&nbsp;Security Information
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="password" class="form-label">Password <span
+                                                    class="text-danger password-star">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="eml_password"
+                                                    name="password" placeholder="Enter password">
+                                                <span class="input-group-text cursor-pointer"
+                                                    onclick="togglePassword('eml_password')">
+                                                    <i class="bx bx-hide eml_password"></i>&nbsp;
+                                                </span>
+                                            </div>
+                                            <div class="passwordInstruction">
+                                                <small class="form-text text-muted ">Password must be at
+                                                    least 8
+                                                    characters long.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="empl_password_confirmation" class="form-label">Confirm Password
+                                                <span class="text-danger confirm-star">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control"
+                                                    id="empl_password_confirmation" name="password_confirmation"
+                                                    placeholder="Confirm password">
+                                                <span class="input-group-text cursor-pointer"
+                                                    onclick="togglePassword('empl_password_confirmation')">
+                                                    <i class="bx bx-hide empl_password_confirmation"></i>&nbsp;
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            {{ $employees->links() }}
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4 mb-5">
+                            <div class="col-12">
+                                <div class="d-flex  justify-content-between align-items-center mx-12">
+                                    <button type="submit" class="btn btn-primary d-flex align-items-center"
+                                        id="formSubmitBtn">
+                                    </button>
+                                    <button class="btn btn-outline-danger d-flex align-items-center" type="button"
+                                        id="cacnelBtn">
+                                        <i class="bx bx-x"></i>&nbsp;Cancel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
+            <!-- end employee entry form  -->
         </div>
     </div>
-    @endif
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white border-0">
-                <h5 class="modal-title text-white">
-                    <i class="ph ph-warning me-2 text-white"></i>Confirm Delete
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="text-center mb-3">
-                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" 
-                         style="width: 80px; height: 80px;">
-                        <i class="ph ph-trash text-danger" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-                <h6 class="text-center mb-2">Are you sure?</h6>
-                <p class="text-center text-muted mb-0">This action cannot be undone. The employee will be permanently removed from the system.</p>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-                    <i class="ph ph-x me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" id="confirmDelete">
-                    <i class="ph ph-trash me-2"></i>Delete Employee
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
-
-@push('scripts')
-<script>
-let employeeToDelete = null;
-
-// Search functionality
-$('#searchInput').on('keyup', function() {
-    applyFilters();
-});
-
-// Status filter functionality
-$('#statusFilter').on('change', function() {
-    applyFilters();
-});
-
-// Combined filter function
-function applyFilters() {
-    const searchTerm = $('#searchInput').val().toLowerCase();
-    const selectedStatus = $('#statusFilter').val().toLowerCase();
-    
-    $('#employeesTable tbody tr').each(function() {
-        const employeeName = $(this).find('td:nth-child(2) h6').text().toLowerCase();
-        const employeeEmail = $(this).find('td:nth-child(2) small').text().toLowerCase();
-        const statusBadge = $(this).find('td:nth-child(5) .badge');
-        const status = statusBadge.text().toLowerCase().includes('active') ? 'active' : 'inactive';
-        
-        // Check if row matches search term
-        const matchesSearch = !searchTerm || 
-            employeeName.includes(searchTerm) || 
-            employeeEmail.includes(searchTerm);
-        
-        // Check if row matches status filter
-        const matchesStatus = !selectedStatus || status === selectedStatus;
-        
-        // Show row only if it matches both filters
-        if (matchesSearch && matchesStatus) {
-            $(this).show();
-        } else {
-            $(this).hide();
-        }
-    });
-}
-
-// Filter button
-$('#filterBtn').on('click', function() {
-    applyFilters();
-});
-
-// Reset button
-$('#resetBtn').on('click', function() {
-    $('#searchInput').val('');
-    $('#statusFilter').val('');
-    $('#employeesTable tbody tr').show();
-});
-
-function deleteEmployee(employeeId) {
-    employeeToDelete = employeeId;
-    $('#deleteModal').modal('show');
-}
-
-function toggleStatus(employeeId) {
-    $.ajax({
-        url: `/admin/employees/${employeeId}/toggle-status`,
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                showNotification('success', response.message);
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            }
-        },
-        error: function(xhr) {
-            const response = xhr.responseJSON;
-            showNotification('error', response.message || 'Something went wrong!');
-        }
-    });
-}
-
-$('#confirmDelete').click(function() {
-    if (employeeToDelete) {
-        $.ajax({
-            url: `/admin/employees/${employeeToDelete}`,
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#deleteModal').modal('hide');
-                    showNotification('success', response.message);
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
+@section('script')
+    <script>
+        $(document).ready(function() {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON;
-                showNotification('error', response.message || 'Something went wrong!');
-            }
-        });
-    }
-});
+            });
 
-// Notification function is now available globally from master layout
-</script>
-@endpush
+            let myOffcanvas = new bootstrap.Offcanvas(document.getElementById('offcanvasEmployeeForm'));
+
+            const employeeDataTable = $('#employee_table').DataTable({
+                processing: true,
+                serverSide: true,
+                autoWidth: true,
+                scrollX: true,
+                scrollCollapse: true,
+                pagination: true,
+                ajax: {
+                    url: `${base_url}/admin/ajax/get/all-employees`,
+                    type: 'POST',
+                    global: false,
+                    data: function(d) {
+                        d.filter_status = $('#filter_status').val();
+                    }
+                },
+                columns: [{
+                        data: null,
+                        name: 'id',
+                        className: "text-center",
+                        orderable: false,
+                        searchable: false,
+                        render: (data, type, row, meta) => meta.row + meta.settings._iDisplayStart + 1
+                    },
+                    {
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'email',
+                        name: 'email'
+                    },
+                    {
+                        data: 'phone',
+                        name: 'phone'
+                    },
+                    {
+                        data: 'position',
+                        name: 'position'
+                    },
+                    {
+                        data: 'full_status',
+                        name: 'status'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        className: "text-center",
+                        width: '12%',
+                        orderable: false,
+                        searchable: false
+                    },
+                ],
+                "columnDefs": [{
+                    "targets": [0, 1, 2, 3, 4, 5],
+                    "orderable": false,
+                    "sorting": false
+                }],
+                dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
+                    "<'row'<'col-12'tr>>" +
+                    "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+                buttons: []
+            });
+
+            $(window).on('load', function() {
+                $('.dataTables_wrapper .dt-buttons').append(
+                    `<button type="button" class="btn btn-primary" type="button" id="addEmployeeBtn"><i
+                            class="lni lni-circle-plus mx-1"></i>Add New
+                        Employee</button>`
+                );
+            })
+
+            // On click add button, open the modal
+            $(document).on('click', '#addEmployeeBtn', function() {
+                document.getElementById("employeeForm").reset();
+                $("#employeeForm").validate().resetForm();
+                $('#operation_type').val('ADD');
+                $("#form_action").val(`{{ route('employees.store') }}`);
+                $("#hidden_id").val('');
+                $('#offcanvasEmployeeFormLabel').html('<i class="bx bx-plus"></i> Add New Employee');
+                $('#formSubmitBtn').html('<i class="bx bx-check-circle"></i> Create Employee');
+                $("#eml_password").prop('disabled', false);
+                $("#empl_password_confirmation").prop('disabled', false);
+                $("#status").prop('disabled', false);
+                myOffcanvas.toggle();
+            });
+
+            // Filter functionality
+            $('#filter_status').on('change', () => employeeDataTable.ajax.reload());
+
+            $("#cacnelBtn").on('click', function() {
+                myOffcanvas.toggle();
+            });
+
+            // jQuery Validation
+            $("#employeeForm").validate({
+                errorClass: "text-danger validation-error",
+                rules: {
+                    name: {
+                        required: true,
+                        minlength: 3
+                    },
+                    email: {
+                        required: true,
+                        email: true
+                    },
+                    phone: {
+                        digits: true,
+                        minlength: 10,
+                        maxlength: 10
+                    },
+                    date_of_birth: {
+                        date: true
+                    },
+                    position: {
+                        minlength: 2
+                    },
+                    status: {
+                        required: true
+                    },
+                    address: {
+                        minlength: 5
+                    },
+                    password: {
+                        required: function() {
+                            return $('#operation_type').val() === 'ADD';
+                        },
+                        minlength: 8
+                    },
+                    password_confirmation: {
+                        required: function() {
+                            return $('#operation_type').val() === 'ADD';
+                        },
+                        minlength: 8,
+                        equalTo: "#eml_password"
+                    }
+                },
+
+                messages: {
+                    name: {
+                        required: "Please enter full name",
+                        minlength: "Name must be at least 3 characters"
+                    },
+                    email: {
+                        required: "Please enter your email",
+                        email: "Please enter a valid email"
+                    },
+                    phone: {
+                        digits: "Phone number must contain only digits",
+                        minlength: "Phone number must be 10 digits",
+                        maxlength: "Phone number must be 10 digits"
+                    },
+                    date_of_birth: {
+                        date: "Please enter valid date"
+                    },
+                    position: {
+                        minlength: "Position must be at least 2 characters"
+                    },
+                    status: {
+                        required: "Please select a status"
+                    },
+                    address: {
+                        minlength: "Address must be at least 5 characters"
+                    },
+                    password: {
+                        required: "Password is required",
+                        minlength: "Password must be at least 8 characters"
+                    },
+                    password_confirmation: {
+                        required: "Confirm Password is required",
+                        minlength: "Confirm Password must be at least 8 characters",
+                        equalTo: "Password and Confirm Password do not match"
+                    }
+                },
+
+                showErrors: function(errorMap, errorList) {
+                    this.defaultShowErrors();
+                    if ($("#eml_password-error").is(":visible")) {
+                        $(".passwordInstruction").addClass("mt-3");
+                    } else {
+                        $(".passwordInstruction").removeClass("mt-3");
+                    }
+                },
+
+                submitHandler: function(form, event) {
+                    event.preventDefault();
+                    var formData = new FormData(form);
+                    const formAction = $('#form_action').val();
+                    var operationType = $('#operation_type').val();
+                    if (operationType == 'EDIT') {
+                        formData.append('_method', 'PUT');
+                    }
+
+                    $.ajax({
+                        url: formAction,
+                        type: 'POST',
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        dataType: "json",
+
+                        success: function(response) {
+                            if (response.status === true) {
+                                employeeDataTable.ajax.reload();
+                                formReset();
+                                myOffcanvas.toggle();
+                                toastr.success(response.message);
+                            } else if (response.status === 'validation_error') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Validation Error',
+                                    html: response.message
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
+                            }
+                        },
+
+                        error: function() {
+                            toastr.error('Server error. Please try again.');
+                        }
+                    });
+                }
+            });
+
+            function formReset() {
+                $("#employeeForm")[0].reset();
+                $("#employeeForm").validate().resetForm();
+                $(".validation-error").removeClass("validation-error");
+            };
+
+            // handle table action button click
+            $(document).on('click', '.editBtn', function() {
+                const route = $(this).attr('editRoute');
+                const updateRoute = $(this).attr("updateRoute");
+                $.ajax({
+                    url: route,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.status == true) {
+                            var data = response.data;
+                            // Set the form data
+                            formReset();
+                            $('#operation_type').val('EDIT');
+                            $('#hidden_id').val(data.id);
+                            $("#form_action").val(updateRoute);
+                            $('#name').val(data.name);
+                            $('#email').val(data.email);
+                            $('#phone').val(data.phone);
+                            $('#empl_address').val(data.address);
+                            $('#position').val(data.position);
+                            $('#salary').val(data.salary);
+                            var dob = data.date_of_birth.split('T')[
+                                0]; // Extract "YYYY-MM-DD" part
+                            $('#date_of_birth').val(dob);
+
+                            $('#status option[value="' + data.status + '"]').prop('selected',
+                                true);
+
+                            $("#eml_password").prop('disabled', true);
+                            $("#empl_password_confirmation").prop('disabled', true);
+                            $("#status").prop('disabled', true);
+
+
+                            $('#offcanvasEmployeeFormLabel').html(
+                                '<i class="bx bx-edit"></i> Edit Employee');
+                            $('#formSubmitBtn').html(
+                                '<i class="bx bx-edit"></i> Update Employee');
+                            myOffcanvas.toggle();
+                        } else if (response.status == false) {
+                            toastr.error(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function(errors) {
+                        console.log(errors);
+                    }
+                });
+            });
+
+            $(document).on('click', '.deleteBtn', function() {
+                var id = $(this).attr('id');
+                if (id) {
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Are you sure?',
+                        text: 'You want to delete this record?',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#555',
+                        confirmButtonText: 'Delete',
+                        cancelButtonText: 'Cancel',
+                    }).then((result) => {
+
+                        /* Read more about isConfirmed, isDenied below */
+                        if (result.value) {
+                            $.ajax({
+                                url: base_url + `/admin/employees/${id}`,
+                                type: 'DELETE',
+                                success: function(response) {
+                                    if (response.status == true) {
+                                        toastr.success(response.message);
+                                        employeeDataTable.ajax.reload();
+                                    } else if (response.status == false) {
+                                        toastr.error(response.message);
+                                    } else {
+                                        toastr.error(response.message);
+                                    }
+                                },
+                                error: function(errors) {
+                                    toastr.error(error)
+                                }
+                            });
+                        }
+
+                    });
+                } else {
+                    toastr.error('Something went wrong. Please try again.');
+                }
+
+            });
+
+            $(document).on('click', '.deactivateBtn', function() {
+                var id = $(this).attr('id');
+                if (id) {
+                    $.ajax({
+                        url: base_url + `/admin/employees/${id}/toggle-status`,
+                        type: 'POST',
+                        success: function(response) {
+                            if (response.status == true) {
+                                toastr.success(response.message);
+                                employeeDataTable.ajax.reload();
+                            } else if (response.status == false) {
+                                toastr.error(response.message);
+                            } else {
+                                toastr.error(response.message);
+                            }
+                        },
+                        error: function(errors) {
+                            toastr.error(error)
+                        }
+                    });
+                } else {
+                    toastr.error('Something went wrong. Please try again.');
+                }
+
+            });
+        });
+        function togglePassword(cls) {
+            let input = $("#" + cls);
+            let icon = $("." + cls);
+
+            if (icon.hasClass("bx-hide")) {
+                input.attr("type", "text");
+                icon.removeClass("bx-hide").addClass("bx-show");
+            } else {
+                icon.removeClass("bx-show").addClass("bx-hide");
+                input.attr("type", "password");
+            }
+        }
+    </script>
+@endsection

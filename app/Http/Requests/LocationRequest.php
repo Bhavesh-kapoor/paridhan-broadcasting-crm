@@ -25,7 +25,6 @@ class LocationRequest extends FormRequest
             'loc_name' => ['required', 'string', 'max:255'],
             'type'     => ['required', 'string', 'max:50'],
             'address'  => ['nullable', 'string'],
-            'status'   => ['required', 'in:active,inactive'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'], // 5MB
 
 
@@ -50,8 +49,6 @@ class LocationRequest extends FormRequest
             'type.required' => 'Type is required.',
             'type.max' => 'Type must not exceed 50 characters.',
             'address.string' => 'Address must be a valid text string.',
-            'status.required' => 'Status is required.',
-            'status.in' => 'Status must be either active or inactive.',
 
             'image.image' => 'Uploaded file must be an image.',
             'image.mimes' => 'Image must be a file of type: JPG, JPEG, or PNG.',

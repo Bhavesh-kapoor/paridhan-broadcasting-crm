@@ -1,20 +1,28 @@
 <?php
 
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\ProcessLargeFileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 #admin routes
-Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', ["App\Http\Controllers\DashboardController", "index"])->name('dashboard');
 
     # Employee routes
-    Route::resource('employees', \App\Http\Controllers\EmployeeController::class);
-    Route::get('employees/{employee}/change-password', [\App\Http\Controllers\EmployeeController::class, 'showChangePassword'])->name('employees.change-password');
-    Route::post('employees/{employee}/change-password', [\App\Http\Controllers\EmployeeController::class, 'changePassword'])->name('employees.change-password.store');
-    Route::post('employees/{employee}/toggle-status', [\App\Http\Controllers\EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
+    Route::resource('employees', EmployeeController::class);
+    Route::post('/ajax/get/all-employees', [EmployeeController::class, 'getAllEmployeesList']);
+    Route::get('employees/{employee}/change-password', [EmployeeController::class, 'showChangePassword'])->name('employees.change-password');
+    Route::post('employees/{employee}/change-password', [EmployeeController::class, 'changePassword'])->name('employees.change-password.store');
+    Route::post('employees/{employee}/toggle-status', [EmployeeController::class, 'toggleStatus'])->name('employees.toggle-status');
 
     # Contact routes (Exhibitors & Visitors)
-    Route::resource('contacts', \App\Http\Controllers\ContactController::class);
+    Route::resource('contacts', ContactController::class);
+    Route::post('/ajax/get/all-contacts', [ContactController::class, 'getAllContactsList']);
 
     # Campaign routes
     Route::resource('campaigns', \App\Http\Controllers\CampaignController::class);
@@ -26,19 +34,40 @@ Route::middleware(['web', 'auth:web'])->prefix('admin')->group(function () {
     Route::get('/change-password', [\App\Http\Controllers\AuthController::class, 'showChangePassword'])->name('admin.change-password');
     Route::post('/change-password', [\App\Http\Controllers\AuthController::class, 'changePassword'])->name('admin.change-password.store');
 
+
+
+    #Bulk import (Exhibitors & Visitors) data
+    Route::post('/import-contact', [ProcessLargeFileController::class, 'upload'])->name('contact.import');
+
+    // location routes
+    Route::resource('locations', LocationController::class);
+    Route::post('/ajax/get/all-locations', [LocationController::class, 'getAllLocationsList']);
+});
+
+
+// employee routes
+Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('employee.dashboard');
+
+    Route::resource('leads', LeadController::class);
+    Route::post('/ajax/get/all-leads', [LeadController::class, 'getAllLeadsList']);
+});
+
+
+
+Route::middleware(['web', 'auth:web', 'checkRole:admin,employee'])->group(function () {
     #auth related routes
     Route::get('/logout', ["App\Http\Controllers\AuthController", "logout"])->name('logout');
 
     # Location routes
-    Route::resource('locations', \App\Http\Controllers\LocationController::class);
-    Route::get('/get/locations/datatable', [\App\Http\Controllers\LocationController::class, 'getLocations'])->name('get.locations.data');
+    // Route::get('/get/locations/datatable', [\App\Http\Controllers\LocationController::class, 'getLocations'])->name('get.locations.data');
 
     Route::resource('leads', \App\Http\Controllers\LeadController::class);
-    Route::get('/get/leads/datatable', [\App\Http\Controllers\LeadController::class, 'getLeads'])->name('get.leads.data');
     Route::post('/follow-up/store', [App\Http\Controllers\LeadController::class, 'store'])
         ->name('followup.store');
     Route::get('/get-followups/{phone}', [App\Http\Controllers\LeadController::class, 'getFollowUps'])->name('get.followups');
 });
+
 
 
 #auth routes
@@ -49,7 +78,6 @@ Route::middleware(['web', 'guest'])->group(function () {
     Route::get('sign-in', ["App\Http\Controllers\AuthController", 'signin'])->name('login');
     Route::post('sign-in', ["App\Http\Controllers\AuthController", 'validate'])->name('login.validate');
 
-
-
     // Lead routes
+    Route::post('check-login', ["App\Http\Controllers\AuthController", 'validate'])->name('login.validate');
 });

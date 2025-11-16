@@ -1,321 +1,530 @@
-@extends('layout.master')
-@section('title', 'lead Management')
+@extends('layouts.app_layout')
+@section('wrapper')
+    <div class="page-wrapper">
+        <div class="page-content">
+            <!--breadcrumb-->
+            <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-2">
+                <div class="breadcrumb-title pe-3">Leads</div>
+                <div class="ps-3">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">All Leads</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!--end breadcrumb-->
+            <!--table wrapper -->
+            <div class="card mb-0">
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table id="location_table" class="table table-striped table-bordered mt-2" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Sl.No</th>
+                                    <th>User Name</th>
+                                    <th>Phone</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Crurrent FollowUp Status</th>
+                                    <th>Last Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!--end table wrapper-->
 
-@section('content')
-    <div class="container-fluid">
-        <!-- Header Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center"
-                            style="margin-left: 20px;padding:10px 2px">
-                            <div>
-                                <h5 class="mb-2 fw-bold text-dark">
-                                    <i class="ph ph-crown me-3 text-primary"></i>Lead Management
-                                </h5>
-                                <p class="text-muted mb-0 fs-9">Manage your Leads</p>
+            <!-- entry form  -->
+            <div class="offcanvas offcanvas-end custom-offcanvas-50" tabindex="-1" id="offcanvasForm"
+                aria-labelledby="offcanvasFormLabel">
+                <div class="offcanvas-header border-bottom">
+                    <h5 id="offcanvasFormLabel"></h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
+                        aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <form id="tableForm" method="POST" action="javascript:void(0)">
+                        <input type="hidden" name="operation_type" id="operation_type" value="EDIT">
+                        <input type="hidden" name="hidden_id" id="hidden_id">
+                        <input type="hidden" name="form_action" id="form_action">
+                        <div class="row">
+                            <!-- Personal Information -->
+                            <div class="col-lg-12">
+                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2">
+                                    <i class="bx bx-user-circle"></i>&nbsp;Add Follow-Up
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Type <span class="text-danger">*</span></label>
+                                        <select name="status" id="status" class="form-select form-control" required>
+                                            <option value="">-- Select Status --</option>
+                                            <option value="busy">Busy</option>
+                                            <option value="interested">Interested</option>
+                                            <option value="materialised">Materialised</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="" id="busyFields" style="display: none;">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Next Follow-up Date</label>
+                                                    <input type="date" name="next_followup_date" class="form-control"
+                                                        min="@php echo date('Y-m-d'); @endphp">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Next Follow-up Time</label>
+                                                    <input type="time" name="next_followup_time" class="form-control"
+                                                        min="@php echo date('H:i'); @endphp">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">Comment</label>
+                                        <textarea name="comment" class="form-control" required></textarea>
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4 mb-5">
+                            <div class="col-12">
+                                <div class="d-flex  justify-content-between align-items-center mx-12">
+                                    <button type="submit" class="btn btn-primary d-flex align-items-center"
+                                        id="formSubmitBtn">
+                                    </button>
+                                    <button class="btn btn-outline-danger d-flex align-items-center" type="button"
+                                        id="cacnelBtn">
+                                        <i class="bx bx-x"></i>&nbsp;Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
-        </div>
+            <!-- end entry form  -->
 
+            {{-- show offcanvas --}}
+            <div class="offcanvas offcanvas-end custom-offcanvas-50" tabindex="-1" id="offcanvasShow"
+                aria-labelledby="offcanvasShowLabel">
+                <div class="offcanvas-header border-bottom">
+                    <h5 id="offcanvasShowLabel"></h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
+                        aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body" id="showFollowUpBody">
 
-
-        <!-- leads Table Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm px-5">
-
-                    <div class="card-body px-4">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="leadsTable">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>User Name</th>
-                                        <th>Phone</th>
-                                        <th>Location</th>
-                                        <th>Type</th>
-                                        <th class="text-wrap">Crurrent FollowUp Status</th>
-                                        <th>Last Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-
-                        </div>
-                    </div>
                 </div>
             </div>
+            {{-- show offcanvas --}}
+
+
         </div>
-
-
-        {{-- offcanvas --}}
-        <div class="offcanvas offcanvas-end shadow" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-            id="followUpCanvas">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title">Add Follow-Up</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-
-            <div class="offcanvas-body">
-
-                <form id="followUpForm">
-                    @csrf
-                    <input type="hidden" name="phone" id="phone" readonly>
-
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select name="status" id="status" class="form-control" required>
-                            <option value="">-- Select Status --</option>
-                            <option value="busy">Busy</option>
-                            <option value="interested">Interested</option>
-                            <option value="materialised">Materialised</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3" id="busyFields" style="display: none;">
-                        <label class="form-label">Next Follow-up Date</label>
-                        <input type="date" name="next_followup_date" class="form-control"
-                            min="@php echo date('Y-m-d'); @endphp">
-
-                        <label class="form-label mt-2">Next Follow-up Time</label>
-                        <input type="time" name="next_followup_time" class="form-control"
-                            min="@php echo date('H:i'); @endphp">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Comment</label>
-                        <textarea name="comment" class="form-control" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100">Save Follow-Up</button>
-
-                </form>
-
-            </div>
-        </div>
-
-        {{-- view follow-ups offcanvas --}}
-        <div class="offcanvas offcanvas-end" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-            id="ViewfollowUpCanvas" style="width:600px !important;max-width:80%;">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title">Follow Up Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-            <div class="offcanvas-body" id="followUpContent">
-                <!-- follow-up data will load here -->
-            </div>
-        </div>
-
-
-
-
     </div>
-
-
 @endsection
-
-@push('scripts')
+@section('script')
     <script>
-        let table = $('#leadsTable').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: '{{ route('get.leads.data') }}',
-                data: function(d) {
-                    d.status = $('#statusFilter').val(); // send selected filter to backend
+        $(document).ready(function() {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
-            },
-            columns: [{
-                    data: 'DT_RowIndex',
-                    name: 'DT_RowIndex',
-                    orderable: false,
-                    searchable: false
+            });
+
+            let myOffcanvas = new bootstrap.Offcanvas(document.getElementById('offcanvasForm'));
+
+            const dataTableList = $('#location_table').DataTable({
+                processing: true,
+                serverSide: true,
+                autoWidth: true,
+                scrollX: true,
+                scrollCollapse: true,
+                pagination: true,
+                ajax: {
+                    url: `${base_url}/employee/ajax/get/all-leads`,
+                    type: 'POST',
+                    global: false,
+                    data: function(d) {
+                        // d.type = 'visitor';
+                    }
                 },
-                {
-                    data: 'name',
-                    name: 'name',
-                    className: 'text-center'
+                columns: [{
+                        data: null,
+                        name: 'id',
+                        className: "text-center",
+                        orderable: false,
+                        searchable: false,
+                        render: (data, type, row, meta) => meta.row + meta.settings._iDisplayStart + 1
+                    },
+                    {
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'phone',
+                        name: 'phone'
+                    },
+                    {
+                        data: 'location',
+                        name: 'location'
+                    },
+                    {
+                        data: 'type',
+                        name: 'type'
+                    },
+                    {
+                        data: 'follow_up_status',
+                        name: 'follow_up_status',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'follow_status_badge',
+                        name: 'follow_status_badge',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        className: "text-center",
+                        width: '12%',
+                        orderable: false,
+                        searchable: false
+                    },
+                ],
+                "columnDefs": [{
+                    "targets": '-All',
+                    "orderable": false,
+                    "sorting": false
+                }],
+                dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
+                    "<'row'<'col-12'tr>>" +
+                    "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+                buttons: [],
+
+            });
+
+
+            // Show/hide fields based on status
+            $("#status").on("change", function() {
+                if ($(this).val() === "busy") {
+                    $("#busyFields").slideDown();
+                    // Make fields required dynamically
+                    $("[name='next_followup_date']").rules("add", {
+                        required: true
+                    });
+                    $("[name='next_followup_time']").rules("add", {
+                        required: true
+                    });
+                } else {
+                    $("#busyFields").slideUp();
+
+                    // Remove validation rules dynamically
+                    $("[name='next_followup_date']").rules("remove", "required");
+                    $("[name='next_followup_time']").rules("remove", "required");
+
+                    // Also clear validation error messages
+                    $("[name='next_followup_date']").val("").removeClass("error");
+                    $("[name='next_followup_time']").val("").removeClass("error");
+                }
+            });
+
+
+
+
+            // On click add button, open the modal
+            $(document).on('click', '.addBtn', function() {
+                document.getElementById("tableForm").reset();
+                $('#operation_type').val('ADD');
+                $("#tableForm").validate().resetForm();
+                $("#form_action").val(`{{ route('leads.store') }}`);
+                let phone = $(this).data('phone');
+                $("#hidden_id").val(phone);
+                $('#offcanvasFormLabel').html('<i class="bx bx-plus"></i> Save Follow-Up');
+                $('#formSubmitBtn').html('<i class="bx bx-check-circle me-1"></i> Create Lead');
+                myOffcanvas.toggle();
+            });
+
+            // Filter functionality
+            // $('#filter_status').on('change', () => dataTableList.ajax.reload());
+
+
+
+
+
+            // jQuery Validation
+            $("#tableForm").validate({
+                errorClass: "text-danger validation-error",
+                rules: {
+                    status: {
+                        required: true
+                    },
+                    comment: {
+                        required: true,
+                        minlength: 3
+                    },
+                    next_followup_date: {
+                        required: function() {
+                            return $("#status").val() === "busy";
+                        }
+                    },
+                    next_followup_time: {
+                        required: function() {
+                            return $("#status").val() === "busy";
+                        }
+                    }
                 },
-                {
-                    data: 'phone',
-                    name: 'phone',
-                    className: 'text-center'
-                },
-                {
-                    data: 'location',
-                    name: 'location',
-                    className: 'text-center'
-                },
-                {
-                    data: 'type',
-                    name: 'type',
-                    className: 'text-center'
-                },
-                {
-                    data: 'follow_status_badge',
-                    name: 'follow_status_badge',
-                    className: 'text-center',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'follow_up_status',
-                    name: 'follow_up_status',
-                    className: 'text-center',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'actions',
-                    name: 'actions',
-                    className: 'text-center',
-                    orderable: false,
-                    searchable: false
-                },
-            ]
-        });
-
-
-        // Open follow-up offcanvas
-        $(document).on("click", ".openFollowUp", function() {
-
-            let phone = $(this).data('phone');
-
-            // Set user ID
-            $("#phone").val(phone);
-
-            // Reset form
-            $("#followUpForm")[0].reset();
-
-            // Hide busy fields initially
-            $("#busyFields").hide();
-
-            // Open the offcanvas
-            let followCanvas = new bootstrap.Offcanvas(document.getElementById('followUpCanvas'));
-            followCanvas.show();
-        });
-
-        // Show/hide fields based on status
-        $("#status").on("change", function() {
-            if ($(this).val() === "busy") {
-                $("#busyFields").slideDown();
-            } else {
-                $("#busyFields").slideUp();
-            }
-        });
-
-
-
-
-        // AJAX form submit
-        $("#followUpForm").on("submit", function(e) {
-            e.preventDefault();
-
-            $.ajax({
-                url: "{{ route('followup.store') }}",
-                type: "POST",
-                data: $(this).serialize(),
-
-                success: function(res) {
-
-                    if (res.status) {
-
-                        Swal.fire({
-                            title: "Success!",
-                            text: res.message,
-                            icon: "success",
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-
-                        // Hide Offcanvas
-                        const offcanvasEl = document.getElementById("followUpCanvas");
-                        const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
-                        offcanvas.hide();
-
-                        // Optional: Reset form
-                        $("#followUpForm")[0].reset();
-
-                        // Reload DataTable
-                        $('#leadsTable').DataTable().ajax.reload();
+                messages: {
+                    next_followup_date: {
+                        required: "Please select next follow-up date"
+                    },
+                    next_followup_time: {
+                        required: "Please select next follow-up time"
                     }
                 },
 
-                error: function(err) {
+                messages: {
+                    loc_name: {
+                        required: "Please enter full name",
+                        minlength: "Name must be at least 3 characters"
+                    },
+                    phone: {
+                        required: "Please enter Address",
+                        minlength: "Phone number must be 3 digits",
 
-                    Swal.fire({
-                        title: "Validation Error!",
-                        text: "Please check required fields.",
-                        icon: "error",
-                        confirmButtonText: "OK"
+                    },
+                    type: {
+                        required: "Please select type"
+                    },
+                },
+                submitHandler: function(form, event) {
+                    event.preventDefault();
+                    var formData = new FormData(form);
+                    const formAction = $('#form_action').val();
+                    var operationType = $('#operation_type').val();
+                    $.ajax({
+                        url: formAction,
+                        type: 'POST',
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        dataType: "json",
+
+                        success: function(response) {
+                            if (response.status === true) {
+                                formReset();
+                                myOffcanvas.toggle();
+                                toastr.success(response.message);
+                                // location.reload();
+                                dataTableList.ajax.reload();
+                            } else if (response.status === 'validation_error') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Validation Error',
+                                    html: response.message
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
+                            }
+                        },
+
+                        error: function() {
+                            toastr.error('Server error. Please try again.');
+                        }
                     });
                 }
             });
-        });
 
-        var followupRoute = "{{ route('get.followups', ['phone' => '__phone__']) }}";
+            function formReset() {
+                $("#tableForm")[0].reset();
+                $("#tableForm").validate().resetForm();
+                $(".validation-error").removeClass("validation-error");
 
-        $(document).on('click', '.viewFollowUp', function() {
-            let phone = $(this).data('phone');
+                // Restore states
+                $('#loc_name, #loc_address, #numTables, #type').prop('readonly', false);
+                $('#type').prop('disabled', false);
+                $('#formSubmitBtn').show();
+                $('#image').closest('.mb-3').show();
 
-            let url = followupRoute.replace('__phone__', phone);
+                $("#busyFields").slideUp();
 
-            $.ajax({
-                url: url,
-                type: "GET",
-                success: function(res) {
+                // Remove validation rules dynamically
+                $("[name='next_followup_date']").rules("remove", "required");
+                $("[name='next_followup_time']").rules("remove", "required");
 
-                    let html = "";
+                // Also clear validation error messages
+                $("[name='next_followup_date']").val("").removeClass("error");
+                $("[name='next_followup_time']").val("").removeClass("error");
+            }
 
-                    if (res.data.length === 0) {
-                        html = `<div class="alert alert-warning">No follow-ups found.</div>`;
-                    } else {
-                        res.data.forEach(function(item) {
-                            html += `
-                                   <div class="card border-0 mt-4 mb-4 rounded-3 shadow bg-body-tertiar">
-                                       <div class="card-body p-6">
 
-                                           <div class="d-flex justify-content-between align-items-center mb-2">
-                                               <span class="badge bg-primary px-3 py-2">
-                                                   <i class="ph ph-check-circle me-1"></i> ${item.status}
-                                               </span>
-                                               <small class="text-muted">
-                                                   <i class="ph ph-calendar me-1"></i> ${item.formatted_date}
-                                                   <i class="ph ph-clock me-1 ms-2"></i> ${item.formatted_time}
-                                               </small>
-                                           </div>
-
-                                           <p class="mb-2" style="font-size: 14px;">
-                                               <i class="ph ph-chat-circle-dots me-2 text-info"></i>
-                                               <strong>Comment:</strong> ${item.comment}
-                                           </p>
-
-                                           <div class="d-flex align-items-center mt-2">
-                                               <i class="ph ph-user-circle me-2 text-secondary" style="font-size:20px;"></i>
-                                               <span class="fw-semibold" style="font-size:14px;">${item.users_name}</span>
-                                           </div>
-
-                                       </div>
-                                   </div>
-                                `;
-
-                        });
-                    }
-
-                    $("#followUpContent").html(html);
-
-                    // open offcanvas
-                    var offcanvas = new bootstrap.Offcanvas(document.getElementById(
-                        'ViewfollowUpCanvas'));
-                    offcanvas.show();
-                }
+            $("#cacnelBtn").on('click', function() {
+                myOffcanvas.toggle();
             });
+
+            $('#offcanvasForm').on('hidden.bs.offcanvas', function() {
+                formReset();
+            });
+
+
+
+
+
+            // show detals in view modal
+            $(document).on('click', '.ViewBtn', function() {
+
+                let route = $(this).attr('editRoute');
+
+                $.ajax({
+                    url: route,
+                    type: "GET",
+                    success: function(res) {
+
+                        if (res.status !== true) {
+                            toastr.error("Unable to fetch lead details");
+                            return;
+                        }
+
+                        let data = res.data;
+
+                        // --------------------
+                        // Build HTML for offcanvas
+                        // --------------------
+                        let html = `
+                <div class="mb-3">
+                    <h5 class="fw-bold mb-1">${data.contact.name}</h5>
+                    <p class="text-muted mb-0">
+                        <i class="ph ph-phone me-1"></i> ${data.contact.phone}
+                    </p>
+                </div>
+
+                <hr>
+
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="ph ph-info me-1"></i> Latest Follow-Up
+                </h6>
+                ${buildLatestFollowupCard(data.latest_followup)}
+
+                <hr>
+
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="ph ph-clock-counter-clockwise me-1"></i> Follow-Up History
+                </h6>
+                ${buildHistoryCards(data.history)}
+            `;
+
+                        $("#showFollowUpBody").html(html);
+
+                        // Open offcanvas
+                        var offcanvas = new bootstrap.Offcanvas(document.getElementById(
+                            'offcanvasShow'));
+                        $("#offcanvasShowLabel").html(
+                            `<i class="bx bx-show"></i> Lead Follow-up Details`);
+                        offcanvas.show();
+                    }
+                });
+            });
+
+
+            function buildLatestFollowupCard(item) {
+
+                return `
+        <div class="card border-0 rounded-3 shadow mb-4">
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="badge bg-success px-3 py-2">${item.status}</span>
+                    <small class="text-muted">
+                        <i class="ph ph-calendar me-1"></i> ${formatDate(item.created_at)}
+                        <i class="ph ph-clock me-1 ms-2"></i> ${formatTime(item.created_at)}
+                    </small>
+                </div>
+
+                <p><strong>Comment:</strong> ${item.comment}</p>
+
+                ${item.next_followup_date ? `
+                                            <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                            <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
+                                            ` : ""}
+            </div>
+        </div>
+         `;
+            }
+
+
+
+            function buildHistoryCards(history) {
+                if (!history || history.length === 0) {
+                    return `<div class="alert alert-warning">No follow-ups found.</div>`;
+                }
+
+                let html = "";
+
+                history.forEach(item => {
+                    html += `
+            <div class="card border-0 mt-3 mb-3 shadow rounded-3">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-primary px-3 py-2">${item.status}</span>
+                        <small class="text-muted">
+                            <i class="ph ph-calendar me-1"></i> ${item.formatted_date}
+                            <i class="ph ph-clock me-1 ms-2"></i> ${item.formatted_time}
+                        </small>
+                    </div>
+
+                    <p class="mb-2">
+                        <strong>Comment:</strong> ${item.comment}
+                    </p>
+
+                    <div class="d-flex align-items-center">
+                        <i class="ph ph-user-circle me-2 text-secondary" style="font-size:20px;"></i>
+                        <span class="fw-semibold">${item.users_name}</span>
+                    </div>
+
+                </div>
+            </div>
+        `;
+                });
+
+                return html;
+            }
+
+
+
+            function formatDate(dateString) {
+                let d = new Date(dateString);
+                return d.toLocaleDateString('en-GB'); // dd/mm/yyyy
+            }
+
+            function formatTime(dateString) {
+                let d = new Date(dateString);
+                return d.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+
+
         });
     </script>
-@endpush
+@endsection

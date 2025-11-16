@@ -14,7 +14,7 @@ class FollowUpRequest extends FormRequest
     public function rules()
     {
         return [
-            'phone' => 'required',
+            'hidden_id' => 'required',
             'status' => 'required|in:busy,interested,materialised',
             'comment' => 'required|string|max:1000',
 

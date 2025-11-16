@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LocationMngt;
 use App\Models\LocationMngtTableDetail;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\DataTables;
 use Exception;
 
 class LocationService
@@ -18,58 +19,42 @@ class LocationService
         return LocationMngt::with('tables')->findOrFail($id);
     }
 
-    /**
-     * Create a new LocationMngt
-     */
-    // public function createLocation($data)
-    // {
-    //     DB::beginTransaction();
+    public function getAllLocationsList()
+    {
+        $result =  DB::table('location_mngt')   ///raw query builder
+            ->orderByDesc('id');
+        return DataTables::of($result)
+            ->addIndexColumn()
+            ->addColumn('action', function ($location) {
+                $id = $location->id;
+                $button = '<button class="btn btn-success btn-sm showBtn" editRoute="' . route('locations.edit', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="View Details">
+                <i class="bx bx-show"></i>
+                </button> <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('locations.edit', $id) . '" updateRoute="' . route('locations.update', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="Edit location">
+                <i class="bx bx-pencil"></i>
+                </button>  <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete location">
+                    <i class="bx bx-trash"></i>
+                </button>';
+                return $button;
+            })
+            ->addColumn('image', function ($row) {
 
-    //     try {
-    //         $imageName = null;
+                // If image exists, use it — otherwise use dummy image
+                $imagePath = $row->image
+                    ? 'uploads/location_images/' . $row->image
+                    : 'uploads/location_images/dummy.png';   // <--- dummy image
 
-    //         if (isset($data['image']) && $data['image'] instanceof \Illuminate\Http\UploadedFile) {
-    //             $file = $data['image'];
-    //             $imageName = time() . '_' . $file->getClientOriginalName();
-    //             $file->move(public_path('uploads/location_images'), $imageName);
-    //         }
+                $url = asset($imagePath);
 
-    //         dd($imageName);
-
-    //         $location = LocationMngt::create([
-    //             'loc_name' => $data['loc_name'],
-    //             'type'     => $data['type'],
-    //             'address'  => $data['address'] ?? null,
-    //             'status'   => $data['status'],
-    //             'image'    => $imageName, // this will now save correctly
-    //         ]);
-
-    //         // Insert table details
-    //         if (!empty($data['tables']) && is_array($data['tables'])) {
-    //             foreach ($data['tables'] as $table) {
-    //                 LocationMngtTableDetail::create([
-    //                     'location_mngt_id' => $location->id,
-    //                     'table_no'         => $table['table_no'] ?? null,
-    //                     'table_size'       => $table['table_size'] ?? null,
-    //                     'price'            => $table['price'] ?? null,
-    //                 ]);
-    //             }
-    //         }
-
-    //         DB::commit();
-    //         return [
-    //             'success' => true,
-    //             'message' => 'Location created successfully!',
-    //             'data'    => $location
-    //         ];
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return [
-    //             'success' => false,
-    //             'message' => 'Failed to create location: ' . $e->getMessage()
-    //         ];
-    //     }
-    // }
+                return '
+                       <a href="' . $url . '" target="_blank">
+                              <img src="' . $url . '" width="50" height="50"
+                                style="border-radius:5px; object-fit:cover;">
+                         </a>
+                    ';
+            })
+            ->rawColumns(['action', 'image'])
+            ->make(true);
+    }
 
     public function createLocation($request)
     {
@@ -107,22 +92,18 @@ class LocationService
 
             DB::commit();
             return [
-                'success' => true,
+                'status' => true,
                 'message' => 'Location created successfully!',
                 'data'    => $location
             ];
         } catch (\Exception $e) {
             DB::rollBack();
             return [
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to create location: ' . $e->getMessage()
             ];
         }
     }
-
-
-
-
 
 
     /**
@@ -169,7 +150,6 @@ class LocationService
                 'loc_name' => $request->loc_name,
                 'type'     => $request->type,
                 'address'  => $request->address ?? null,
-                'status'   => $request->status,
                 'image'    => $imageName,
             ]);
 
@@ -191,7 +171,7 @@ class LocationService
             DB::commit();
 
             return [
-                'success' => true,
+                'status' => true,
                 'message' => 'Location updated successfully!',
                 'data'    => $location
             ];
@@ -199,7 +179,7 @@ class LocationService
             DB::rollBack();
 
             return [
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to update location: ' . $e->getMessage()
             ];
         }
@@ -215,22 +195,18 @@ class LocationService
         DB::beginTransaction();
 
         try {
-            $location = LocationMngt::findOrFail($id);
-
+            $location = $this->getLocationById($id);
+            // delete table details first
             LocationMngtTableDetail::where('location_mngt_id', $id)->delete();
+
+            // delete location
             $location->delete();
 
             DB::commit();
-            return [
-                'success' => true,
-                'message' => 'Location deleted successfully!'
-            ];
-        } catch (Exception $e) {
+            return true;
+        } catch (\Exception $e) {
             DB::rollBack();
-            return [
-                'success' => false,
-                'message' => 'Failed to delete location: ' . $e->getMessage()
-            ];
+            throw $e;
         }
     }
 
