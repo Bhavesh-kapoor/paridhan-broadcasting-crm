@@ -215,6 +215,16 @@
                     "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
                 buttons: [],
 
+
+                // 🔥 Correct place to append custom button
+                initComplete: function() {
+                    $('.dataTables_wrapper .dt-buttons').append(
+                        `<button type="button" class="btn btn-primary" id="addNewBtn">
+                      <i class="lni lni-circle-plus mx-1"></i>Add New Visitor
+                    </button>`
+                    );
+                }
+
             });
 
 
@@ -461,9 +471,9 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                            <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                            <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
-                                            ` : ""}
+                                                        <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                        <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
+                                                        ` : ""}
             </div>
         </div>
          `;

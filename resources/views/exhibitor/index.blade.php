@@ -291,18 +291,30 @@
                 dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
                     "<'row'<'col-12'tr>>" +
                     "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
-                buttons: []
-            });
+                buttons: [],
 
-            $(window).on('load', function() {
-                $('.dataTables_wrapper .dt-buttons').append(
-                    `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
-                            class="lni lni-circle-plus mx-1"></i>Add New
-                        Exhibitor</button><button type="button" class="btn btn-warning" type="button" id="bulkImportBtn"><i
+
+                // 🔥 Correct place to append custom button
+                initComplete: function() {
+                    $('.dataTables_wrapper .dt-buttons').append(
+                        `<button type="button" class="btn btn-primary" id="addNewBtn">
+                <i class="lni lni-circle-plus mx-1"></i>Add New Visitor
+            </button><button type="button" class="btn btn-warning" type="button" id="bulkImportBtn"><i
                             class="bx bx-file mx-1"></i>
                         Bulk Import</button>`
-                );
-            })
+                    );
+                }
+            });
+
+            // $(window).on('load', function() {
+            //     $('.dataTables_wrapper .dt-buttons').append(
+            //         `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
+        //                 class="lni lni-circle-plus mx-1"></i>Add New
+        //             Exhibitor</button><button type="button" class="btn btn-warning" type="button" id="bulkImportBtn"><i
+        //                 class="bx bx-file mx-1"></i>
+        //             Bulk Import</button>`
+            //     );
+            // })
 
             // On click add button, open the modal
             $(document).on('click', '#addNewBtn', function() {

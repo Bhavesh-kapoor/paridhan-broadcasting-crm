@@ -75,7 +75,7 @@ class FollowUpService
                 $join->on('contacts.phone', '=', 'follow_ups.phone')
                     ->on('follow_ups.created_at', '=', 'latest_followup.max_created_at');
             })
-            ->where('contacts.type', 'visitor')
+            // ->where('contacts.type', 'visitor')
             ->orderByDesc('contacts.id');
 
 
