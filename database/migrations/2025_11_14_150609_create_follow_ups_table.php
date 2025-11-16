@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('follow_ups', function (Blueprint $table) {
             $table->id();
 
-            $table->string('user_id');
+            $table->string('phone');
             $table->string('status', 50);
 
             $table->date('next_followup_date')->nullable();
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamps(); // created_at + updated_at
 
             // Indexes
-            $table->index('user_id');
+            $table->index('phone');
             $table->index('employee_id');
         });
     }

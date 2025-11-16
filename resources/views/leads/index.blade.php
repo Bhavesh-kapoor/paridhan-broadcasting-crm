@@ -216,7 +216,7 @@
                 buttons: [],
 
 
-                // 🔥 Correct place to append custom button
+                //  Correct place to append custom button
                 initComplete: function() {
                     $('.dataTables_wrapper .dt-buttons').append(
                         `<button type="button" class="btn btn-primary" id="addNewBtn">
@@ -471,9 +471,9 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                                        <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                                        <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
-                                                        ` : ""}
+                                                            <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                            <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
+                                                            ` : ""}
             </div>
         </div>
          `;
