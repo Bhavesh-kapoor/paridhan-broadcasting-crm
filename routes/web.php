@@ -63,8 +63,20 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
 Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('employee.dashboard');
 
+    // Lead routes
     Route::resource('leads', LeadController::class);
     Route::post('/ajax/get/all-leads', [LeadController::class, 'getAllLeadsList']);
+
+    // Booking routes
+    Route::post('/booking/check-availability', [LeadController::class, 'checkAvailability'])
+        ->name('booking.checkAvailability');
+    // get tables by location id
+    Route::get('/get-tables/{locationId}', [LeadController::class, 'getTables'])->name('booking.getTables');
+    // get price by table id
+    Route::get('/get-price/{tableId}', [LeadController::class, 'getPrice'])
+        ->name('booking.getPrice');
+    // search location
+    // Route::get('/api/search-location', [LeadController::class, 'searchLocation'])->name('booking.searchLocation');
 });
 
 
@@ -72,14 +84,6 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
 Route::middleware(['web', 'auth:web', 'checkRole:admin,employee'])->group(function () {
     #auth related routes
     Route::get('/logout', ["App\Http\Controllers\AuthController", "logout"])->name('logout');
-
-    # Location routes
-    // Route::get('/get/locations/datatable', [\App\Http\Controllers\LocationController::class, 'getLocations'])->name('get.locations.data');
-
-    Route::resource('leads', \App\Http\Controllers\LeadController::class);
-    Route::post('/follow-up/store', [App\Http\Controllers\LeadController::class, 'store'])
-        ->name('followup.store');
-    Route::get('/get-followups/{phone}', [App\Http\Controllers\LeadController::class, 'getFollowUps'])->name('get.followups');
 });
 
 

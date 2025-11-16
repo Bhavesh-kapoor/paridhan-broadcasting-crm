@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\FollowUpService;
 use App\Http\Requests\FollowUpRequest;
+use App\Models\Booking;
+use App\Models\LocationMngt;
+use App\Models\LocationMngtTableDetail;
 use Illuminate\Http\JsonResponse;
-
-
-
+use Illuminate\Support\Facades\DB;
 
 class LeadController extends Controller
 {
@@ -21,12 +22,14 @@ class LeadController extends Controller
 
     public function index(Request $request)
     {
-        return view('leads.index');
+        $location = LocationMngt::all();
+        return view('leads.index', compact('location'));
     }
 
-    public function getAllLeadsList()
+    public function getAllLeadsList(Request $request)
     {
-        return $this->service->getAllLeadsList();
+        $filters = $request->only(['filter_lead_type']);
+        return $this->service->getAllLeadsList($filters);
     }
 
 
@@ -70,4 +73,61 @@ class LeadController extends Controller
             'data' => $data
         ]);
     }
+
+    // Get Tables by Location ID
+    public function getTables($locationId)
+    {
+        $tables = LocationMngtTableDetail::where('id', $locationId)->get();
+        return response()->json($tables);
+    }
+
+    // Get Price by Table ID
+    public function getPrice($tableId)
+    {
+        $table = LocationMngtTableDetail::find($tableId);
+
+        if (!$table) {
+            return response()->json(['price' => 0]);
+        }
+
+        return response()->json(['price' => $table->price]);
+    }
+
+
+    // Table Availability Check
+    public function checkAvailability(Request $request)
+    {
+        $validated = $request->validate([
+            'booking_date' => 'required|date',
+            'booking_location' => 'required|string',
+            'table_no' => 'required|string',
+            'price' => 'required|numeric',
+        ]);
+
+        // Check if row already exists
+        $exists = Booking::where('booking_date', $request->booking_date)
+            ->where('booking_location', $request->booking_location)
+            ->where('table_no', $request->table_no)
+            ->where('price', $request->price)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['available' => false]);
+        }
+
+        return response()->json(['available' => true]);
+    }
+
+
+    // public function searchLocation(Request $request)
+    // {
+    //     $term = $request->get('term');
+    //     $locations = LocationMngt::where('loc_name', 'like', '%' . $term . '%')
+    //         ->orWhere('address', 'like', '%' . $term . '%')
+    //         ->select('id', DB::raw("CONCAT(loc_name, ' - ', address) AS text"))
+    //         ->limit(20)
+    //         ->get();
+
+    //     return response()->json($locations);
+    // }
 }

@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Booking;
 use App\Models\FollowUp;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
 use Exception;
 
+use Illuminate\Support\Str;
 
 class FollowUpService
 {
@@ -44,7 +46,7 @@ class FollowUpService
     }
 
 
-    public function getAllLeadsList()
+    public function getAllLeadsList($filters = [])
     {
         // Step 1: Get the latest follow_up timestamp for each phone
         $latestFollowUps = DB::table('follow_ups')
@@ -75,7 +77,9 @@ class FollowUpService
                 $join->on('contacts.phone', '=', 'follow_ups.phone')
                     ->on('follow_ups.created_at', '=', 'latest_followup.max_created_at');
             })
-            // ->where('contacts.type', 'visitor')
+            ->when(isset($filters['filter_lead_type']) && $filters['filter_lead_type'] !== '', function ($query) use ($filters) {
+                return $query->where('contacts.type', $filters['filter_lead_type']);
+            })
             ->orderByDesc('contacts.id');
 
 
@@ -117,14 +121,33 @@ class FollowUpService
 
     public function create(array $data)
     {
-        return FollowUp::create([
-            'phone' => $data['hidden_id'],
-            'status' => $data['status'],
-            'comment' => $data['comment'],
+        // 1️⃣ Save follow-up
+        $followup = FollowUp::create([
+            'phone'             => $data['hidden_id'],  // phone number
+            'status'            => $data['status'],
+            'comment'           => $data['comment'],
             'next_followup_date' => $data['next_followup_date'] ?? null,
             'next_followup_time' => $data['next_followup_time'] ?? null,
-            'employee_id' => auth()->id(),
+            'employee_id'       => auth()->id(),
         ]);
+
+        // 2️⃣ If Materialised → store in bookings table
+        if ($data['status'] === 'materialised') {
+
+            Booking::create([
+                'id'               => (string) Str::ulid(),
+                'phone'            => $data['hidden_id'], // hidden_id = phone
+                'booking_date'     => $data['booking_date'],
+                'booking_location' => $data['booking_location'],
+                'table_no'         => $data['table_no'],
+                'price'            => $data['price'],
+                'amount_status'    => $data['amount_status'],
+                'amount_paid'      => $data['amount_paid'],
+                'employee_id'      => auth()->id(),
+            ]);
+        }
+
+        return $followup;
     }
 
 

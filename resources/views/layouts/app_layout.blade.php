@@ -29,6 +29,9 @@
     <link rel="stylesheet" href="{{ asset('/assets/plugins/sweetalert2/sweetalert2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/plugins/toastr/toastr.min.css') }}">
     <link href="{{ asset('/assets/plugins/datatable/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet" />
+    <!-- select 2 plugin-->
+    <link href="{{ asset('/assets/plugins/select2/css/select2.min.css') }}" rel="stylesheet" />
+    <link href="{{ asset('/assets/plugins/select2/css/select2-bootstrap-5-theme.min.css') }}" rel="stylesheet" />
     <!-- Title -->
     <title> @yield('title', 'Paridhan Dashboard')</title>
 
@@ -171,8 +174,8 @@
     <script src="{{ asset('/assets/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
     <script src="{{ asset('/assets/plugins/datatable/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('/assets/plugins/datatable/js/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('/assets/plugins/select2/js/select2.min.js') }}"></script>
     <!--app JS-->
-    @yield('script')
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script>
         // Start the loader
@@ -182,8 +185,49 @@
         // Stop the loader
         $(document).ajaxStop(function() {
             $(".loader").hide();
-        })
+        });
+        // $('.select2').select2({
+        //     theme: "bootstrap-5",
+        //     width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+        //     placeholder: $(this).data('placeholder'),
+        // });
+
+        // function initSelect2() {
+        //     $('.select2').each(function() {
+        //         $(this).select2({
+        //             theme: "bootstrap-5",
+        //             dropdownParent: $(this).closest('.offcanvas, .modal'), // auto detect parent
+        //             width: $(this).data('width') ?
+        //                 $(this).data('width') : $(this).hasClass('w-100') ?
+        //                 '100%' : 'style',
+        //             placeholder: $(this).data('placeholder'),
+        //             allowClear: true
+        //         });
+        //     });
+        // }
+        function initSelect2() {
+            $('.select2').each(function() {
+                $(this).select2({
+                    theme: "bootstrap-5",
+                    dropdownParent: $(this).closest('.offcanvas, .modal'),
+                    width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ?
+                        '100%' : 'style',
+                    placeholder: $(this).data('placeholder'),
+                });
+            });
+        }
+
+        initSelect2();
+
+        $('.offcanvas').on('shown.bs.offcanvas', function() {
+            initSelect2();
+        });
+
+        $('.select2').on('select2:clear', function() {
+            $(this).val(null).trigger("change");
+        });
     </script>
+    @yield('script')
 
 </body>
 
