@@ -84,6 +84,80 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Materialised Fields -->
+                                        <div id="materialisedFields" class="mt-3" style="display: none;">
+                                            <div class="row">
+
+                                                <div class="col-md-6 mb-3">
+
+                                                    <label class="form-label">Booking Date <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="date" name="booking_date" class="form-control"
+                                                        min="@php echo date('Y-m-d'); @endphp">
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Booking Locations <span
+                                                            class="text-danger">*</span></label>
+                                                    <select name="booking_location" id="booking_location"
+                                                        class="form-select form-control select2" required>
+                                                        <option value="">-- Select Location --</option>
+                                                        @foreach ($location as $loc)
+                                                            <option value="{{ $loc->id }}">
+                                                                {{ $loc->loc_name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Table No <span
+                                                            class="text-danger">*</span></label>
+                                                    <select name="table_no" id="table_no"
+                                                        class="form-select form-control select2"></select>
+                                                    {{-- <option value="">-- Select Table No --</option> --}}
+
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Price <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="number" name="price" class="form-control"
+                                                        placeholder="Enter Price" readonly>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <button type="button" id="checkAvailabilityBtn"
+                                                        class="btn btn-warning mt-2">
+                                                        Check Availability
+                                                    </button>
+                                                </div>
+
+
+                                                <div id="availabilityResult" class="mt-2 fw-bold">
+
+                                                </div>
+
+                                                <div class="col-md-6 mt-2">
+                                                    <label class="form-label">Amount Status <span
+                                                            class="text-danger">*</span></label>
+                                                    <select name="amount_status" class="form-select form-control"
+                                                        id="amount_status">
+                                                        <option value="">-- Select Amount Status --</option>
+                                                        <option value="pending" selected>Pending</option>
+                                                        <option value="fully_paid">Fully Paid</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mt-2">
+                                                    <label class="form-label">Amount Paid <span
+                                                            class="text-danger">*</span></label>
+                                                    <input type="number" name="amount_paid" class="form-control"
+                                                        placeholder="Enter Amount Paid">
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+
                                     </div>
                                     <div class="col-md-12 mb-3">
                                         <label class="form-label">Comment</label>
@@ -137,6 +211,9 @@
 @section('script')
     <script>
         $(document).ready(function() {
+
+
+
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -230,25 +307,17 @@
 
             // Show/hide fields based on status
             $("#status").on("change", function() {
-                if ($(this).val() === "busy") {
+                let status = $(this).val();
+
+                if (status === "busy") {
                     $("#busyFields").slideDown();
-                    // Make fields required dynamically
-                    $("[name='next_followup_date']").rules("add", {
-                        required: true
-                    });
-                    $("[name='next_followup_time']").rules("add", {
-                        required: true
-                    });
+                    $("#materialisedFields").slideUp();
+                } else if (status === "materialised") {
+                    $("#materialisedFields").slideDown();
+                    $("#busyFields").slideUp();
                 } else {
                     $("#busyFields").slideUp();
-
-                    // Remove validation rules dynamically
-                    $("[name='next_followup_date']").rules("remove", "required");
-                    $("[name='next_followup_time']").rules("remove", "required");
-
-                    // Also clear validation error messages
-                    $("[name='next_followup_date']").val("").removeClass("error");
-                    $("[name='next_followup_time']").val("").removeClass("error");
+                    $("#materialisedFields").slideUp();
                 }
             });
 
@@ -286,26 +355,41 @@
                         required: true,
                         minlength: 3
                     },
-                    next_followup_date: {
-                        required: function() {
-                            return $("#status").val() === "busy";
-                        }
-                    },
-                    next_followup_time: {
-                        required: function() {
-                            return $("#status").val() === "busy";
-                        }
-                    }
-                },
-                messages: {
-                    next_followup_date: {
-                        required: "Please select next follow-up date"
-                    },
-                    next_followup_time: {
-                        required: "Please select next follow-up time"
-                    }
-                },
 
+                    // Busy
+                    next_followup_date: {
+                        required: function() {
+                            return $("#status").val() === "busy";
+                        }
+                    },
+                    next_followup_time: {
+                        required: function() {
+                            return $("#status").val() === "busy";
+                        }
+                    },
+
+                    // Materialised rules
+                    booking_date: {
+                        required: function() {
+                            return $("#status").val() === "materialised";
+                        }
+                    },
+                    booking_location: {
+                        required: function() {
+                            return $("#status").val() === "materialised";
+                        }
+                    },
+                    table_no: {
+                        required: function() {
+                            return $("#status").val() === "materialised";
+                        }
+                    },
+                    price: {
+                        required: function() {
+                            return $("#status").val() === "materialised";
+                        }
+                    }
+                },
                 messages: {
                     loc_name: {
                         required: "Please enter full name",
@@ -383,6 +467,14 @@
                 // Also clear validation error messages
                 $("[name='next_followup_date']").val("").removeClass("error");
                 $("[name='next_followup_time']").val("").removeClass("error");
+
+
+                $("#materialisedFields").hide();
+                $("[name='booking_date']").val("").removeClass("error");
+                $("[name='booking_location']").val("").removeClass("error");
+                $("[name='table_no']").val("").removeClass("error");
+                $("[name='price']").val("").removeClass("error");
+
             }
 
 
@@ -471,9 +563,9 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                                            <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                                            <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
-                                                            ` : ""}
+                                                                                                                                                                                                                                                                                                                                                                                        <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                                                                                                                                                                                                                                                                                                                                                        <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p>
+                                                                                                                                                                                                                                                                                                                                                                                        ` : ""}
             </div>
         </div>
          `;
@@ -532,6 +624,157 @@
                     minute: '2-digit'
                 });
             }
+
+
+            $(document).on('click', '#checkAvailabilityBtn', function() {
+
+                let booking_date = $("[name='booking_date']").val();
+                let booking_location = $("[name='booking_location']").val();
+                let table_no = $("[name='table_no']").val();
+                let price = $("[name='price']").val();
+
+                if (!booking_date || !booking_location || !table_no || !price) {
+                    $("#availabilityResult").html(
+                        "<span class='text-danger'>Please fill all fields first.</span>");
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('booking.checkAvailability') }}", // ADD THIS ROUTE
+                    type: "POST",
+                    data: {
+                        booking_date: booking_date,
+                        booking_location: booking_location,
+                        table_no: table_no,
+                        price: price,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+
+                        if (response.available === true) {
+                            $("#availabilityResult").html(
+                                "<span class='text-success'>Available ✓</span>");
+                        } else {
+                            $("#availabilityResult").html(
+                                "<span class='text-danger'>Not Available ✗</span>");
+                        }
+                    },
+                    error: function(xhr) {
+                        console.log(xhr.responseText);
+                    }
+                });
+
+            });
+
+
+            // Booking location change - load table numbers
+            $('#booking_location').on('change', function() {
+
+                let locationId = $(this).val();
+
+                $('#table_no').empty();
+                $('#table_no').append('<option value="">-- Select Table No --</option>');
+
+                if (locationId) {
+
+                    let url = "{{ route('booking.getTables', ':id') }}";
+                    url = url.replace(':id', locationId);
+
+                    $.ajax({
+                        url: url,
+                        type: "GET",
+                        success: function(response) {
+                            $.each(response, function(index, table) {
+                                $('#table_no').append(
+                                    '<option value="' + table.id + '">' + table
+                                    .table_no + '</option>'
+                                );
+                            });
+                        },
+                        error: function() {
+                            alert("Failed to load table numbers.");
+                        }
+                    });
+                }
+            });
+
+
+
+            // Table no change - load price
+            $('#table_no').on('change', function() {
+
+                let tableId = $(this).val();
+
+                // Clear existing price
+                $('input[name="price"]').val('');
+
+                if (tableId) {
+
+                    let url = "{{ route('booking.getPrice', ':id') }}";
+                    url = url.replace(':id', tableId);
+
+                    $.ajax({
+                        url: url,
+                        type: "GET",
+                        success: function(response) {
+                            $('input[name="price"]').val(response.price);
+                        },
+                        error: function() {
+                            alert("Failed to load price.");
+                        }
+                    });
+                }
+            });
+
+
+
+            $('#booking_location').select2({
+                // booking.searchLocation
+                ajax: {
+                    url: `${base_url}/api/search-location`,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            term: params.term //
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data //
+                        };
+                    }
+                },
+                minimumInputLength: 2,
+                placeholder: 'Location चुनें'
+            });
+
+
+
+            $('#amount_status').on('change', function() {
+                let status = $(this).val();
+                let price = $('input[name="price"]').val(); // get price input value
+                let amountPaidInput = $('input[name="amount_paid"]');
+
+                if (status === "fully_paid") {
+                    amountPaidInput.val(price); // set price value
+                    amountPaidInput.prop('readonly', true); // make readonly
+                } else {
+                    amountPaidInput.val(""); // clear value
+                    amountPaidInput.prop('readonly', false); // make editable
+                }
+            });
+
+
+
+
+
+
+
+
+
+
+
 
 
 

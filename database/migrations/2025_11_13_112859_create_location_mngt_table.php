@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('loc_name', 255);
             $table->string('type', 50);
             $table->text('address')->nullable();
+            $table->string('image', 255)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps(); // creates 'created_at' and 'updated_at'
         });
