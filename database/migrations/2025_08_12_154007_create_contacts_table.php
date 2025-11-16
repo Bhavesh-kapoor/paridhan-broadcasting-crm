@@ -26,6 +26,9 @@ return new class extends Migration
             $table->string('gst_number')->unique()->nullable();
             $table->string('type')->default('visitor');
             $table->timestamps();
+            $table->index('name');
+            $table->index('type'); //server-side filtering
+            $table->index('created_at'); //fast ordering
         });
     }
 

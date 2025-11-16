@@ -54,6 +54,19 @@
                     <div class="menu-title">Locations</div>
                 </a>
             </li>
+
+            <li>
+                <a href="javascript:;" class="has-arrow">
+                    <div class="parent-icon"><i class="bx bxs-megaphone"></i>
+                    </div>
+                    <div class="menu-title">Campaign Management</div>
+                </a>
+                <ul>
+                    <li> <a href="{{ route('campaigns.index') }}"><i class='bx bx-radio-circle'></i> All Campaigns</a>
+                    </li>
+                    <li> <a href="{{ route('campaigns.create') }}"><i class='bx bx-radio-circle'></i>Create Campaign</a>
+                </ul>
+            </li>
         @endif
         @if (auth()->user()->role == 'employee')
             <li>

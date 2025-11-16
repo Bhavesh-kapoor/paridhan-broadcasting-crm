@@ -163,7 +163,7 @@
                                             </label>
                                             <div class="input-group">
                                                 <input type="password" class="form-control" id="eml_password"
-                                                    name="password" placeholder="Enter password">
+                                                    name="password" placeholder="Enter password" autocomplete="off">
                                                 <span class="input-group-text cursor-pointer"
                                                     onclick="togglePassword('eml_password')">
                                                     <i class="bx bx-hide eml_password"></i>&nbsp;
@@ -184,7 +184,7 @@
                                             </label>
                                             <div class="input-group">
                                                 <input type="password" class="form-control"
-                                                    id="empl_password_confirmation" name="password_confirmation"
+                                                    id="empl_password_confirmation" name="password_confirmation" autocomplete="off"
                                                     placeholder="Confirm password">
                                                 <span class="input-group-text cursor-pointer"
                                                     onclick="togglePassword('empl_password_confirmation')">
@@ -485,8 +485,12 @@
                             $('#empl_address').val(data.address);
                             $('#position').val(data.position);
                             $('#salary').val(data.salary);
-                            var dob = data.date_of_birth.split('T')[
-                                0]; // Extract "YYYY-MM-DD" part
+                            var dob = data.date_of_birth;
+                            if (data.date_of_birth) {
+                                dob = data.date_of_birth.split('T')[
+                                    0];
+                            }
+                            // Extract "YYYY-MM-DD" part
                             $('#date_of_birth').val(dob);
 
                             $('#status option[value="' + data.status + '"]').prop('selected',
@@ -582,6 +586,7 @@
 
             });
         });
+
         function togglePassword(cls) {
             let input = $("#" + cls);
             let icon = $("." + cls);

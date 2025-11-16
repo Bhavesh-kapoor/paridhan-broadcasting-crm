@@ -265,7 +265,7 @@
             <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
                 <div class="card shadow-none">
                     <div class="card-body ">
-                        <form class="row g-3" class="updateProfileForm" id="updateProfileForm" autocomplete="off">
+                        <form class="row g-3" class="updateProfileForm" id="updateProfileForm" >
                             @csrf
                             <div class="col-md-12">
                                 <label for="profile_f_name" class="form-label mb-1"><strong
@@ -319,13 +319,13 @@
                                 <label for="old_password" class="form-label mb-1"><strong
                                         class="text-danger">*</strong> Old Password</label>
                                 <input type="password" type="password" class="form-control" name="old_password"
-                                    id="old_password">
+                                    id="old_password" autocomplete="off">
                             </div>
 
                             <div class="col-md-12">
                                 <label for="new_password" class="form-label mb-1"><strong
                                         class="text-danger">*</strong> New Password</label>
-                                <input type="password" class="form-control" name="password" id="password">
+                                <input type="password" class="form-control" name="password" id="password" autocomplete="off">
                             </div>
 
                             <div class="col-md-12">
@@ -333,7 +333,7 @@
                                         class="text-danger">*</strong> Confirm
                                     Password</label>
                                 <input type="password" class="form-control" name="password_confirmation"
-                                    id="password_confirmation">
+                                    id="password_confirmation" autocomplete="off">
                             </div>
 
                             <div class="form-group text-center my-3">

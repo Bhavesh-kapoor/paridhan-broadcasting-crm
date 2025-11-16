@@ -1,292 +1,631 @@
-@extends("layout.master")
-@section('title','Edit Campaign')
+@extends('layouts.app_layout')
 
-@section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center" style="margin-left: 20px;padding:10px 2px">
-                        <div>
-                            <h5 class="mb-1 fw-bold text-dark">
-                                Edit Campaign
-                            </h5>
-                            <p class="text-muted mb-0 fs-9">Update campaign information and recipients</p>
-                        </div>
-                        <a href="{{ route('campaigns.index') }}" class="py-12 text-15 px-20 hover-bg-gray-50 text-gray-300 rounded-8 flex-align gap-8 fw-medium text-15">
-                            <i class="ph ph-arrow-left me-2"></i>Back to Campaigns
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+@section('style')
+    <style>
+        .recipient-list {
+            max-height: 18rem;
+            overflow-y: auto;
+        }
 
-    <!-- Campaign Form -->
-    <form id="campaignForm" action="{{ route('campaigns.update', $campaign->id) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div class="row mt-8">
-            <!-- Campaign Details Section -->
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-10">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-megaphone me-2 text-primary"></i>Campaign Information
-                        </h6>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-3" style="padding: 10px;">
-                            <!-- Campaign Name -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>&nbsp;Campaign Name <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" name="name" value="{{ $campaign->name }}" placeholder="Enter campaign name" required>
-                            </div>
+        .small-note {
+            font-size: .85rem;
+        }
+        .recipient-list .form-check{
+            margin-left: 5px;
+        }
 
-                            <!-- Campaign Subject -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-envelope me-2 text-muted"></i>&nbsp;Campaign Subject <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" name="subject" value="{{ $campaign->subject }}" placeholder="Enter campaign subject" required>
-                            </div>
-
-                            <!-- Campaign Type -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>&nbsp;Campaign Type <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select form-control" name="type" required>
-                                    <option value="">Select campaign type</option>
-                                    <option value="email" {{ $campaign->type === 'email' ? 'selected' : '' }}>Email Campaign</option>
-                                    <option value="sms" {{ $campaign->type === 'sms' ? 'selected' : '' }}>SMS Campaign</option>
-                                    <option value="whatsapp" {{ $campaign->type === 'whatsapp' ? 'selected' : '' }}>WhatsApp Campaign</option>
-                                </select>
-                            </div>
-
-                            <!-- Scheduled Date -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-calendar me-2 text-muted"></i>&nbsp;Schedule Date (Optional)
-                                </label>
-                                <input type="datetime-local" class="form-control" name="scheduled_at"
-                                       value="{{ $campaign->scheduled_at ? $campaign->scheduled_at->format('Y-m-d\TH:i') : '' }}">
-                            </div>
-
-                            <!-- Campaign Message -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-chat-circle-text me-2 text-muted"></i>&nbsp;Campaign Message <span class="text-danger">*</span>
-                                </label>
-                                <textarea class="form-control" name="message" rows="8" placeholder="Enter your campaign message..." required>{{ $campaign->message }}</textarea>
-                                <div class="form-text">
-                                    <i class="ph ph-info me-1"></i>Maximum 5000 characters allowed
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recipients Selection Section -->
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-10">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-users me-2 text-primary"></i>Select Recipients
-                        </h6>
-                    </div>
-                    <div class="card-body p-4">
-                        <!-- Recipient Type Tabs -->
-                        <ul class="nav nav-tabs nav-fill mb-3" id="recipientTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="exhibitors-tab" data-bs-toggle="tab" data-bs-target="#exhibitors" type="button" role="tab">
-                                    <i class="ph ph-storefront me-1"></i>&nbsp;Exhibitors
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="visitors-tab" data-bs-toggle="tab" data-bs-target="#visitors" type="button" role="tab">
-                                    <i class="ph ph-user me-1"></i>&nbsp;Visitors
-                                </button>
-                            </li>
-                        </ul>
-
-                        <!-- Tab Content -->
-                        <div class="tab-content" id="recipientTabsContent">
-                            <!-- Exhibitors Tab -->
-                            <div class="tab-pane fade show active" id="exhibitors" role="tabpanel">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-muted small">Select exhibitors to include:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllExhibitors()">
-                                            Select All
-                                        </button>
-                                    </div>
-                                    <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
-                                        @forelse($exhibitors as $exhibitor)
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox"
-                                                   name="recipients[]" value="{{ $exhibitor->id }}"
-                                                   id="exhibitor_{{ $exhibitor->id }}"
-                                                   {{ in_array($exhibitor->id, $campaign->recipients->pluck('contact_id')->toArray()) ? 'checked' : '' }}>
-                                            <label class="form-check-label small" for="exhibitor_{{ $exhibitor->id }}">
-                                                <div class="d-flex flex-column">
-                                                    <span class="fw-semibold">{{ $exhibitor->name }}</span>
-                                                    <small class="text-muted">{{ $exhibitor->email }} • {{ $exhibitor->location }}</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                        @empty
-                                        <div class="text-center py-3">
-                                            <i class="ph ph-storefront text-muted" style="font-size: 2rem;"></i>
-                                            <p class="text-muted mt-2 mb-0">No exhibitors found</p>
-                                        </div>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Visitors Tab -->
-                            <div class="tab-pane fade" id="visitors" role="tabpanel">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-muted small">Select visitors to include:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllVisitors()">
-                                            Select All
-                                        </button>
-                                    </div>
-                                    <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
-                                        @forelse($visitors as $visitor)
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox"
-                                                   name="recipients[]" value="{{ $visitor->id }}"
-                                                   id="visitor_{{ $visitor->id }}"
-                                                   {{ in_array($visitor->id, $campaign->recipients->pluck('contact_id')->toArray()) ? 'checked' : '' }}>
-                                            <label class="form-check-label small" for="visitor_{{ $visitor->id }}">
-                                                <div class="d-flex flex-column">
-                                                    <span class="fw-semibold">{{ $visitor->name }}</span>
-                                                    <small class="text-muted">{{ $visitor->phone }} • {{ $visitor->location }}</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                        @empty
-                                        <div class="text-center py-3">
-                                            <i class="ph ph-user text-muted" style="font-size: 2rem;"></i>
-                                            <p class="text-muted mt-2 mb-0">No visitors found</p>
-                                        </div>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipient Summary -->
-                        <div class="border-top pt-3"  style="padding: 10px;">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-semibold text-dark">Selected Recipients:</span>
-                                <span class="badge bg-primary" id="selectedCount">0</span>
-                            </div>
-                            <div class="text-muted small">
-                                <i class="ph ph-info me-1"></i>At least one recipient must be selected
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campaign Actions -->
-                <div class="card border-0 shadow-sm mt-8">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-content-center">
-                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                                <i class="ph ph-check-circle me-2"></i>&nbsp;Update Campaign
-                            </button>
-                            <a href="{{ route('campaigns.index') }}" class="py-12 text-15 px-20 hover-bg-danger-50 text-gray-300 hover-text-danger-600 rounded-8 flex-align gap-8 fw-medium text-15">
-                                <i class="ph ph-x me-2"></i>&nbsp;Cancel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
+        .recipient-list .form-check-label{
+            cursor: pointer;
+        }
+    </style>
 @endsection
 
-@push('scripts')
-<script>
-// Update selected count when checkboxes change
-$('.recipient-checkbox').on('change', function() {
-    updateSelectedCount();
-});
+@section('wrapper')
+    <div class="page-wrapper">
+        <div class="page-content">
 
-function updateSelectedCount() {
-    const selectedCount = $('.recipient-checkbox:checked').length;
-    $('#selectedCount').text(selectedCount);
-}
+            <!-- Breadcrumb -->
+            <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                <div class="breadcrumb-title pe-3">Campaign Management</div>
+                <div class="ps-3">
+                    <ol class="breadcrumb mb-0 p-0">
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                        </li>
+                        <li class="breadcrumb-item active">Edit Campaign</li>
+                    </ol>
+                </div>
 
-function selectAllExhibitors() {
-    $('#exhibitors .recipient-checkbox').prop('checked', true);
-    updateSelectedCount();
-}
+                <div class="ms-auto">
+                    <a href="{{ route('campaigns.index') }}" class="btn btn-primary d-flex align-items-center">
+                        <i class="bx bxs-megaphone"></i>&nbsp;All Campaigns
+                    </a>
+                </div>
+            </div>
 
-function selectAllVisitors() {
-    $('#visitors .recipient-checkbox').prop('checked', true);
-    updateSelectedCount();
-}
+            <!-- Create Campaign Form -->
+            <form id="campaignForm" action="{{ route('campaigns.update', $campaign->id) }}" method="POST">
+                @csrf
+                @method('PUT')
 
-// Form submission
-$('#campaignForm').on('submit', function(e) {
-    e.preventDefault();
+                <div class="row mt-4">
+                    <!-- Left Side: Campaign Info -->
+                    <div class="col-lg-7">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="fw-semibold text-dark d-flex align-items-center mb-0 py-2">
+                                    <i class="bx bxs-megaphone text-primary me-2"></i>Campaign Information
+                                </h6>
+                            </div>
 
-    const selectedRecipients = $('.recipient-checkbox:checked').length;
-    if (selectedRecipients === 0) {
-        showNotification('error', 'Please select at least one recipient for the campaign.');
-        return;
-    }
+                            <div class="card-body">
+                                <div class="row g-3">
 
-    // Show loading state
-    $('#submitBtn').prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Updating...');
+                                    <div class="col-12">
+                                        <label class="form-label">Campaign Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="name"
+                                            value="{{ $campaign->name }}" required placeholder="Enter campaign name">
+                                    </div>
 
-    // Submit form via AJAX
-    $.ajax({
-        url: $(this).attr('action'),
-        method: 'POST',
-        data: $(this).serialize(),
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                showNotification('success', response.message);
-                setTimeout(() => {
-                    window.location.href = response.redirect;
-                }, 1000);
-            }
-        },
-        error: function(xhr) {
-            const response = xhr.responseJSON;
-            if (response.errors) {
-                let errorMessage = 'Please fix the following errors:\n';
-                Object.keys(response.errors).forEach(key => {
-                    errorMessage += `• ${response.errors[key][0]}\n`;
-                });
-                showNotification('error', errorMessage);
-            } else {
-                showNotification('error', response.message || 'Something went wrong!');
-            }
-        },
-        complete: function() {
-            // Reset loading state
-            $('#submitBtn').prop('disabled', false).html('<i class="ph ph-check-circle me-2"></i>Update Campaign');
+                                    <div class="col-12">
+                                        <label class="form-label">Campaign Subject <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="subject"
+                                            value="{{ $campaign->subject }}" required placeholder="Enter campaign subject">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Campaign Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="type" required>
+                                            <option value="">Select type</option>
+                                            <option value="email" {{ $campaign->type === 'email' ? 'selected' : '' }}>Email
+                                                Campaign</option>
+                                            <option value="sms" {{ $campaign->type === 'sms' ? 'selected' : '' }}>SMS
+                                                Campaign</option>
+                                            <option value="whatsapp" {{ $campaign->type === 'whatsapp' ? 'selected' : '' }}>
+                                                WhatsApp Campaign</option>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Schedule Date (Optional)</label>
+                                        <input type="datetime-local" class="form-control" name="scheduled_at"
+                                            value="{{ $campaign->scheduled_at ? $campaign->scheduled_at->format('Y-m-d\TH:i') : '' }}">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Message <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="message" rows="7" required placeholder="Enter campaign message...">{{ $campaign->message }}</textarea>
+                                        <small class="text-muted"><i class="bx bx-info-circle me-1"></i>Max 5000
+                                            characters</small>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Recipients -->
+                    <div class="col-lg-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="fw-semibold text-dark d-flex align-items-center mb-0 py-2">
+                                    <i class="lni lni-users text-primary me-2"></i>Select Recipients
+                                </h6>
+                            </div>
+
+                            <div class="card-body">
+
+                                <!-- Tabs -->
+                                <ul class="nav nav-tabs nav-fill mb-3" id="recipientTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="exhibitors-tab" data-bs-toggle="tab"
+                                            data-bs-target="#exhibitorsTab" type="button" role="tab"
+                                            aria-controls="exhibitorsTab" aria-selected="true">
+                                            <i class="bx bx-store-alt"></i> Exhibitors
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="visitors-tab" data-bs-toggle="tab"
+                                            data-bs-target="#visitorsTab" type="button" role="tab"
+                                            aria-controls="visitorsTab" aria-selected="false">
+                                            <i class="bx bx-user"></i> Visitors
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content">
+
+                                    <!-- Exhibitors TAB -->
+                                    <div class="tab-pane fade show active" id="exhibitorsTab" role="tabpanel"
+                                        aria-labelledby="exhibitors-tab">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select exhibitors:</span>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    id="selectPageExhibitors">Select All</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="exhibitorsContainer" class="recipient-list"></div>
+                                    </div>
+
+                                    <!-- Visitors TAB -->
+                                    <div class="tab-pane fade" id="visitorsTab" role="tabpanel"
+                                        aria-labelledby="visitors-tab">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select visitors:</span>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    id="selectPageVisitors">Select All</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="visitorsContainer" class="recipient-list"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Selected Count -->
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="fw-semibold">Selected Recipients:</span>
+                                            <div class="small-note text-muted">Selections persist when you change pages
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-primary align-self-center" id="selectedCount">0</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                    <div class="col-12">
+                        <!-- Action Buttons -->
+                        <div class="card">
+                            <div class="card-body d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center" id="submitBtn">
+                                    <i class="bx bx-pencil"></i>&nbsp;Update Campaign
+                                </button>
+
+                                <a href="{{ route('campaigns.index') }}"
+                                    class="btn btn-outline-danger d-flex align-items-center">
+                                    <i class="bx bx-x"></i>&nbsp;Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+@endsection
+
+{{-- @section('script')
+    <script>
+        /* ============================================
+           GLOBAL STATE
+        ============================================ */
+        let selectedRecipients = new Set(@json($campaign->recipients->pluck('contact_id')));
+
+        let exhibitorsToggle = false;
+        let visitorsToggle = false;
+
+        /* ============================================
+           UPDATE SELECTED COUNT
+        ============================================ */
+        function updateSelectedCount() {
+            $("#selectedCount").text(selectedRecipients.size);
+
+            $("#selectPageExhibitors").text(exhibitorsToggle ? "Unselect All" : "Select All");
+            $("#selectPageVisitors").text(visitorsToggle ? "Unselect All" : "Select All");
         }
-    });
-});
 
-// Initialize selected count
-updateSelectedCount();
-</script>
-@endpush
+        /* ============================================
+           LOAD AJAX LISTS
+        ============================================ */
+        function loadExhibitors(page = 1) {
+            $.get("{{ route('ajax.exhibitors') }}", {
+                page
+            }, function(html) {
+                $("#exhibitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        function loadVisitors(page = 1) {
+            $.get("{{ route('ajax.visitors') }}", {
+                page
+            }, function(html) {
+                $("#visitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        /* ============================================
+           RESTORE CHECKBOXES AFTER PAGINATION
+        ============================================ */
+        function restoreSelections() {
+            $(".recipient-checkbox").each(function() {
+                const id = String($(this).data("id"));
+
+                if (selectedRecipients.has(id)) {
+                    $(this).prop("checked", true);
+                }
+            });
+
+            updateSelectedCount();
+        }
+
+        /* ============================================
+           SINGLE CHECK / UNCHECK
+        ============================================ */
+        $(document).on("change", ".recipient-checkbox", function() {
+            const id = String($(this).data("id"));
+            const type = $(this).data("type");
+
+            if ($(this).is(":checked")) {
+                selectedRecipients.add(id);
+            } else {
+                selectedRecipients.delete(id);
+
+                if (type === "exhibitor") exhibitorsToggle = false;
+                if (type === "visitor") visitorsToggle = false;
+            }
+
+            updateSelectedCount();
+        });
+
+        /* ============================================
+           SELECT ALL (FULL LIST – NOT PAGE ONLY)
+        ============================================ */
+
+        /* ----------- EXHIBITORS -------------- */
+        $("#selectPageExhibitors").on("click", function() {
+            exhibitorsToggle = !exhibitorsToggle;
+
+            if (exhibitorsToggle) {
+                // Fetch all exhibitor IDs once
+                $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
+                    data.forEach(id => selectedRecipients.add(String(id)));
+                    restoreSelections();
+                    updateSelectedCount();
+                });
+            } else {
+                // Remove all exhibitor IDs only
+                $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
+                    data.forEach(id => selectedRecipients.delete(String(id)));
+                    restoreSelections();
+                    updateSelectedCount();
+                });
+            }
+        });
+
+        /* ----------- VISITORS -------------- */
+        $("#selectPageVisitors").on("click", function() {
+            visitorsToggle = !visitorsToggle;
+
+            if (visitorsToggle) {
+                $.get("{{ route('ajax.visitors.all') }}", function(data) {
+                    data.forEach(id => selectedRecipients.add(String(id)));
+                    restoreSelections();
+                    updateSelectedCount();
+                });
+            } else {
+                $.get("{{ route('ajax.visitors.all') }}", function(data) {
+                    data.forEach(id => selectedRecipients.delete(String(id)));
+                    restoreSelections();
+                    updateSelectedCount();
+                });
+            }
+        });
+
+        /* ============================================
+           PAGINATION CLICK
+        ============================================ */
+        $(document).on("click", ".recipient-list .pagination a", function(e) {
+            e.preventDefault();
+            const page = new URL($(this).attr("href")).searchParams.get("page") || 1;
+
+            if ($("#exhibitors-tab").hasClass("active")) {
+                loadExhibitors(page);
+            } else {
+                loadVisitors(page);
+            }
+        });
+
+        /* ============================================
+           SUBMIT FORM
+        ============================================ */
+        $("#campaignForm").on("submit", function(e) {
+            e.preventDefault();
+
+            if (selectedRecipients.size === 0) {
+                toastr.error("Please select at least one recipient.");
+                return;
+            }
+
+            let fd = new FormData(this);
+            selectedRecipients.forEach(id => fd.append("recipients[]", id));
+
+            $("#submitBtn").prop("disabled", true).html(
+                '<span class="spinner-border spinner-border-sm"></span> Creating...'
+            );
+
+            $.ajax({
+                url: $(this).attr("action"),
+                method: "POST",
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    toastr.success(res.message);
+                    window.location.href = res.redirect;
+                },
+                error: function(xhr) {
+                    toastr.error("Error submitting form.");
+                },
+                complete: function() {
+                    $("#submitBtn").prop("disabled", false).html(
+                        '<i class="bx bx-pencil"></i>&nbsp;Create Campaign'
+                    );
+                }
+            });
+        });
+
+        /* ============================================
+           INITIAL LOAD
+        ============================================ */
+        $(function() {
+            loadExhibitors();
+            loadVisitors();
+        });
+    </script>
+@endsection --}}
+@section('script')
+    <script>
+        /* ============================================
+                           GLOBAL STATE
+        ============================================ */
+        let selectedRecipients = new Set(@json($campaign->recipients->pluck('contact_id'))); // All selected IDs
+        let exhibitorsToggle = false; // false = not selected, true = select all
+        let visitorsToggle = false;
+
+        /* ============================================
+           UPDATE SELECTED COUNT
+        ============================================ */
+        function updateSelectedCount() {
+            $("#selectedCount").text(selectedRecipients.size);
+
+            $("#selectPageExhibitors").text("Select All");
+            $("#selectPageVisitors").text("Select All");
+        }
+
+        /* ============================================
+           LOAD AJAX LISTS
+        ============================================ */
+        function loadExhibitors(page = 1) {
+            $.get("{{ route('ajax.exhibitors') }}", {
+                page
+            }, function(html) {
+                $("#exhibitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        function loadVisitors(page = 1) {
+            $.get("{{ route('ajax.visitors') }}", {
+                page
+            }, function(html) {
+                $("#visitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        /* ============================================
+           RESTORE SELECTIONS AFTER PAGINATION
+        ============================================ */
+        function restoreSelections() {
+            $(".recipient-checkbox").each(function() {
+                const id = String($(this).data("id"));
+
+                if (selectedRecipients.has(id)) {
+                    $(this).prop("checked", true);
+                }
+            });
+
+            updateSelectedCount();
+        }
+
+        /* ============================================
+           SINGLE CHECKBOX CLICK
+        ============================================ */
+        $(document).on("change", ".recipient-checkbox", function() {
+            const id = String($(this).data("id"));
+            const type = $(this).data("type");
+
+            if ($(this).is(":checked")) {
+                selectedRecipients.add(id);
+            } else {
+                selectedRecipients.delete(id);
+
+                // Disable toggle if any unselected
+                if (type === "exhibitor") exhibitorsToggle = false;
+                if (type === "visitor") visitorsToggle = false;
+            }
+
+            updateSelectedCount();
+        });
+
+        /* ============================================
+           SELECT ALL TOGGLE
+        ============================================ */
+        $("#selectPageExhibitors").on("click", function() {
+            exhibitorsToggle = !exhibitorsToggle;
+
+            $("#exhibitorsContainer .recipient-checkbox").each(function() {
+                const id = String($(this).data("id"));
+
+                if (exhibitorsToggle) {
+                    $(this).prop("checked", true);
+                    selectedRecipients.add(id);
+                } else {
+                    $(this).prop("checked", false);
+                    selectedRecipients.delete(id);
+                }
+            });
+
+            updateSelectedCount();
+        });
+
+        $("#selectPageVisitors").on("click", function() {
+            visitorsToggle = !visitorsToggle;
+
+            $("#visitorsContainer .recipient-checkbox").each(function() {
+                const id = String($(this).data("id"));
+
+                if (visitorsToggle) {
+                    $(this).prop("checked", true);
+                    selectedRecipients.add(id);
+                } else {
+                    $(this).prop("checked", false);
+                    selectedRecipients.delete(id);
+                }
+            });
+
+            updateSelectedCount();
+        });
+
+        /* ============================================
+           PAGINATION CLICK HANDLING
+        ============================================ */
+        $(document).on("click", ".recipient-list .pagination a", function(e) {
+            e.preventDefault();
+            const page = new URL($(this).attr("href")).searchParams.get("page") || 1;
+
+            if ($("#exhibitors-tab").hasClass("active")) {
+                loadExhibitors(page);
+            } else {
+                loadVisitors(page);
+            }
+        });
+
+        /* ============================================
+           FORM SUBMIT WITH RECIPIENT ARRAY
+        ============================================ */
+        $("#campaignForm").validate({
+            errorClass: "text-danger validation-error",
+            rules: {
+                name: {
+                    required: true,
+                    minlength: 3
+                },
+                subject: {
+                    required: true,
+                    minlength: 3
+                },
+                type: {
+                    required: true
+                },
+                message: {
+                    required: true,
+                    minlength: 5,
+                    maxlength: 5000
+                },
+                scheduled_at: {
+                    required: false,
+                    futureDate: true
+                },
+            },
+
+            submitHandler: function(form, event) {
+                event.preventDefault();
+
+                if (selectedRecipients.size === 0) {
+                    toastr.error("Please select at least one recipient.");
+                    return;
+                }
+
+                let formData = new FormData(form);
+
+                selectedRecipients.forEach(id => formData.append("recipients[]", id));
+
+                $.ajax({
+                    url: $("#campaignForm").attr("action"), // FIXED
+                    type: 'POST',
+                    data: formData,
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    dataType: "json",
+
+                    success: function(response) {
+                        if (response.status === true) {
+
+                            Swal.fire({
+                                icon: "success",
+                                title: "Campaign Updated!",
+                                html: response.message,
+                                showCancelButton: true,
+                                confirmButtonText: "Edit More",
+                                cancelButtonText: "Go to List"
+                            }).then((result) => {
+                                if (!result.isConfirmed) {
+                                    window.location.href = "{{ route('campaigns.index') }}";
+                                }
+                            });
+
+                        } else if (response.status === "validation_error") {
+
+                            Swal.fire({
+                                icon: "error",
+                                title: "Validation Error",
+                                html: response.message
+                            });
+
+                        } else {
+
+                            Swal.fire({
+                                icon: "error",
+                                title: "Error",
+                                text: response.message || "Something went wrong."
+                            });
+
+                        }
+                    },
+
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Server Error",
+                            text: xhr.responseJSON?.message || "Please try again later."
+                        });
+                    }
+                });
+            }
+        });
+
+        $.validator.addMethod("futureDate", function(value, element) {
+            if (!value) return true; // optional field
+            let selected = new Date(value);
+            let now = new Date();
+            return selected > now;
+        }, "Selected date and time must be in the future.");
+
+
+
+        /* ============================================
+           INITIAL LOAD
+        ============================================ */
+        $(function() {
+            loadExhibitors();
+            loadVisitors();
+            updateSelectedCount();
+        });
+    </script>
+@endsection

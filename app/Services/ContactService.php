@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Contacts;
 use Illuminate\Support\Facades\DB;
-use Yajra\DataTables\DataTables;
+use Yajra\DataTables\Facades\DataTables;
 
 class ContactService
 {
@@ -35,12 +35,32 @@ class ContactService
     }
 
 
-    public function getAllContactsList($type = 'visitor')
+    public function getAllContactsList($type)
     {
-        $result =  DB::table('contacts')   ///raw query builder
-            ->where('type', $type)
-            ->orderByDesc('id');
-        return DataTables::of($result)
+
+
+        $query  = DB::table('contacts')->where('type', $type);
+        if ($type === 'exhibitor') {
+            $query->select(
+                'id',
+                'name',
+                'email',
+                'phone',
+                'location',
+                'product_type',
+                'brand_name',
+                'business_type',
+                'gst_number',
+                'created_at'
+            );
+        } else {
+            $query->select('id', 'name', 'phone', 'location', 'created_at');
+        }
+
+        $query->orderByDesc('created_at');
+
+        return DataTables::query($query)
+            ->addIndexColumn()
             ->addIndexColumn()
             ->addColumn('action', function ($employee) {
                 $id = $employee->id;

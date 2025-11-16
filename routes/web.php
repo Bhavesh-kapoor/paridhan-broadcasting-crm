@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
@@ -25,7 +26,20 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     Route::post('/ajax/get/all-contacts', [ContactController::class, 'getAllContactsList']);
 
     # Campaign routes
-    Route::resource('campaigns', \App\Http\Controllers\CampaignController::class);
+    Route::resource('campaigns', CampaignController::class);
+    Route::post('/ajax/get/all-campaigns', [CampaignController::class, 'getAllCampaignsList']);
+    Route::post('/ajax/get/all-campaigns-recipients', [CampaignController::class, 'getAllCampaignsRecipientsList']);
+
+    Route::get('/ajax/exhibitors', [CampaignController::class, 'ajaxExhibitors'])->name('ajax.exhibitors');
+    Route::get('/ajax/visitors', [CampaignController::class, 'ajaxVisitors'])->name('ajax.visitors');
+    Route::get('/ajax/exhibitors/all', [CampaignController::class, 'getAllExhibitorIDs'])
+        ->name('ajax.exhibitors.all');
+
+    Route::get('/ajax/visitors/all', [CampaignController::class, 'getAllVisitorIDs'])
+        ->name('ajax.visitors.all');
+
+
+
     Route::post('campaigns/{campaign}/send', [\App\Http\Controllers\CampaignController::class, 'send'])->name('campaigns.send');
     Route::get('campaigns/contacts/get', [\App\Http\Controllers\CampaignController::class, 'getContacts'])->name('campaigns.contacts.get');
 

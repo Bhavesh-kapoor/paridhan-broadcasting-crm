@@ -32,7 +32,6 @@ class VisitorSeeder extends Seeder
                 $data = [];
             }
         }
-
         // Insert remaining records
         if (!empty($data)) {
             DB::table('contacts')->insert($data);

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CampaignRequest extends FormRequest
 {
@@ -13,6 +15,7 @@ class CampaignRequest extends FormRequest
     {
         return true;
     }
+
 
     /**
      * Get the validation rules that apply to the request.
@@ -50,5 +53,17 @@ class CampaignRequest extends FormRequest
             'recipients.min' => 'Please select at least one recipient.',
             'recipients.*.exists' => 'One or more selected recipients are invalid.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        // Throw JSON response instead of HTML redirect
+        throw new HttpResponseException(response()->json([
+            'status' => 'validation_error',
+            'message' => $validator->errors()->all(),
+        ]));
     }
 }

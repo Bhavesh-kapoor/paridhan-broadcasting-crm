@@ -23,8 +23,49 @@ class CampaignController extends Controller
     {
         $filters = $request->only(['search', 'status']);
         $campaigns = $this->campaignService->getAllCampaigns($filters);
-        
+
         return view('campaigns.index', compact('campaigns', 'filters'));
+    }
+
+    /**
+     * server side rendoring data table
+     */
+    public function getAllCampaignsList(Request $request)
+    {
+        return $this->campaignService->getAllCampaignsList();
+    }
+
+    public function getAllCampaignsRecipientsList(Request $request)
+    {
+        return $this->campaignService->getAllCampaignsRecipientsList($request->input('id'));
+    }
+
+
+
+
+    public function ajaxExhibitors(Request $request)
+    {
+        $exhibitors = $this->campaignService->getContactsForCampaign('exhibitor');
+
+        return view('campaigns.partials.exhibitors', compact('exhibitors'))->render();
+    }
+
+    public function ajaxVisitors(Request $request)
+    {
+        $visitors = $this->campaignService->getContactsForCampaign('visitor');
+
+        return view('campaigns.partials.visitors', compact('visitors'))->render();
+    }
+
+
+    public function getAllExhibitorIDs()
+    {
+        return $this->campaignService->getAllRecipientsIDs('exhibitor');
+    }
+
+    public function getAllVisitorIDs()
+    {
+        return $this->campaignService->getAllRecipientsIDs('visitor');
     }
 
     /**
@@ -34,7 +75,7 @@ class CampaignController extends Controller
     {
         $exhibitors = $this->campaignService->getContactsForCampaign('exhibitor');
         $visitors = $this->campaignService->getContactsForCampaign('visitor');
-        
+
         return view('campaigns.create', compact('exhibitors', 'visitors'));
     }
 
@@ -44,16 +85,14 @@ class CampaignController extends Controller
     public function store(CampaignRequest $request): JsonResponse
     {
         try {
-            $campaign = $this->campaignService->createCampaign($request->validated());
-            
+            $this->campaignService->createCampaign($request->validated());
             return response()->json([
-                'success' => true,
-                'message' => 'Campaign created successfully!',
-                'redirect' => route('campaigns.index')
+                'status' => true,
+                'message' => 'Campaign created successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to create campaign: ' . $e->getMessage()
             ], 500);
         }
@@ -76,7 +115,7 @@ class CampaignController extends Controller
         $campaign = $this->campaignService->getCampaignById($id);
         $exhibitors = $this->campaignService->getContactsForCampaign('exhibitor');
         $visitors = $this->campaignService->getContactsForCampaign('visitor');
-        
+
         return view('campaigns.edit', compact('campaign', 'exhibitors', 'visitors'));
     }
 
@@ -86,16 +125,15 @@ class CampaignController extends Controller
     public function update(CampaignRequest $request, $id): JsonResponse
     {
         try {
-            $campaign = $this->campaignService->updateCampaign($id, $request->validated());
-            
+            $this->campaignService->updateCampaign($id, $request->validated());
+
             return response()->json([
-                'success' => true,
-                'message' => 'Campaign updated successfully!',
-                'redirect' => route('campaigns.index')
+                'status' => true,
+                'message' => 'Campaign updated successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to update campaign: ' . $e->getMessage()
             ], 500);
         }
@@ -108,14 +146,14 @@ class CampaignController extends Controller
     {
         try {
             $this->campaignService->deleteCampaign($id);
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => 'Campaign deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to delete campaign: ' . $e->getMessage()
             ], 500);
         }
@@ -127,16 +165,15 @@ class CampaignController extends Controller
     public function send($id): JsonResponse
     {
         try {
-            $campaign = $this->campaignService->sendCampaign($id);
-            
+            $this->campaignService->sendCampaign($id);
+
             return response()->json([
-                'success' => true,
-                'message' => 'Campaign sent successfully!',
-                'redirect' => route('campaigns.index')
+                'status' => true,
+                'message' => 'Campaign sent successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to send campaign: ' . $e->getMessage()
             ], 500);
         }
@@ -149,9 +186,9 @@ class CampaignController extends Controller
     {
         $type = $request->get('type');
         $contacts = $this->campaignService->getContactsForCampaign($type);
-        
+
         return response()->json([
-            'success' => true,
+            'status' => true,
             'contacts' => $contacts
         ]);
     }
