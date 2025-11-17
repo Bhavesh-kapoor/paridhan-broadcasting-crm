@@ -137,12 +137,12 @@
                                                     <input type="number" name="price" class="form-control"
                                                         placeholder="Enter Price" readonly>
                                                 </div>
-                                                <div class="col-md-12">
+                                                {{-- <div class="col-md-12">
                                                     <button type="button" id="checkAvailabilityBtn"
                                                         class="btn btn-warning mt-2">
                                                         Check Availability
                                                     </button>
-                                                </div>
+                                                </div> --}}
 
 
                                                 <div id="availabilityResult" class="mt-2 fw-bold">
@@ -157,6 +157,7 @@
                                                         <option value="">-- Select Amount Status --</option>
                                                         <option value="partial" selected>Partial</option>
                                                         <option value="paid"> Paid</option>
+                                                        <option value="unpaid"> Unpaid</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6 mt-2">
@@ -502,7 +503,7 @@
 
 
 
-            // show detals in view modal
+            // show detals in view offcanvas
             $(document).on('click', '.ViewBtn', function() {
 
                 let route = $(this).attr('editRoute');
@@ -557,6 +558,7 @@
             });
 
 
+            // build latest followup card
             function buildLatestFollowupCard(item) {
 
                 return `
@@ -574,15 +576,15 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
+                                                                                                    <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                                                                    <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
                 </div>
               </div>
              `;
             }
 
 
-
+            // build history cards
             function buildHistoryCards(history) {
                 if (!history || history.length === 0) {
                     return `<div class="alert alert-warning">No follow-ups found.</div>`;
@@ -636,7 +638,80 @@
             }
 
 
-            $(document).on('click', '#checkAvailabilityBtn', function() {
+
+
+
+            // Booking location change - load table numbers
+            $('#booking_location').on('change', function() {
+
+                let locationId = $(this).val();
+
+                $('#table_no').empty();
+                $('#table_no').append('<option value="">-- Select Table No --</option>');
+
+                if (locationId) {
+
+                    let url = "{{ route('booking.getTables', ':id') }}";
+                    url = url.replace(':id', locationId);
+
+                    $.ajax({
+                        url: url,
+                        type: "GET",
+                        success: function(response) {
+                            $.each(response, function(index, table) {
+                                $('#table_no').append(
+                                    '<option value="' + table.id + '">' + table
+                                    .table_no + '</option>'
+                                );
+                            });
+                        },
+                        error: function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                html: 'Failed to load table numbers.'
+                            });
+
+                        }
+                    });
+                }
+            });
+
+
+
+            // Table no change - load price
+            $('#table_no').on('change', function() {
+
+                let tableId = $(this).val();
+
+                // Clear existing price
+                $('input[name="price"]').val('');
+
+                if (tableId) {
+
+                    let url = "{{ route('booking.getPrice', ':id') }}";
+                    url = url.replace(':id', tableId);
+
+                    $.ajax({
+                        url: url,
+                        type: "GET",
+                        success: function(response) {
+                            $('input[name="price"]').val(response.price);
+                            checkAvailabilityBtn();
+                        },
+                        error: function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                html: 'Failed to load price.'
+                            });
+                        }
+                    });
+                }
+            });
+
+
+            function checkAvailabilityBtn() {
 
                 let booking_date = $("[name='booking_date']").val();
                 let booking_location = $("[name='booking_location']").val();
@@ -670,71 +745,16 @@
                         }
                     },
                     error: function(xhr) {
-                        console.log(xhr.responseText);
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            html: xhr.responseText
+                        });
                     }
                 });
 
-            });
-
-
-            // Booking location change - load table numbers
-            $('#booking_location').on('change', function() {
-
-                let locationId = $(this).val();
-
-                $('#table_no').empty();
-                $('#table_no').append('<option value="">-- Select Table No --</option>');
-
-                if (locationId) {
-
-                    let url = "{{ route('booking.getTables', ':id') }}";
-                    url = url.replace(':id', locationId);
-
-                    $.ajax({
-                        url: url,
-                        type: "GET",
-                        success: function(response) {
-                            $.each(response, function(index, table) {
-                                $('#table_no').append(
-                                    '<option value="' + table.id + '">' + table
-                                    .table_no + '</option>'
-                                );
-                            });
-                        },
-                        error: function() {
-                            alert("Failed to load table numbers.");
-                        }
-                    });
-                }
-            });
-
-
-
-            // Table no change - load price
-            $('#table_no').on('change', function() {
-
-                let tableId = $(this).val();
-
-                // Clear existing price
-                $('input[name="price"]').val('');
-
-                if (tableId) {
-
-                    let url = "{{ route('booking.getPrice', ':id') }}";
-                    url = url.replace(':id', tableId);
-
-                    $.ajax({
-                        url: url,
-                        type: "GET",
-                        success: function(response) {
-                            $('input[name="price"]').val(response.price);
-                        },
-                        error: function() {
-                            alert("Failed to load price.");
-                        }
-                    });
-                }
-            });
+            };
 
 
 
@@ -766,7 +786,7 @@
                 let price = $('input[name="price"]').val(); // get price input value
                 let amountPaidInput = $('input[name="amount_paid"]');
 
-                if (status === "fully_paid") {
+                if (status === "paid") {
                     amountPaidInput.val(price); // set price value
                     amountPaidInput.prop('readonly', true); // make readonly
                 } else {
@@ -774,19 +794,6 @@
                     amountPaidInput.prop('readonly', false); // make editable
                 }
             });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         });
     </script>

@@ -3,6 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class FollowUpRequest extends FormRequest
 {
@@ -30,5 +33,14 @@ class FollowUpRequest extends FormRequest
             'amount_status' => 'required_if:status,materialised|nullable|in:paid,partial,unpaid',
             'amount_paid'      => 'required_if:status,materialised|nullable|numeric',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        // Throw JSON response instead of HTML redirect
+        throw new HttpResponseException(response()->json([
+            'status' => 'validation_error',
+            'message' => $validator->errors()->all(),
+        ]));
     }
 }

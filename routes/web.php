@@ -38,8 +38,6 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     Route::get('/ajax/visitors/all', [CampaignController::class, 'getAllVisitorIDs'])
         ->name('ajax.visitors.all');
 
-
-
     Route::post('campaigns/{campaign}/send', [\App\Http\Controllers\CampaignController::class, 'send'])->name('campaigns.send');
     Route::get('campaigns/contacts/get', [\App\Http\Controllers\CampaignController::class, 'getContacts'])->name('campaigns.contacts.get');
 
