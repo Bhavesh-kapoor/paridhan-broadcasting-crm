@@ -160,7 +160,7 @@
                                                         <option value="unpaid"> Unpaid</option>
                                                     </select>
                                                 </div>
-                                                <div class="col-md-6 mt-2">
+                                                <div id="amountPaidWrapper" class="col-md-6 mt-2">
                                                     <label class="form-label">Amount Paid <span
                                                             class="text-danger">*</span></label>
                                                     <input type="number" name="amount_paid" class="form-control"
@@ -576,8 +576,8 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                                                                                    <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                                                                                    <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
+                                                                                                                <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                                                                                <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
                 </div>
               </div>
              `;
@@ -783,17 +783,22 @@
 
             $('#amount_status').on('change', function() {
                 let status = $(this).val();
-                let price = $('input[name="price"]').val(); // get price input value
+                let price = $('input[name="price"]').val();
                 let amountPaidInput = $('input[name="amount_paid"]');
+                let wrapper = $('#amountPaidWrapper'); // wrapper div
 
                 if (status === "paid") {
-                    amountPaidInput.val(price); // set price value
-                    amountPaidInput.prop('readonly', true); // make readonly
-                } else {
-                    amountPaidInput.val(""); // clear value
-                    amountPaidInput.prop('readonly', false); // make editable
+                    wrapper.show();
+                    amountPaidInput.val(price).prop('readonly', true);
+                } else if (status === "partial") {
+                    wrapper.show();
+                    amountPaidInput.val("").prop('readonly', false);
+                } else if (status === "unpaid") {
+                    wrapper.hide();
+                    amountPaidInput.val("").prop('readonly', false);
                 }
             });
+
 
         });
     </script>

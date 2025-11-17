@@ -31,7 +31,8 @@ class FollowUpRequest extends FormRequest
             'table_no'         => 'required_if:status,materialised|nullable|string',
             'price'            => 'required_if:status,materialised|nullable|numeric',
             'amount_status' => 'required_if:status,materialised|nullable|in:paid,partial,unpaid',
-            'amount_paid'      => 'required_if:status,materialised|nullable|numeric',
+            // amount_paid required only if paid or partial
+            'amount_paid' => 'required_if:amount_status,paid,partial|nullable|numeric',
         ];
     }
 
