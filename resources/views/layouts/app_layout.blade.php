@@ -226,6 +226,134 @@
         $('.select2').on('select2:clear', function() {
             $(this).val(null).trigger("change");
         });
+
+        $("#changePasswordForm").validate({
+            errorClass: "text-danger validation-error",
+            rules: {
+                current_password: {
+                    required: true
+                },
+                new_password: {
+                    required: true,
+                },
+                new_password_confirmation: {
+                    required: true,
+                    equalTo: "#new_password"
+                }
+            },
+            messages: {
+                current_password: {
+                    required: "Please Enter Your Old Password !"
+                },
+                new_password: {
+                    required: "Please Enter Your New Password !"
+                },
+                new_password_confirmation: {
+                    required: "Please Re-enter Password !"
+                }
+            },
+            submitHandler: function(form, event) {
+                event.preventDefault();
+                var formData = new FormData(document.getElementById('changePasswordForm'));
+
+                // Send Ajax Request
+                $.ajax({
+                    url: `{{ route('admin.change-password.store') }}`,
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        console.log(response.status);
+
+                        if (response.status === true) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                html: response.message
+                            }).then(() => {
+                                // Optional: reload page or redirect after showing message
+                                window.location.reload();
+                            });
+                        } else if (response.status === false) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                html: response.message
+                            });
+                        } else {
+                            toastr.error('Something went wrong. Please try again.');
+                        }
+                    },
+                    error: function(error) {
+                        toastr.error('Something went wrong. Please try again.');
+                    }
+                });
+
+            }
+        });
+
+
+
+        $("#updateProfileForm").validate({
+            errorClass: "text-danger validation-error",
+            rules: {
+                profile_name: {
+                    required: true
+                },
+                profile_phone: {
+                    required: true
+                },
+                profile_email: {
+                    required: true,
+                    email: true,
+                }
+            },
+            messages: {
+                profile_name: {
+                    required: "Please Enter Your Name !"
+                },
+                profile_phone: {
+                    required: "Please Enter Your Phone Number !"
+                },
+                address: {
+                    required: "Please Enter Your Address"
+                }
+            },
+
+
+            submitHandler: function(form, event) {
+                event.preventDefault();
+                var formData = new FormData(document.getElementById('updateProfileForm'))
+                $(".loader").show();
+
+                // Send Ajax Request
+                $.ajax({
+                    url: `{{ route('admin.change-profile.store') }}`,
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if (response.status == true) {
+                            toastr.success(response.message);
+                            window.location.reload();
+                        } else if (response.status == false) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                html: response.message
+                            })
+                        } else {
+                            toastr.error('Something went wrong. Please try again.');
+                        }
+                    },
+                    error: function(error) {
+                        toastr.error('Something went wrong. Please try again.')
+                    }
+                });
+            }
+        });
     </script>
     @yield('script')
 

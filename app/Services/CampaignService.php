@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendCampaignJob;
 use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\Contacts;
@@ -39,8 +40,8 @@ class CampaignService
 
     public function getAllCampaignsList()
     {
-        $query = Campaign::with('recipients');
-        $result = $query->orderBy('created_at', 'desc');
+        $result = Campaign::withCount('recipients')->
+            orderBy('created_at', 'desc');
         return DataTables::of($result)
             ->addIndexColumn()
             ->addColumn('full_type', function ($data) {
@@ -51,7 +52,7 @@ class CampaignService
             ->addColumn('recipient_count', function ($data) {
 
                 return '    <span class="badge bg-info px-3 py-2">
-                                                <i class="lni lni-users me-1"></i>' . $data->recipient_count . ' Recipients
+                                                <i class="lni lni-users me-1"></i>' . $data->recipients_count . ' Recipients
                                             </span>';
             })
             ->editColumn('created_at', function ($data) {
@@ -63,9 +64,9 @@ class CampaignService
                 <i class="lni lni-eye"></i>
                 </button>';
 
-                $button .= ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('campaigns.edit', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit Campaign">
-                <i class="bx bx-pencil"></i>
-                </button>';
+                // $button .= ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('campaigns.edit', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit Campaign">
+                // <i class="bx bx-pencil"></i>
+                // </button>';
                 if ($data->isDraft()):
                     $button .= '<button class="btn btn-success btn-sm sendCampaign mx-1" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Send Campaign">
                     <i class="bx bx-paper-plane"></i>
@@ -106,30 +107,30 @@ class CampaignService
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('recipient_name', function ($d) {
-                return $d->contact->name;
+                return $d->contact->name ?? '-';
             })
 
             ->addColumn('recipient_contact', function ($d) {
+                if (!$d->contact) return '-';
                 return $d->contact->type === 'exhibitor'
                     ? '<small class="text-muted">' . $d->contact->email . '</small>'
                     : '<small class="text-muted">' . $d->contact->phone . '</small>';
             })
 
             ->addColumn('recipient_type', function ($d) {
+                if (!$d->contact) return '-';
                 $icon = ($d->contact->type === 'exhibitor') ? 'bx bx-store-alt' : 'bx bx-user';
                 return '<span class="badge bg-light text-dark px-3 py-2 border">
-                    <i class="' . $icon . ' me-1"></i>' . ucfirst($d->contact->type) . '
-                </span>';
+                <i class="' . $icon . ' me-1"></i>' . ucfirst($d->contact->type) . '
+            </span>';
             })
 
             ->addColumn('recipient_location', function ($d) {
-                return $d->contact->location;
+                return $d->contact->location ?? '-';
             })
 
             ->addColumn('full_status', function ($d) {
-
-                $status = $d->status;
-
+                $status = $d->status ?? 'pending';
                 $icon = match ($status) {
                     'sent' => 'bx bx-check-circle',
                     'delivered' => 'bx bx-check',
@@ -147,13 +148,11 @@ class CampaignService
                 };
 
                 return '<span class="badge ' . $color . ' px-2 py-2 border">
-                    <i class="' . $icon . ' me-1"></i>' . $status . '
-                </span>';
+                <i class="' . $icon . ' me-1"></i>' . $status . '
+            </span>';
             })
 
-            /** -------------------------------
-             *  SEARCH FOR RELATION FIELDS
-             *  ------------------------------- */
+            /** SEARCH FOR RELATION FIELDS */
             ->filterColumn('recipient_name', function ($q, $keyword) {
                 $q->whereHas('contact', function ($c) use ($keyword) {
                     $c->where('name', 'like', "%{$keyword}%");
@@ -162,8 +161,10 @@ class CampaignService
 
             ->filterColumn('recipient_contact', function ($q, $keyword) {
                 $q->whereHas('contact', function ($c) use ($keyword) {
-                    $c->where('email', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
+                    $c->where(function ($query) use ($keyword) {
+                        $query->where('email', 'like', "%{$keyword}%")
+                            ->orWhere('phone', 'like', "%{$keyword}%");
+                    });
                 });
             })
 
@@ -192,6 +193,7 @@ class CampaignService
             ->rawColumns(['recipient_contact', 'recipient_type', 'full_status'])
             ->make(true);
     }
+
 
 
 
@@ -288,6 +290,28 @@ class CampaignService
             DB::rollBack();
             throw $e;
         }
+
+        DB::beginTransaction();
+
+        try {
+            $batchSize = 5000; // adjust based on your DB performance
+
+            do {
+                $deleted = DB::table('campaign_recipients')
+                    ->where('campaign_id', $id)
+                    ->limit($batchSize)
+                    ->delete();
+            } while ($deleted > 0);
+
+            DB::table('campaigns')->where('id', $id)->delete();
+
+
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -310,6 +334,8 @@ class CampaignService
             ]);
 
             // Here you would integrate with your messaging service (Wati, etc.)
+           dispatch(new SendCampaignJob($id));
+
             // For now, we'll just mark it as sent
 
             DB::commit();
@@ -319,6 +345,9 @@ class CampaignService
             throw $e;
         }
     }
+
+
+
 
     /**
      * Get contacts for campaign selection
@@ -341,7 +370,7 @@ class CampaignService
     /**
      * Add recipients to campaign
      */
-    private function addRecipientsToCampaign($campaignId, $recipientIds)
+    public function addRecipientsToCampaign($campaignId, $recipientIds)
     {
         $recipients = [];
         foreach ($recipientIds as $contactId) {
@@ -368,7 +397,7 @@ class CampaignService
     /**
      * Update recipients for campaign
      */
-    private function updateRecipientsForCampaign($campaignId, $recipientIds)
+    public function updateRecipientsForCampaign($campaignId, $recipientIds)
     {
         // Remove existing recipients
         CampaignRecipient::where('campaign_id', $campaignId)->delete();

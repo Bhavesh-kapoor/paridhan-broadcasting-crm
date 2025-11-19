@@ -19,7 +19,7 @@
                             <a href="{{ route('contacts.create', ['type' => $type]) }}" class="btn btn-{{ $type === 'exhibitor' ? 'primary' : 'success' }} btn-lg shadow-sm">
                                 <i class="ph ph-plus-circle me-2"></i>Add {{ ucfirst($type) }}
                             </a>
-                            <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-lg">
+                            <a href="{{ route(Auth::user()->role . '.dashboard')}}" class="btn btn-secondary btn-lg">
                                 <i class="ph ph-arrow-left me-2"></i>Dashboard
                             </a>
                         </div>
@@ -40,8 +40,8 @@
                                 <i class="ph ph-magnifying-glass me-1"></i>Search {{ ucfirst($type) }}s
                             </label>
                             <div class="input-group input-group-sm">
-                                <input type="text" class="form-control form-control-sm border-start-0 py-1" id="searchInput" 
-                                       placeholder="Search by name, location, or phone..." 
+                                <input type="text" class="form-control form-control-sm border-start-0 py-1" id="searchInput"
+                                       placeholder="Search by name, location, or phone..."
                                        style="border-left: none;">
                             </div>
                         </div>
@@ -188,20 +188,20 @@
                                     @endif
                                     <td class="px-3 py-3 text-center">
                                         <div class="btn-group btn-group-sm shadow-sm" role="group">
-                                            <!-- <a href="{{ route('contacts.show', $contact) }}" 
-                                               class="btn btn-info btn-sm border" 
+                                            <!-- <a href="{{ route('contacts.show', $contact) }}"
+                                               class="btn btn-info btn-sm border"
                                                title="View Details"
                                                style="min-width: 40px;">
                                                 <i class="ph ph-eye"></i>
                                             </a> -->
-                                            <a href="{{ route('contacts.edit', $contact) }}" 
-                                               class="btn btn-primary btn-sm border" 
+                                            <a href="{{ route('contacts.edit', $contact) }}"
+                                               class="btn btn-primary btn-sm border"
                                                title="Edit {{ ucfirst($type) }}"
                                                style="min-width: 40px;">
                                                 <i class="ph ph-pencil"></i>
                                             </a>
-                                            <button type="button" 
-                                                    class="btn btn-danger btn-sm border" 
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm border"
                                                     onclick="deleteContact('{{ $contact->id }}')"
                                                     title="Delete {{ ucfirst($type) }}"
                                                     style="min-width: 40px;">
@@ -214,7 +214,7 @@
                                 <tr>
                                     <td colspan="{{ $type === 'exhibitor' ? '6' : '5' }}" class="text-center py-5">
                                         <div class="d-flex flex-column align-items-center">
-                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3"
                                                  style="width: 80px; height: 80px;">
                                                 <i class="ph ph-{{ $type === 'exhibitor' ? 'storefront' : 'user-circle' }} text-muted" style="font-size: 2rem;"></i>
                                             </div>
@@ -268,7 +268,7 @@
             </div>
             <div class="modal-body p-4">
                 <div class="text-center mb-3">
-                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" 
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center"
                          style="width: 80px; height: 80px;">
                         <i class="ph ph-trash text-danger" style="font-size: 2rem;"></i>
                     </div>
@@ -307,18 +307,18 @@ $('#locationFilter').on('change', function() {
 function applyFilters() {
     const searchTerm = $('#searchInput').val().toLowerCase();
     const selectedLocation = $('#locationFilter').val().toLowerCase();
-    
+
     $('#contactsTable tbody tr').each(function() {
         const contactName = $(this).find('td:nth-child(2) h6').text().toLowerCase();
         const contactLocation = $(this).find('td:nth-child(3) span').text().toLowerCase();
-        
+
         // Check if row matches search term
-        const matchesSearch = !searchTerm || 
+        const matchesSearch = !searchTerm ||
             contactName.includes(searchTerm);
-        
+
         // Check if row matches location filter
         const matchesLocation = !selectedLocation || contactLocation.includes(selectedLocation);
-        
+
         // Show row only if it matches both filters
         if (matchesSearch && matchesLocation) {
             $(this).show();

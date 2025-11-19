@@ -21,7 +21,7 @@
                 <div class="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0 p-0">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role.'.dashboard') }}"><i class="bx bx-home-alt"></i></a>
                             </li>
                             <li class="breadcrumb-item active" aria-current="page">All Employees</li>
                         </ol>
@@ -34,7 +34,7 @@
                 <div class="mb-3 filter-col">
                     <div class="col-md-3 form-group">
                         <label for="filter_status">Status Filter</label>
-                        <select class="form-control form-select select2" name="filter_status" id="filter_status">
+                        <select class="form-control form-select" name="filter_status" id="filter_status">
                             <option value="">Select</option>
                             <option value="active">
                                 Active</option>

@@ -170,7 +170,7 @@
             <div class="user-box dropdown px-3">
                 <a class="d-flex align-items-center nav-link dropdown-toggle gap-3 dropdown-toggle-nocaret"
                     href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="{{ asset('/assets/images/avatars/avatar-2.png') }}" class="user-img" alt="user avatar">
+                    <img src="{{ url(config('contants.logo')) }}" class="user-img" alt="user avatar">
                     <div class="user-info">
                         <p class="user-name mb-0">{{ Auth::user()->name }}</p>
                         <p class="designattion mb-0">{{ Str::upper(Auth::user()->role) }}</p>
@@ -180,10 +180,6 @@
                     <li><a class="dropdown-item d-flex align-items-center" type="button" data-bs-toggle="offcanvas"
                             data-bs-target="#offcanvasProfileSetup" aria-controls="offcanvasProfileSetup"><i
                                 class="bx bx-user fs-5"></i><span>Profile</span></a>
-                    </li>
-                    <li><a class="dropdown-item d-flex align-items-center"
-                            href="{{ route('admin.change-password') }}"><i class="bx bx-lock fs-5"></i><span>Change
-                                Password</span></a>
                     </li>
 
                     <li>
@@ -230,24 +226,21 @@
             <div class="tab-pane fade show active profileInfoTab" id="home" role="tabpanel"
                 aria-labelledby="home-tab">
                 <div class="text-center mt-2">
-                    <img src="{{ asset('/assets/images/avatars/avatar-2.png') }}" class="user-img " alt="user avatar">
+                    <img src="{{ url(config('contants.logo')) }}" class="user-img " alt="user avatar">
                 </div>
-                <div class="user-info text-center">
+                <div class="user-info text-center text-success ">
                     <p class="user-name mb-0"><i class='bx bxs-check-circle'></i>
                         {{ auth()->user()->name }}
                     </p>
                 </div>
 
                 <div class="user-info text-center mb-1">
-                    <span class="badge bg-warning">
+                    <span class="badge bg-warning text-uppercase">
                         {{ Auth::user()->role }}
                     </span>
                 </div>
 
-                <div class="row py-3 border-top border-bottom">
-                    <div class="col-4"><strong>User ID:</strong></div>
-                    <div class="col-8">{{ Auth::user()->id }}</div>
-                </div>
+
                 <div class="row py-3  border-bottom">
                     <div class="col-4"><strong>Email Id:</strong></div>
                     <div class="col-8 text-uppercase">{{ Auth::user()->email }}</div>
@@ -265,12 +258,12 @@
             <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
                 <div class="card shadow-none">
                     <div class="card-body ">
-                        <form class="row g-3" class="updateProfileForm" id="updateProfileForm" >
+                        <form class="row g-3" class="updateProfileForm" id="updateProfileForm">
                             @csrf
                             <div class="col-md-12">
                                 <label for="profile_f_name" class="form-label mb-1"><strong
-                                        class="text-danger">*</strong> First Name</label>
-                                <input type="text" class="form-control" name="profile_f_name" id="profile_f_name"
+                                        class="text-danger">*</strong> name</label>
+                                <input type="text" class="form-control" name="profile_name" id="profile_name"
                                     value="{{ auth()->user()->name }}">
                             </div>
 
@@ -288,10 +281,6 @@
                                     value="{{ auth()->user()->phone }}" maxlength="10">
                             </div>
 
-                            <div class="col-md-12">
-                                <label for="profile_image" class="form-label mb-1">Profile Image</label>
-                                <input type="file" class="form-control" name="profile_image" id="profile_image">
-                            </div>
 
                             <div class="col-md-12">
                                 <label for="address" class="form-label mb-1"><strong class="text-danger">*</strong>
@@ -301,9 +290,10 @@
 
                             <div class="col-md-12 col-12">
                                 <div class="text-center">
-                                    <button type="submit" class="btn submit-btn btn-sm w-100 radius-10 py-2"
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 radius-10 py-2"
                                         id="profileFormSubmitBtn"><span class="bx bx-edit"></span>
-                                        Update</button>
+                                        Update
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -316,28 +306,29 @@
                         <form action="" class="changePasswordForm row g-3" id="changePasswordForm">
                             @csrf
                             <div class="col-md-12">
-                                <label for="old_password" class="form-label mb-1"><strong
+                                <label for="current_password" class="form-label mb-1"><strong
                                         class="text-danger">*</strong> Old Password</label>
-                                <input type="password" type="password" class="form-control" name="old_password"
-                                    id="old_password" autocomplete="off">
+                                <input  type="password" class="form-control" name="current_password"
+                                    id="current_password" autocomplete="off">
                             </div>
 
                             <div class="col-md-12">
                                 <label for="new_password" class="form-label mb-1"><strong
                                         class="text-danger">*</strong> New Password</label>
-                                <input type="password" class="form-control" name="password" id="password" autocomplete="off">
+                                <input type="password" class="form-control" name="new_password" id="new_password"
+                                    autocomplete="off">
                             </div>
 
                             <div class="col-md-12">
                                 <label for="password_confirmation" class="form-label mb-1"><strong
                                         class="text-danger">*</strong> Confirm
                                     Password</label>
-                                <input type="password" class="form-control" name="password_confirmation"
-                                    id="password_confirmation" autocomplete="off">
+                                <input type="password" class="form-control" name="new_password_confirmation"
+                                    id="new_password_confirmation" autocomplete="off">
                             </div>
 
                             <div class="form-group text-center my-3">
-                                <button type="submit" class="btn submit-btn  btn-sm w-100 radius-10 py-2"><span
+                                <button type="submit" class="btn btn-primary  btn-sm w-100 radius-10 py-2"><span
                                         class="bx bx-edit"></span>
                                     Update</button>
                             </div>

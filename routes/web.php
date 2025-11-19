@@ -7,12 +7,13 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProcessLargeFileController;
+use App\Models\Campaign;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 #admin routes
 Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', ["App\Http\Controllers\DashboardController", "index"])->name('dashboard');
+    Route::get('/dashboard', ["App\Http\Controllers\DashboardController", "index"])->name('admin.dashboard');
 
     # Employee routes
     Route::resource('employees', EmployeeController::class);
@@ -29,11 +30,14 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     Route::resource('campaigns', CampaignController::class);
     Route::post('/ajax/get/all-campaigns', [CampaignController::class, 'getAllCampaignsList']);
     Route::post('/ajax/get/all-campaigns-recipients', [CampaignController::class, 'getAllCampaignsRecipientsList']);
+    Route::GET('campaigns/{id}/progress',  [CampaignController::class, 'progress']);
 
     Route::get('/ajax/exhibitors', [CampaignController::class, 'ajaxExhibitors'])->name('ajax.exhibitors');
     Route::get('/ajax/visitors', [CampaignController::class, 'ajaxVisitors'])->name('ajax.visitors');
     Route::get('/ajax/exhibitors/all', [CampaignController::class, 'getAllExhibitorIDs'])
         ->name('ajax.exhibitors.all');
+    Route::post('/campaigns/add-recipients', [CampaignController::class, 'addRecipients'])
+        ->name('campaigns.addRecipients');
 
     Route::get('/ajax/visitors/all', [CampaignController::class, 'getAllVisitorIDs'])
         ->name('ajax.visitors.all');
@@ -82,6 +86,9 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
 Route::middleware(['web', 'auth:web', 'checkRole:admin,employee'])->group(function () {
     #auth related routes
     Route::get('/logout', ["App\Http\Controllers\AuthController", "logout"])->name('logout');
+
+     Route::post('/change-password', [\App\Http\Controllers\AuthController::class, 'changePassword'])->name('admin.change-password.store');
+     Route::post('/change-profile', [\App\Http\Controllers\AuthController::class, 'changeProfile'])->name('admin.change-profile.store');
 });
 
 

@@ -30,8 +30,8 @@ class CampaignRequest extends FormRequest
             'message' => ['required', 'string', 'max:5000'],
             'type' => ['required', 'in:email,sms,whatsapp'],
             'scheduled_at' => ['nullable', 'date', 'after:now'],
-            'recipients' => ['required', 'array', 'min:1'],
-            'recipients.*' => ['required', 'string', 'exists:contacts,id'],
+            // 'recipients' => ['required', 'array', 'min:1'],
+            // 'recipients.*' => ['required', 'string', 'exists:contacts,id'],
         ];
     }
 
