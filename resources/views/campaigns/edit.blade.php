@@ -10,11 +10,12 @@
         .small-note {
             font-size: .85rem;
         }
-        .recipient-list .form-check{
+
+        .recipient-list .form-check {
             margin-left: 5px;
         }
 
-        .recipient-list .form-check-label{
+        .recipient-list .form-check-label {
             cursor: pointer;
         }
     </style>
@@ -30,7 +31,7 @@
                 <div class="ps-3">
                     <ol class="breadcrumb mb-0 p-0">
                         <li class="breadcrumb-item">
-                            <a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            <a href="{{ route(Auth::user()->role . '.dashboard')}}"><i class="bx bx-home-alt"></i></a>
                         </li>
                         <li class="breadcrumb-item active">Edit Campaign</li>
                     </ol>
@@ -204,16 +205,35 @@
             </form>
         </div>
     </div>
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+        data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Uploading Recipients</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage" class="text-center mb-3">Uploading recipients, please wait...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+                            id="modalUploadProgressBar" style="width: 0%">0%</div>
+                    </div>
+                    <div class="mt-2 text-center" id="modalProgressText">0 of 0 completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
-{{-- @section('script')
+
+@section('script')
     <script>
         /* ============================================
-           GLOBAL STATE
-        ============================================ */
-        let selectedRecipients = new Set(@json($campaign->recipients->pluck('contact_id')));
-
-        let exhibitorsToggle = false;
+                                                       GLOBAL STATE
+                                    ============================================ */
+        let selectedRecipients = new Set(@json($campaign->recipients->pluck('contact_id'))); // All selected IDs
+        let exhibitorsToggle = false; // false = not selected, true = select all
         let visitorsToggle = false;
 
         /* ============================================
@@ -248,196 +268,14 @@
         }
 
         /* ============================================
-           RESTORE CHECKBOXES AFTER PAGINATION
-        ============================================ */
-        function restoreSelections() {
-            $(".recipient-checkbox").each(function() {
-                const id = String($(this).data("id"));
-
-                if (selectedRecipients.has(id)) {
-                    $(this).prop("checked", true);
-                }
-            });
-
-            updateSelectedCount();
-        }
-
-        /* ============================================
-           SINGLE CHECK / UNCHECK
-        ============================================ */
-        $(document).on("change", ".recipient-checkbox", function() {
-            const id = String($(this).data("id"));
-            const type = $(this).data("type");
-
-            if ($(this).is(":checked")) {
-                selectedRecipients.add(id);
-            } else {
-                selectedRecipients.delete(id);
-
-                if (type === "exhibitor") exhibitorsToggle = false;
-                if (type === "visitor") visitorsToggle = false;
-            }
-
-            updateSelectedCount();
-        });
-
-        /* ============================================
-           SELECT ALL (FULL LIST – NOT PAGE ONLY)
-        ============================================ */
-
-        /* ----------- EXHIBITORS -------------- */
-        $("#selectPageExhibitors").on("click", function() {
-            exhibitorsToggle = !exhibitorsToggle;
-
-            if (exhibitorsToggle) {
-                // Fetch all exhibitor IDs once
-                $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
-                    data.forEach(id => selectedRecipients.add(String(id)));
-                    restoreSelections();
-                    updateSelectedCount();
-                });
-            } else {
-                // Remove all exhibitor IDs only
-                $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
-                    data.forEach(id => selectedRecipients.delete(String(id)));
-                    restoreSelections();
-                    updateSelectedCount();
-                });
-            }
-        });
-
-        /* ----------- VISITORS -------------- */
-        $("#selectPageVisitors").on("click", function() {
-            visitorsToggle = !visitorsToggle;
-
-            if (visitorsToggle) {
-                $.get("{{ route('ajax.visitors.all') }}", function(data) {
-                    data.forEach(id => selectedRecipients.add(String(id)));
-                    restoreSelections();
-                    updateSelectedCount();
-                });
-            } else {
-                $.get("{{ route('ajax.visitors.all') }}", function(data) {
-                    data.forEach(id => selectedRecipients.delete(String(id)));
-                    restoreSelections();
-                    updateSelectedCount();
-                });
-            }
-        });
-
-        /* ============================================
-           PAGINATION CLICK
-        ============================================ */
-        $(document).on("click", ".recipient-list .pagination a", function(e) {
-            e.preventDefault();
-            const page = new URL($(this).attr("href")).searchParams.get("page") || 1;
-
-            if ($("#exhibitors-tab").hasClass("active")) {
-                loadExhibitors(page);
-            } else {
-                loadVisitors(page);
-            }
-        });
-
-        /* ============================================
-           SUBMIT FORM
-        ============================================ */
-        $("#campaignForm").on("submit", function(e) {
-            e.preventDefault();
-
-            if (selectedRecipients.size === 0) {
-                toastr.error("Please select at least one recipient.");
-                return;
-            }
-
-            let fd = new FormData(this);
-            selectedRecipients.forEach(id => fd.append("recipients[]", id));
-
-            $("#submitBtn").prop("disabled", true).html(
-                '<span class="spinner-border spinner-border-sm"></span> Creating...'
-            );
-
-            $.ajax({
-                url: $(this).attr("action"),
-                method: "POST",
-                data: fd,
-                processData: false,
-                contentType: false,
-                success: function(res) {
-                    toastr.success(res.message);
-                    window.location.href = res.redirect;
-                },
-                error: function(xhr) {
-                    toastr.error("Error submitting form.");
-                },
-                complete: function() {
-                    $("#submitBtn").prop("disabled", false).html(
-                        '<i class="bx bx-pencil"></i>&nbsp;Create Campaign'
-                    );
-                }
-            });
-        });
-
-        /* ============================================
-           INITIAL LOAD
-        ============================================ */
-        $(function() {
-            loadExhibitors();
-            loadVisitors();
-        });
-    </script>
-@endsection --}}
-@section('script')
-    <script>
-        /* ============================================
-                           GLOBAL STATE
-        ============================================ */
-        let selectedRecipients = new Set(@json($campaign->recipients->pluck('contact_id'))); // All selected IDs
-        let exhibitorsToggle = false; // false = not selected, true = select all
-        let visitorsToggle = false;
-
-        /* ============================================
-           UPDATE SELECTED COUNT
-        ============================================ */
-        function updateSelectedCount() {
-            $("#selectedCount").text(selectedRecipients.size);
-
-            $("#selectPageExhibitors").text("Select All");
-            $("#selectPageVisitors").text("Select All");
-        }
-
-        /* ============================================
-           LOAD AJAX LISTS
-        ============================================ */
-        function loadExhibitors(page = 1) {
-            $.get("{{ route('ajax.exhibitors') }}", {
-                page
-            }, function(html) {
-                $("#exhibitorsContainer").html(html);
-                restoreSelections();
-            });
-        }
-
-        function loadVisitors(page = 1) {
-            $.get("{{ route('ajax.visitors') }}", {
-                page
-            }, function(html) {
-                $("#visitorsContainer").html(html);
-                restoreSelections();
-            });
-        }
-
-        /* ============================================
            RESTORE SELECTIONS AFTER PAGINATION
         ============================================ */
         function restoreSelections() {
             $(".recipient-checkbox").each(function() {
                 const id = String($(this).data("id"));
-
-                if (selectedRecipients.has(id)) {
-                    $(this).prop("checked", true);
-                }
+                $(this).prop("checked", selectedRecipients.has(id));
             });
+
 
             updateSelectedCount();
         }
@@ -465,41 +303,42 @@
         /* ============================================
            SELECT ALL TOGGLE
         ============================================ */
+        /* ========================================================
+           SELECT ALL EXHIBITORS
+        ======================================================== */
         $("#selectPageExhibitors").on("click", function() {
             exhibitorsToggle = !exhibitorsToggle;
 
-            $("#exhibitorsContainer .recipient-checkbox").each(function() {
-                const id = String($(this).data("id"));
+            $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
+                data.forEach(id => {
+                    if (exhibitorsToggle) selectedRecipients.add(String(id));
+                    else selectedRecipients.delete(String(id));
+                });
 
-                if (exhibitorsToggle) {
-                    $(this).prop("checked", true);
-                    selectedRecipients.add(id);
-                } else {
-                    $(this).prop("checked", false);
-                    selectedRecipients.delete(id);
-                }
+                restoreSelections();
+                updateSelectedCount();
             });
-
-            updateSelectedCount();
         });
 
+        /* ========================================================
+           SELECT ALL VISITORS
+        ======================================================== */
         $("#selectPageVisitors").on("click", function() {
             visitorsToggle = !visitorsToggle;
 
-            $("#visitorsContainer .recipient-checkbox").each(function() {
-                const id = String($(this).data("id"));
+            $.get("{{ route('ajax.visitors.all') }}", function(data) {
+                data.forEach(id => {
+                    if (visitorsToggle) selectedRecipients.add(String(id));
+                    else selectedRecipients.delete(String(id));
+                });
 
-                if (visitorsToggle) {
-                    $(this).prop("checked", true);
-                    selectedRecipients.add(id);
-                } else {
-                    $(this).prop("checked", false);
-                    selectedRecipients.delete(id);
-                }
+                restoreSelections();
+                updateSelectedCount();
             });
-
-            updateSelectedCount();
         });
+
+
+
 
         /* ============================================
            PAGINATION CLICK HANDLING
@@ -543,7 +382,73 @@
                 },
             },
 
-            submitHandler: function(form, event) {
+            // submitHandler: function(form, event) {
+            //     event.preventDefault();
+
+            //     if (selectedRecipients.size === 0) {
+            //         toastr.error("Please select at least one recipient.");
+            //         return;
+            //     }
+
+            //     let formData = new FormData(form);
+
+            //     selectedRecipients.forEach(id => formData.append("recipients[]", id));
+
+            //     $.ajax({
+            //         url: $("#campaignForm").attr("action"), // FIXED
+            //         type: 'POST',
+            //         data: formData,
+            //         cache: false,
+            //         processData: false,
+            //         contentType: false,
+            //         dataType: "json",
+
+            //         success: function(response) {
+            //             if (response.status === true) {
+
+            //                 Swal.fire({
+            //                     icon: "success",
+            //                     title: "Campaign Updated!",
+            //                     html: response.message,
+            //                     showCancelButton: true,
+            //                     confirmButtonText: "Edit More",
+            //                     cancelButtonText: "Go to List"
+            //                 }).then((result) => {
+            //                     if (!result.isConfirmed) {
+            //                         window.location.href =
+            //                             "{{ route('campaigns.index') }}";
+            //                     }
+            //                 });
+
+            //             } else if (response.status === "validation_error") {
+
+            //                 Swal.fire({
+            //                     icon: "error",
+            //                     title: "Validation Error",
+            //                     html: response.message
+            //                 });
+
+            //             } else {
+
+            //                 Swal.fire({
+            //                     icon: "error",
+            //                     title: "Error",
+            //                     text: response.message || "Something went wrong."
+            //                 });
+
+            //             }
+            //         },
+
+            //         error: function(xhr) {
+            //             Swal.fire({
+            //                 icon: "error",
+            //                 title: "Server Error",
+            //                 text: xhr.responseJSON?.message || "Please try again later."
+            //             });
+            //         }
+            //     });
+            // }
+            submitHandler: async function(form, event) {
                 event.preventDefault();
 
                 if (selectedRecipients.size === 0) {
@@ -551,62 +456,96 @@
                     return;
                 }
 
+                // Disable submit button
+                $("#submitBtn").prop("disabled", true).text("Processing...");
+
+                let recipientArray = Array.from(selectedRecipients);
+                let chunkSize = 1000;
+                let total = recipientArray.length;
                 let formData = new FormData(form);
 
-                selectedRecipients.forEach(id => formData.append("recipients[]", id));
+                // Show modal
+                let progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                $("#modalUploadProgressBar").css("width", "0%").text("0%");
+                $("#modalProgressText").text(`0 of ${total} completed`);
+                $("#modalMessage").text("Uploading recipients, please wait...");
+                progressModal.show();
 
-                $.ajax({
-                    url: $("#campaignForm").attr("action"), // FIXED
-                    type: 'POST',
-                    data: formData,
-                    cache: false,
-                    processData: false,
-                    contentType: false,
-                    dataType: "json",
+                try {
+                    // Step 1: create campaign
+                    const campaignResponse = await $.ajax({
+                        url: $("#campaignForm").attr("action"),
+                        type: "POST",
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        global: true,
+                    });
 
-                    success: function(response) {
-                        if (response.status === true) {
-
-                            Swal.fire({
-                                icon: "success",
-                                title: "Campaign Updated!",
-                                html: response.message,
-                                showCancelButton: true,
-                                confirmButtonText: "Edit More",
-                                cancelButtonText: "Go to List"
-                            }).then((result) => {
-                                if (!result.isConfirmed) {
-                                    window.location.href = "{{ route('campaigns.index') }}";
-                                }
-                            });
-
-                        } else if (response.status === "validation_error") {
-
-                            Swal.fire({
-                                icon: "error",
-                                title: "Validation Error",
-                                html: response.message
-                            });
-
-                        } else {
-
-                            Swal.fire({
-                                icon: "error",
-                                title: "Error",
-                                text: response.message || "Something went wrong."
-                            });
-
-                        }
-                    },
-
-                    error: function(xhr) {
+                    if (!campaignResponse.status) {
                         Swal.fire({
                             icon: "error",
-                            title: "Server Error",
-                            text: xhr.responseJSON?.message || "Please try again later."
+                            title: "Error",
+                            text: campaignResponse.message
                         });
+                        $("#submitBtn").prop("disabled", false).text("Update Campaign");
+                        progressModal.hide();
+                        return;
                     }
-                });
+
+                    let campaignId = `{{ $campaign->id }}`;
+                    let completed = 0;
+
+                    // Step 2: send recipients chunk by chunk
+                    for (let i = 0; i < total; i += chunkSize) {
+                        let chunk = recipientArray.slice(i, i + chunkSize);
+
+                        await $.ajax({
+                            url: "{{ route('campaigns.addRecipients') }}",
+                            type: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                campaign_id: campaignId,
+                                recipients: JSON.stringify(chunk),
+                                operation_type: "update"
+                            },
+                            global: false,
+                        });
+
+                        completed += chunk.length;
+                        let percent = Math.round((completed / total) * 100);
+                        $("#modalUploadProgressBar").css("width", percent + "%").text(percent + "%");
+                        $("#modalProgressText").text(`${completed} of ${total} completed`);
+                    }
+
+
+
+                    // Success alert
+                    Swal.fire({
+                        icon: "success",
+                        title: "Campaign Updated!",
+                        text: "All recipients processed successfully.",
+                    }).then(() => {
+                        // Hide progress modal
+                        progressModal.hide();
+
+                        // Re-enable submit button
+                        $("#submitBtn").prop("disabled", false).text("Update Campaign");
+                    });
+
+
+                } catch (err) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: err.responseJSON?.message || "Something went wrong!"
+                    });
+
+                    // Re-enable submit button and hide modal in case of error
+                    $("#submitBtn").prop("disabled", false).text("Update Campaign");
+                    progressModal.hide();
+                }
             }
         });
 

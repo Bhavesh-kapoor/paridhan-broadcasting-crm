@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AuthRequest;
+use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -50,7 +52,7 @@ class AuthController extends Controller
             $authRequest->session()->regenerate();
             $dashboard_url = '';
             if (Auth::user()->role === "admin") {
-                $dashboard_url = redirect()->intended(route('dashboard'))->getTargetUrl();
+                $dashboard_url = redirect()->intended(route('admin.dashboard'))->getTargetUrl();
             } else if (Auth::user()->role === "employee") {
                 $dashboard_url = redirect()->intended(route('employee.dashboard'))->getTargetUrl();
             }
@@ -95,9 +97,9 @@ class AuthController extends Controller
         // Check current password
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Current password is incorrect.'
-            ], 400);
+            ]);
         }
 
         // Update password
@@ -106,7 +108,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
+            'status' => true,
             'message' => 'Password changed successfully!'
         ]);
     }
@@ -122,5 +124,47 @@ class AuthController extends Controller
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         return redirect()->route('login');
+    }
+
+
+
+
+    public function changeProfile(Request $request)
+    {
+
+        $user = User::find(Auth::user()->id);
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found, please check your user or contact support team'
+            ]);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'profile_name' => 'required|string',
+            'profile_phone' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'validation_errors',
+                'message' => $validator->errors()->all()
+            ]);
+        } else {
+            $user->name = $request->profile_name;
+            $user->phone = $request->profile_phone;
+            $user->address = $request->address;
+            if ($user->save()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Profile updated successfully.'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Server is not responding. Please try again.'
+                ]);
+            }
+        }
     }
 }

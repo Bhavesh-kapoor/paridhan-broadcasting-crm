@@ -10,7 +10,8 @@
         .small-note {
             font-size: .85rem;
         }
-        .recipient-list .form-check{
+
+        .recipient-list .form-check {
             margin-left: 5px;
         }
     </style>
@@ -26,7 +27,7 @@
                 <div class="ps-3">
                     <ol class="breadcrumb mb-0 p-0">
                         <li class="breadcrumb-item">
-                            <a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            <a href="{{ route(Auth::user()->role . '.dashboard')}}"><i class="bx bx-home-alt"></i></a>
                         </li>
                         <li class="breadcrumb-item active">Create Campaign</li>
                     </ol>
@@ -42,6 +43,8 @@
             <!-- Create Campaign Form -->
             <form id="campaignForm" action="{{ route('campaigns.store') }}" method="POST">
                 @csrf
+
+
 
                 <div class="row mt-4">
                     <!-- Left Side: Campaign Info -->
@@ -179,7 +182,7 @@
                         <div class="card ">
                             <div class="card-body d-flex justify-content-between">
                                 <button type="submit" class="btn btn-primary d-flex align-items-center" id="submitBtn">
-                                    <i class="bx bx-pencil"></i>&nbsp;Create Campaign
+                                    <i class="fadeIn animated bx bx-paper-plane"></i>&nbsp;Create Campaign
                                 </button>
 
                                 <a href="{{ route('campaigns.index') }}"
@@ -194,13 +197,33 @@
             </form>
         </div>
     </div>
+
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+        data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Uploading Recipients</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage" class="text-center mb-3">Uploading recipients, please wait...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+                            id="modalUploadProgressBar" style="width: 0%">0%</div>
+                    </div>
+                    <div class="mt-2 text-center" id="modalProgressText">0 of 0 completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
     <script>
         /* ========================================================
-           GLOBAL STATE
-        ======================================================== */
+                                                           GLOBAL STATE
+                                                        ======================================================== */
         let selectedRecipients = new Set();
 
         let exhibitorsToggle = false;
@@ -212,8 +235,8 @@
         function updateSelectedCount() {
             $("#selectedCount").text(selectedRecipients.size);
 
-            $("#selectPageExhibitors").text('Select All');
-            $("#selectPageVisitors").text('Select All');
+           $("#selectPageExhibitors").text(exhibitorsToggle ? "Unselect All" : "Select All");
+            $("#selectPageVisitors").text(visitorsToggle ? "Unselect All" : "Select All");
         }
 
         /* ========================================================
@@ -322,6 +345,7 @@
         /* ========================================================
            FORM SUBMIT (FIXED VERSION)
         ======================================================== */
+
         $("#campaignForm").validate({
             errorClass: "text-danger validation-error",
             rules: {
@@ -347,7 +371,7 @@
                 },
             },
 
-            submitHandler: function(form, event) {
+            submitHandler: async function(form, event) {
                 event.preventDefault();
 
                 if (selectedRecipients.size === 0) {
@@ -355,67 +379,109 @@
                     return;
                 }
 
+                // Disable submit button
+                $("#submitBtn").prop("disabled", true).text("Processing...");
+
+                let recipientArray = Array.from(selectedRecipients);
+                let chunkSize = 1000;
+                let total = recipientArray.length;
                 let formData = new FormData(form);
 
-                selectedRecipients.forEach(id => formData.append("recipients[]", id));
+                // Show modal
+                let progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                $("#modalUploadProgressBar").css("width", "0%").text("0%");
+                $("#modalProgressText").text(`0 of ${total} completed`);
+                $("#modalMessage").text("Uploading recipients, please wait...");
+                progressModal.show();
 
-                $.ajax({
-                    url: $("#campaignForm").attr("action"), // FIXED
-                    type: 'POST',
-                    data: formData,
-                    cache: false,
-                    processData: false,
-                    contentType: false,
-                    dataType: "json",
+                try {
+                    // Step 1: create campaign
+                    const campaignResponse = await $.ajax({
+                        url: $("#campaignForm").attr("action"),
+                        type: "POST",
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        global: true,
+                    });
 
-                    success: function(response) {
-                        if (response.status === true) {
-
-                            Swal.fire({
-                                icon: "success",
-                                title: "Campaign Created!",
-                                html: response.message,
-                                showCancelButton: true,
-                                confirmButtonText: "Add More",
-                                cancelButtonText: "Go to List"
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href =
-                                        "{{ route('campaigns.create') }}";
-                                } else {
-                                    window.location.href = "{{ route('campaigns.index') }}";
-                                }
-                            });
-
-                        } else if (response.status === "validation_error") {
-
-                            Swal.fire({
-                                icon: "error",
-                                title: "Validation Error",
-                                html: response.message
-                            });
-
-                        } else {
-
-                            Swal.fire({
-                                icon: "error",
-                                title: "Error",
-                                text: response.message || "Something went wrong."
-                            });
-
-                        }
-                    },
-
-                    error: function(xhr) {
+                    if (!campaignResponse.status) {
                         Swal.fire({
                             icon: "error",
-                            title: "Server Error",
-                            text: xhr.responseJSON?.message || "Please try again later."
+                            title: "Error",
+                            text: campaignResponse.message
                         });
+                        $("#submitBtn").prop("disabled", false).text("Create Campaign");
+                        progressModal.hide();
+                        return;
                     }
-                });
+
+                    let campaignId = campaignResponse.campaign_id;
+                    let completed = 0;
+
+                    // Step 2: send recipients chunk by chunk
+                    for (let i = 0; i < total; i += chunkSize) {
+                        let chunk = recipientArray.slice(i, i + chunkSize);
+
+                        await $.ajax({
+                            url: "{{ route('campaigns.addRecipients') }}",
+                            type: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                campaign_id: campaignId,
+                                recipients: JSON.stringify(chunk),
+                            },
+                            global: false,
+                        });
+
+                        completed += chunk.length;
+                        let percent = Math.round((completed / total) * 100);
+                        $("#modalUploadProgressBar").css("width", percent + "%").text(percent + "%");
+                        $("#modalProgressText").text(`${completed} of ${total} completed`);
+                    }
+
+                    // Success alert
+                    Swal.fire({
+                        icon: "success",
+                        title: "Campaign Saved!",
+                        text: "All recipients processed successfully.",
+                    }).then(() => {
+                        // Reset form
+                        form.reset();
+
+                        // Clear selectedRecipients
+                        selectedRecipients.clear();
+
+                        // Uncheck all checkboxes
+                        $(".recipient-checkbox").prop("checked", false);
+
+                        // Update selected count
+                        updateSelectedCount();
+
+                        // Hide progress modal
+                        progressModal.hide();
+
+                        // Re-enable submit button
+                        $("#submitBtn").prop("disabled", false).text(`Create Campaign`);
+                    });
+
+                } catch (err) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: err.responseJSON?.message || "Something went wrong!"
+                    });
+
+                    // Re-enable submit button and hide modal in case of error
+                    $("#submitBtn").prop("disabled", false).text("Create Campaign");
+                    progressModal.hide();
+                }
             }
         });
+
+
+
 
         $.validator.addMethod("futureDate", function(value, element) {
             if (!value) return true; // optional field

@@ -27,7 +27,7 @@
             <ul class="sidebar-menu">
 
                 <li class="sidebar-menu__item">
-                    <a href="{{ route('dashboard') }}" class="sidebar-menu__link">
+                    <a href="{{ route(Auth::user()->role . '.dashboard') }}" class="sidebar-menu__link">
                         <span class="icon"><i class="ph ph-squares-four"></i></span>
                         <span class="text">Dashboard</span>
                     </a>

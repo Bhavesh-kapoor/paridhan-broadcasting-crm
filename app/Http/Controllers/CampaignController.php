@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CampaignRequest;
+use App\Jobs\ProcessRecipientsJob;
+use App\Models\Campaign;
 use App\Services\CampaignService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -22,9 +24,10 @@ class CampaignController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        $campaigns = $this->campaignService->getAllCampaigns($filters);
+        // $campaigns = $this->campaignService->getAllCampaigns($filters);
+        // 'campaigns',
 
-        return view('campaigns.index', compact('campaigns', 'filters'));
+        return view('campaigns.index', compact('filters'));
     }
 
     /**
@@ -85,15 +88,39 @@ class CampaignController extends Controller
     public function store(CampaignRequest $request): JsonResponse
     {
         try {
-            $this->campaignService->createCampaign($request->validated());
+            $campaign = $this->campaignService->createCampaign($request->validated());
             return response()->json([
                 'status' => true,
-                'message' => 'Campaign created successfully!'
+                'message' => 'Campaign created successfully!',
+                'campaign_id' => $campaign->id
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to create campaign: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function addRecipients(Request $request)
+    {
+        $request->validate([
+            'campaign_id' => 'required|exists:campaigns,id',
+            'recipients'  => 'required|string',
+        ]);
+        try {
+            dispatch(new ProcessRecipientsJob(
+                $request->campaign_id,
+                json_decode($request->recipients, true),
+                $request->operation_type ?? false
+            ));
+
+            return response()->json(['status' => true]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -179,6 +206,19 @@ class CampaignController extends Controller
         }
     }
 
+
+    public function progress($id)
+    {
+        $campaign = Campaign::with('recipients')->find($id);
+        $total = $campaign->recipients->count();
+        $sent = $campaign->recipients->where('status', 'sent')->count();
+        $failed = $campaign->recipients->where('status', 'failed')->count();
+        $pending = $total - ($sent + $failed);
+
+        $percent = $total ? round((($sent + $failed) / $total) * 100) : 0;
+
+        return response()->json(compact('total', 'sent', 'failed', 'pending', 'percent'));
+    }
     /**
      * Get contacts for campaign selection (AJAX)
      */
