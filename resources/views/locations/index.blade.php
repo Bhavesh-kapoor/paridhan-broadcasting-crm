@@ -228,7 +228,7 @@
                 $('.dataTables_wrapper .dt-buttons').append(
                     `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
                             class="lni lni-circle-plus mx-1"></i>Add New
-                        Visitor</button>`
+                        Location</button>`
                 );
             })
 
@@ -402,7 +402,8 @@
                             $('#loc_address').val(data.address);
                             $('#type').val(data.type);
                             if (data.image) {
-                                const imagePath = '/uploads/location_images/' + data.image;
+                                const imagePath = '/uploads/location_images/' + data
+                                    .image;
 
                                 document.getElementById('imagePreview').src = imagePath;
                                 document.getElementById('imagePreviewLink').href = imagePath;
