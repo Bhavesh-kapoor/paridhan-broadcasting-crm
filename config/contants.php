@@ -1,6 +1,6 @@
 <?php
 return [
-    'logo' => 'assets/logo/logo.png',
+    'logo' => env('APP_LOGO', 'assets/logo/logo.png'),
     'business_types' => [
         'Manufacturer' => 'Manufacturer',
         'Distributor' => 'Distributor',
