@@ -8,7 +8,8 @@
                 <div class="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0 p-0">
-                            <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role . '.dashboard') }}"><i class="bx bx-home-alt"></i></a>
+                            <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role . '.dashboard') }}"><i
+                                        class="bx bx-home-alt"></i></a>
                             </li>
                             <li class="breadcrumb-item active" aria-current="page">All Leads</li>
                         </ol>
@@ -303,19 +304,16 @@
                 dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
                     "<'row'<'col-12'tr>>" +
                     "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
-                buttons: [],
-
-
-                //  Correct place to append custom button
-                initComplete: function() {
-                    $('.dataTables_wrapper .dt-buttons').append(
-                        `<button type="button" class="btn btn-primary" id="addNewBtn">
-                      <i class="lni lni-circle-plus mx-1"></i>Add New Visitor
-                    </button>`
-                    );
-                }
+                buttons: []
 
             });
+
+            $(window).on('load', function() {
+                $('.dataTables_wrapper .dt-buttons').append(
+                    `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
+                            class="lni lni-circle-plus mx-1"></i>Add New</button>`
+                );
+            })
 
 
             // Show/hide fields based on status
@@ -576,8 +574,8 @@
                 <p><strong>Comment:</strong> ${item.comment}</p>
 
                 ${item.next_followup_date ? `
-                                                                                                                <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
-                                                                                                                <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
+                                                                                                                        <p class="mb-1"><strong>Next Follow-Up:</strong> ${item.next_followup_date}</p>
+                                                                                                                        <p class="mb-0"><strong>Time:</strong> ${item.next_followup_time}</p> ` : ""}
                 </div>
               </div>
              `;
