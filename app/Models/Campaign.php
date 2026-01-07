@@ -20,6 +20,7 @@ class Campaign extends Model
         'message',
         'type',
         'status',
+        'image',
         'scheduled_at',
         'sent_at',
     ];

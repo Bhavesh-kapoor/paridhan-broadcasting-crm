@@ -15,7 +15,7 @@
                             </h5>
                             <p class="text-muted mb-0 fs-9">Update your account password</p>
                         </div>
-                        <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-lg shadow-sm">
+                        <a href="{{ route(Auth::user()->role . '.dashboard')}}" class="btn btn-secondary btn-lg shadow-sm">
                             <i class="ph ph-arrow-left me-2"></i>Back to Dashboard
                         </a>
                     </div>
@@ -28,18 +28,18 @@
     <div class="row justify-content-center">
         <div class="col-lg-12">
             <div class="card border-0 shadow-sm" style="padding: 20px !important;">
-                
+
                 <div class="card-body p-4">
                     <form id="changePasswordForm" action="{{ route('admin.change-password.store') }}" method="POST">
                         @csrf
-                        
+
                         <!-- Current Password -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold text-dark mb-2">
                                 <i class="ph ph-lock me-2 text-muted"></i>Current Password <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input type="password" class="form-control" name="current_password" 
+                                <input type="password" class="form-control" name="current_password"
                                        id="current_password" placeholder="Enter your current password" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
                                     <i class="ph ph-eye" id="current_password_icon"></i>
@@ -53,7 +53,7 @@
                                 <i class="ph ph-lock-key me-2 text-muted"></i>New Password <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input type="password" class="form-control" name="new_password" 
+                                <input type="password" class="form-control" name="new_password"
                                        id="new_password" placeholder="Enter your new password" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
                                     <i class="ph ph-eye" id="new_password_icon"></i>
@@ -70,7 +70,7 @@
                                 <i class="ph ph-lock-key me-2 text-muted"></i>Confirm New Password <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input type="password" class="form-control" name="new_password_confirmation" 
+                                <input type="password" class="form-control" name="new_password_confirmation"
                                        id="new_password_confirmation" placeholder="Confirm your new password" required>
                                 <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password_confirmation')">
                                     <i class="ph ph-eye" id="new_password_confirmation_icon"></i>
@@ -122,7 +122,7 @@
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const icon = document.getElementById(inputId + '_icon');
-    
+
     if (input.type === 'password') {
         input.type = 'text';
         icon.className = 'ph ph-eye-slash';
@@ -135,7 +135,7 @@ function togglePassword(inputId) {
 // Form submission
 $('#changePasswordForm').on('submit', function(e) {
     e.preventDefault();
-    
+
     // Show loading state
     $('#submitBtn').prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Updating...');
 

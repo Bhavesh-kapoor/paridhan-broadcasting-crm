@@ -6,7 +6,7 @@ echo "Fixing Laravel Configuration Issues...\n\n";
 if (!file_exists('.env')) {
     echo "❌ .env file not found!\n";
     echo "📝 Creating .env file...\n";
-    
+
     $envContent = 'APP_NAME="Paridharan CRM"
 APP_ENV=local
 APP_KEY=base64:your-app-key-here
@@ -66,15 +66,15 @@ VITE_PUSHER_HOST="${PUSHER_HOST}"
 VITE_PUSHER_PORT="${PUSHER_PORT}"
 VITE_PUSHER_SCHEME="${PUSHER_SCHEME}"
 VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"';
-    
+
     if (file_put_contents('.env', $envContent)) {
-        echo "✅ .env file created successfully!\n";
+        echo " .env file created successfully!\n";
     } else {
         echo "❌ Failed to create .env file!\n";
         echo "Please create it manually with the content from env_setup.txt\n";
     }
 } else {
-    echo "✅ .env file exists\n";
+    echo " .env file exists\n";
 }
 
 // Step 2: Check if storage directory is writable
@@ -82,7 +82,7 @@ if (!is_writable('storage')) {
     echo "❌ Storage directory is not writable!\n";
     echo "Please make sure the storage directory has write permissions\n";
 } else {
-    echo "✅ Storage directory is writable\n";
+    echo " Storage directory is writable\n";
 }
 
 // Step 3: Check if bootstrap/cache directory is writable
@@ -90,7 +90,7 @@ if (!is_writable('bootstrap/cache')) {
     echo "❌ Bootstrap cache directory is not writable!\n";
     echo "Please make sure the bootstrap/cache directory has write permissions\n";
 } else {
-    echo "✅ Bootstrap cache directory is writable\n";
+    echo " Bootstrap cache directory is writable\n";
 }
 
 // Step 4: Generate a simple APP_KEY
@@ -102,9 +102,9 @@ echo "Generated APP_KEY: " . $appKey . "\n";
 if (file_exists('.env')) {
     $envContent = file_get_contents('.env');
     $envContent = str_replace('APP_KEY=base64:your-app-key-here', 'APP_KEY=' . $appKey, $envContent);
-    
+
     if (file_put_contents('.env', $envContent)) {
-        echo "✅ APP_KEY updated in .env file\n";
+        echo " APP_KEY updated in .env file\n";
     } else {
         echo "❌ Failed to update APP_KEY in .env file\n";
         echo "Please manually update APP_KEY in your .env file to: " . $appKey . "\n";
@@ -123,4 +123,3 @@ echo "- php artisan config:cache\n";
 echo "- php artisan route:cache\n";
 echo "- php artisan view:cache\n";
 echo "- php artisan optimize:clear\n";
-

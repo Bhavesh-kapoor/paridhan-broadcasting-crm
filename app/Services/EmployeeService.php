@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\DataTables;
 
 class EmployeeService
 {
@@ -18,11 +19,11 @@ class EmployeeService
         // Apply search filter
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('position', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('position', 'like', "%{$search}%");
             });
         }
 
@@ -38,6 +39,66 @@ class EmployeeService
         return $query->orderBy('created_at', 'desc')->paginate(10);
     }
 
+
+    public function getAllEmployeesList(array $filters = [])
+    {
+        $query = user::where('role', 'employee');
+        // // Apply status filter
+        if (!empty($filters['filter_status'])) {
+            if ($filters['filter_status'] === 'active') {
+                $query->active();
+            } elseif ($filters['filter_status'] === 'inactive') {
+                $query->inactive();
+            }
+        }
+        $result = $query->orderBy('created_at', 'desc');
+        // dd($result);
+
+        return DataTables::of($result)
+            ->addIndexColumn()
+            ->addColumn('action', function ($employee) {
+                $id = $employee->id;
+                $button = '';
+                $status = $employee->status;
+                $button_class = 'success';
+                $button_icon_class = 'pause';
+                if ($status === 'inactive') {
+                    $button_class = 'warning';
+                    $button_icon_class = 'play';
+                }
+
+                $button .= ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('employees.edit', $id) . '" updateRoute="' . route('employees.update', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="Edit Employee">
+                <i class="bx bx-pencil"></i>
+                </button>';
+                $button .= '<button class="btn btn-' . $button_class . ' btn-sm deactivateBtn mx-1" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Change Status">
+                    <i class="bx bx-' . $button_icon_class . '"></i>
+                </button>';
+                $button .= ' <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete Employee">
+                    <i class="bx bx-trash"></i>
+                </button>';
+                return $button;
+            })
+
+
+            ->addColumn('full_status', function ($employee) {
+                $status = $employee->status;
+                $button_class = 'success';
+                $button_icon_class = 'check-circle';
+                if ($status === 'inactive') {
+                    $button_icon_class = 'pause-circle';
+                    $button_class = 'warning';
+                }
+
+                return ' <span
+                                                    class="badge bg-' . $button_class . ' px-3 py-2">
+                                                    <i
+                                                        class="bx bx-' . $button_icon_class . ' me-1"></i>
+                                                   ' . ucfirst($employee->status) . '
+                                                </span>';
+            })
+            ->rawColumns(['action', 'full_status'])
+            ->make(true);
+    }
     /**
      * Get employee by ID
      */
@@ -52,7 +113,7 @@ class EmployeeService
     public function createEmployee($data)
     {
         DB::beginTransaction();
-        
+
         try {
             $employee = User::create([
                 'name' => $data['name'],
@@ -82,10 +143,9 @@ class EmployeeService
     public function updateEmployee($id, $data)
     {
         DB::beginTransaction();
-        
+
         try {
             $employee = $this->getEmployeeById($id);
-            
             $updateData = [
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -118,11 +178,11 @@ class EmployeeService
     public function deleteEmployee($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $employee = $this->getEmployeeById($id);
             $employee->delete();
-            
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -137,12 +197,12 @@ class EmployeeService
     public function toggleStatus($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $employee = $this->getEmployeeById($id);
             $newStatus = $employee->status === 'active' ? 'inactive' : 'active';
             $employee->update(['status' => $newStatus]);
-            
+
             DB::commit();
             return $employee;
         } catch (\Exception $e) {
@@ -157,18 +217,18 @@ class EmployeeService
     public function changePassword($id, $currentPassword, $newPassword)
     {
         DB::beginTransaction();
-        
+
         try {
             $employee = $this->getEmployeeById($id);
-            
+
             // Verify current password
             if (!Hash::check($currentPassword, $employee->password)) {
                 throw new \Exception('Current password is incorrect.');
             }
-            
+
             // Update password
             $employee->update(['password' => Hash::make($newPassword)]);
-            
+
             DB::commit();
             return $employee;
         } catch (\Exception $e) {

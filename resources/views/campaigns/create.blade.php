@@ -1,288 +1,644 @@
-@extends("layout.master")
-@section('title','Create Campaign')
+@extends('layouts.app_layout')
 
-@section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center" style="margin-left: 20px;padding:10px 2px">
-                        <div>
-                            <h5 class="mb-2 fw-bold text-dark">
-                                <i class="ph ph-plus-circle me-3 text-primary"></i>Create New Campaign
-                            </h5>
-                            <p class="text-muted mb-0 fs-9">Create and configure your marketing campaign</p>
+@section('style')
+    <style>
+        .recipient-list {
+            max-height: 18rem;
+            overflow-y: auto;
+        }
+
+        .small-note {
+            font-size: .85rem;
+        }
+
+        .recipient-list .form-check {
+            margin-left: 5px;
+        }
+    </style>
+@endsection
+
+@section('wrapper')
+    <div class="page-wrapper">
+        <div class="page-content">
+
+            <!-- Breadcrumb -->
+            <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                <div class="breadcrumb-title pe-3">Campaign Management</div>
+                <div class="ps-3">
+                    <ol class="breadcrumb mb-0 p-0">
+                        <li class="breadcrumb-item">
+                            <a href="{{ route(Auth::user()->role . '.dashboard')}}"><i class="bx bx-home-alt"></i></a>
+                        </li>
+                        <li class="breadcrumb-item active">Create Campaign</li>
+                    </ol>
+                </div>
+
+                <div class="ms-auto">
+                    <a href="{{ route('campaigns.index') }}" class="btn btn-primary d-flex align-items-center">
+                        <i class="bx bxs-megaphone"></i>&nbsp;All Campaigns
+                    </a>
+                </div>
+            </div>
+
+            <!-- Create Campaign Form -->
+            <form id="campaignForm" action="{{ route('campaigns.store') }}" method="POST">
+                @csrf
+
+
+
+                <div class="row mt-4">
+                    <!-- Left Side: Campaign Info -->
+                    <div class="col-lg-7">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="fw-semibold text-dark d-flex align-items-center mb-0 py-2">
+                                    <i class="bx bxs-megaphone text-primary me-2"></i>Campaign Information
+                                </h6>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="row g-3">
+
+                                    <div class="col-12">
+                                        <label class="form-label">Campaign Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="name"
+                                            placeholder="Enter campaign name">
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Campaign Subject <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="subject"
+                                            placeholder="Enter campaign subject">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Campaign Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="type" id="campaignType">
+                                            <option value="">Select type</option>
+                                            <option value="email">Email Campaign</option>
+                                            <option value="sms">SMS Campaign</option>
+                                            <option value="whatsapp">WhatsApp Campaign</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Schedule Date (Optional)</label>
+                                        <input type="datetime-local" class="form-control" name="scheduled_at">
+                                    </div>
+
+                                    <!-- WhatsApp Template Selection -->
+                                    <div class="col-12" id="templateSelectionDiv" style="display: none;">
+                                        <label class="form-label">WhatsApp Template <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <select class="form-select" name="whatsapp_template" id="whatsappTemplate">
+                                                <option value="">Select template...</option>
+                                            </select>
+                                            <button type="button" class="btn btn-outline-primary" id="refreshTemplatesBtn" title="Refresh templates">
+                                                <i class="bx bx-refresh"></i>
+                                            </button>
+                                            <a href="{{ route('whatsapp-templates.index') }}" target="_blank" class="btn btn-outline-info" title="Manage templates">
+                                                <i class="bx bx-cog"></i>
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="bx bx-info-circle me-1"></i>
+                                            Select an approved template. 
+                                            <a href="{{ route('whatsapp-templates.index') }}" target="_blank">Sync templates from API</a> if none available.
+                                        </small>
+                                        <div id="templatePreview" class="mt-2 p-3 bg-light rounded" style="display: none;">
+                                            <strong>Template Preview:</strong>
+                                            <div id="templatePreviewContent" class="mt-2"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Message <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" name="message" rows="7" placeholder="Enter campaign message..."></textarea>
+                                        <small class="text-muted"><i class="bx bx-info-circle me-1"></i>Max 5000
+                                            characters</small>
+                                    </div>
+
+                                </div>
+                            </div>
                         </div>
-                        <a href="{{ route('campaigns.index') }}" class="btn btn-secondary btn-lg shadow-sm">
-                            <i class="ph ph-arrow-left me-2"></i>Back to Campaigns
-                        </a>
                     </div>
+
+                    <!-- Right Side: Recipients -->
+                    <div class="col-lg-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="fw-semibold text-dark d-flex align-items-center mb-0 py-2">
+                                    <i class="lni lni-users text-primary me-2"></i>Select Recipients
+                                </h6>
+                            </div>
+
+                            <div class="card-body">
+
+                                <!-- Tabs -->
+                                <ul class="nav nav-tabs nav-fill mb-3" id="recipientTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="exhibitors-tab" data-bs-toggle="tab"
+                                            data-bs-target="#exhibitorsTab" type="button" role="tab"
+                                            aria-controls="exhibitorsTab" aria-selected="true">
+                                            <i class="bx bx-store-alt"></i> Exhibitors
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="visitors-tab" data-bs-toggle="tab"
+                                            data-bs-target="#visitorsTab" type="button" role="tab"
+                                            aria-controls="visitorsTab" aria-selected="false">
+                                            <i class="bx bx-user"></i> Visitors
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content">
+
+                                    <!-- Exhibitors TAB -->
+                                    <div class="tab-pane fade show active" id="exhibitorsTab" role="tabpanel"
+                                        aria-labelledby="exhibitors-tab">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select exhibitors:</span>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    id="selectPageExhibitors">Select All</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="exhibitorsContainer" class="recipient-list"></div>
+                                    </div>
+
+                                    <!-- Visitors TAB -->
+                                    <div class="tab-pane fade" id="visitorsTab" role="tabpanel"
+                                        aria-labelledby="visitors-tab">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select visitors:</span>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    id="selectPageVisitors">Select All</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="visitorsContainer" class="recipient-list"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Selected Count -->
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="fw-semibold">Selected Recipients:</span>
+                                            <div class="small-note text-muted">Selections persist when you change pages
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-primary align-self-center" id="selectedCount">0</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="col-12">
+                        <div class="card ">
+                            <div class="card-body d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary d-flex align-items-center" id="submitBtn">
+                                    <i class="fadeIn animated bx bx-paper-plane"></i>&nbsp;Create Campaign
+                                </button>
+
+                                <a href="{{ route('campaigns.index') }}"
+                                    class="btn btn-outline-danger d-flex align-items-center">
+                                    <i class="bx bx-x"></i>&nbsp;Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+        data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Uploading Recipients</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage" class="text-center mb-3">Uploading recipients, please wait...</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar"
+                            id="modalUploadProgressBar" style="width: 0%">0%</div>
+                    </div>
+                    <div class="mt-2 text-center" id="modalProgressText">0 of 0 completed</div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Campaign Form -->
-    <form id="campaignForm" action="{{ route('campaigns.store') }}" method="POST">
-        @csrf
-        <div class="row">
-            <!-- Campaign Details Section -->
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-3">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-megaphone me-2 text-primary"></i>Campaign Information
-                        </h6>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            <!-- Campaign Name -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>Campaign Name <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" name="name" placeholder="Enter campaign name" required>
-                            </div>
-
-                            <!-- Campaign Subject -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-envelope me-2 text-muted"></i>Campaign Subject <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" name="subject" placeholder="Enter campaign subject" required>
-                            </div>
-
-                            <!-- Campaign Type -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-tag me-2 text-muted"></i>Campaign Type <span class="text-danger">*</span>
-                                </label>
-                                <select class="form-select" name="type" required>
-                                    <option value="">Select campaign type</option>
-                                    <option value="email">Email Campaign</option>
-                                    <option value="sms">SMS Campaign</option>
-                                    <option value="whatsapp">WhatsApp Campaign</option>
-                                </select>
-                            </div>
-
-                            <!-- Scheduled Date -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-calendar me-2 text-muted"></i>Schedule Date (Optional)
-                                </label>
-                                <input type="datetime-local" class="form-control" name="scheduled_at">
-                            </div>
-
-                            <!-- Campaign Message -->
-                            <div class="col-12">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    <i class="ph ph-chat-circle-text me-2 text-muted"></i>Campaign Message <span class="text-danger">*</span>
-                                </label>
-                                <textarea class="form-control" name="message" rows="8" placeholder="Enter your campaign message..." required></textarea>
-                                <div class="form-text">
-                                    <i class="ph ph-info me-1"></i>Maximum 5000 characters allowed
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recipients Selection Section -->
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-light border-0 py-3">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-users me-2 text-primary"></i>Select Recipients
-                        </h6>
-                    </div>
-                    <div class="card-body p-4">
-                        <!-- Recipient Type Tabs -->
-                        <ul class="nav nav-tabs nav-fill mb-3" id="recipientTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="exhibitors-tab" data-bs-toggle="tab" data-bs-target="#exhibitors" type="button" role="tab">
-                                    <i class="ph ph-storefront me-1"></i>Exhibitors
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="visitors-tab" data-bs-toggle="tab" data-bs-target="#visitors" type="button" role="tab">
-                                    <i class="ph ph-user me-1"></i>Visitors
-                                </button>
-                            </li>
-                        </ul>
-
-                        <!-- Tab Content -->
-                        <div class="tab-content" id="recipientTabsContent">
-                            <!-- Exhibitors Tab -->
-                            <div class="tab-pane fade show active" id="exhibitors" role="tabpanel">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-muted small">Select exhibitors to include:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllExhibitors()">
-                                            Select All
-                                        </button>
-                                    </div>
-                                    <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
-                                        @forelse($exhibitors as $exhibitor)
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox" 
-                                                   name="recipients[]" value="{{ $exhibitor->id }}" 
-                                                   id="exhibitor_{{ $exhibitor->id }}">
-                                            <label class="form-check-label small" for="exhibitor_{{ $exhibitor->id }}">
-                                                <div class="d-flex flex-column">
-                                                    <span class="fw-semibold">{{ $exhibitor->name }}</span>
-                                                    <small class="text-muted">{{ $exhibitor->email }} • {{ $exhibitor->location }}</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                        @empty
-                                        <div class="text-center py-3">
-                                            <i class="ph ph-storefront text-muted" style="font-size: 2rem;"></i>
-                                            <p class="text-muted mt-2 mb-0">No exhibitors found</p>
-                                        </div>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Visitors Tab -->
-                            <div class="tab-pane fade" id="visitors" role="tabpanel">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-muted small">Select visitors to include:</span>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllVisitors()">
-                                            Select All
-                                        </button>
-                                    </div>
-                                    <div class="recipient-list" style="max-height: 300px; overflow-y: auto;">
-                                        @forelse($visitors as $visitor)
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input recipient-checkbox" type="checkbox" 
-                                                   name="recipients[]" value="{{ $visitor->id }}" 
-                                                   id="visitor_{{ $visitor->id }}">
-                                            <label class="form-check-label small" for="visitor_{{ $visitor->id }}">
-                                                <div class="d-flex flex-column">
-                                                    <span class="fw-semibold">{{ $visitor->name }}</span>
-                                                    <small class="text-muted">{{ $visitor->phone }} • {{ $visitor->location }}</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                        @empty
-                                        <div class="text-center py-3">
-                                            <i class="ph ph-user text-muted" style="font-size: 2rem;"></i>
-                                            <p class="text-muted mt-2 mb-0">No visitors found</p>
-                                        </div>
-                                        @endforelse
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipient Summary -->
-                        <div class="border-top pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-semibold text-dark">Selected Recipients:</span>
-                                <span class="badge bg-primary" id="selectedCount">0</span>
-                            </div>
-                            <div class="text-muted small">
-                                <i class="ph ph-info me-1"></i>At least one recipient must be selected
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campaign Actions -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                                <i class="ph ph-check-circle me-2"></i>Create Campaign
-                            </button>
-                            <a href="{{ route('campaigns.index') }}" class="btn btn-secondary">
-                                <i class="ph ph-x me-2"></i>Cancel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
 @endsection
 
-@push('scripts')
-<script>
-// Update selected count when checkboxes change
-$('.recipient-checkbox').on('change', function() {
-    updateSelectedCount();
-});
+@section('script')
+    <script>
+        /* ========================================================
+                                                           GLOBAL STATE
+                                                        ======================================================== */
+        let selectedRecipients = new Set();
 
-function updateSelectedCount() {
-    const selectedCount = $('.recipient-checkbox:checked').length;
-    $('#selectedCount').text(selectedCount);
-}
+        let exhibitorsToggle = false;
+        let visitorsToggle = false;
 
-function selectAllExhibitors() {
-    $('#exhibitors .recipient-checkbox').prop('checked', true);
-    updateSelectedCount();
-}
+        /* ========================================================
+           UPDATE SELECT COUNT
+        ======================================================== */
+        function updateSelectedCount() {
+            $("#selectedCount").text(selectedRecipients.size);
 
-function selectAllVisitors() {
-    $('#visitors .recipient-checkbox').prop('checked', true);
-    updateSelectedCount();
-}
-
-// Form submission
-$('#campaignForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    const selectedRecipients = $('.recipient-checkbox:checked').length;
-    if (selectedRecipients === 0) {
-        showNotification('error', 'Please select at least one recipient for the campaign.');
-        return;
-    }
-
-    // Show loading state
-    $('#submitBtn').prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Creating...');
-
-    // Submit form via AJAX
-    $.ajax({
-        url: $(this).attr('action'),
-        method: 'POST',
-        data: $(this).serialize(),
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                showNotification('success', response.message);
-                setTimeout(() => {
-                    window.location.href = response.redirect;
-                }, 1000);
-            }
-        },
-        error: function(xhr) {
-            const response = xhr.responseJSON;
-            if (response.errors) {
-                let errorMessage = 'Please fix the following errors:\n';
-                Object.keys(response.errors).forEach(key => {
-                    errorMessage += `• ${response.errors[key][0]}\n`;
-                });
-                showNotification('error', errorMessage);
-            } else {
-                showNotification('error', response.message || 'Something went wrong!');
-            }
-        },
-        complete: function() {
-            // Reset loading state
-            $('#submitBtn').prop('disabled', false).html('<i class="ph ph-check-circle me-2"></i>Create Campaign');
+           $("#selectPageExhibitors").text(exhibitorsToggle ? "Unselect All" : "Select All");
+            $("#selectPageVisitors").text(visitorsToggle ? "Unselect All" : "Select All");
         }
-    });
-});
 
-// Initialize selected count
-updateSelectedCount();
-</script>
-@endpush
+        /* ========================================================
+           LOAD EXHIBITORS
+        ======================================================== */
+        function loadExhibitors(page = 1) {
+            $.get("{{ route('ajax.exhibitors') }}", {
+                page
+            }, function(html) {
+                $("#exhibitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        /* ========================================================
+           LOAD VISITORS
+        ======================================================== */
+        function loadVisitors(page = 1) {
+            $.get("{{ route('ajax.visitors') }}", {
+                page
+            }, function(html) {
+                $("#visitorsContainer").html(html);
+                restoreSelections();
+            });
+        }
+
+        /* ========================================================
+           RESTORE SELECTIONS AFTER PAGINATION
+        ======================================================== */
+        function restoreSelections() {
+            $(".recipient-checkbox").each(function() {
+                const id = String($(this).data("id"));
+                $(this).prop("checked", selectedRecipients.has(id));
+            });
+
+            updateSelectedCount();
+        }
+
+        /* ========================================================
+           SINGLE CHECKBOX
+        ======================================================== */
+        $(document).on("change", ".recipient-checkbox", function() {
+            const id = String($(this).data("id"));
+            const type = $(this).data("type");
+
+            if ($(this).is(":checked")) {
+                selectedRecipients.add(id);
+            } else {
+                selectedRecipients.delete(id);
+
+                if (type === "exhibitor") exhibitorsToggle = false;
+                if (type === "visitor") visitorsToggle = false;
+            }
+
+            updateSelectedCount();
+        });
+
+        /* ========================================================
+           SELECT ALL EXHIBITORS
+        ======================================================== */
+        $("#selectPageExhibitors").on("click", function() {
+            exhibitorsToggle = !exhibitorsToggle;
+
+            $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
+                data.forEach(id => {
+                    if (exhibitorsToggle) selectedRecipients.add(String(id));
+                    else selectedRecipients.delete(String(id));
+                });
+
+                restoreSelections();
+                updateSelectedCount();
+            });
+        });
+
+        /* ========================================================
+           SELECT ALL VISITORS
+        ======================================================== */
+        $("#selectPageVisitors").on("click", function() {
+            visitorsToggle = !visitorsToggle;
+
+            $.get("{{ route('ajax.visitors.all') }}", function(data) {
+                data.forEach(id => {
+                    if (visitorsToggle) selectedRecipients.add(String(id));
+                    else selectedRecipients.delete(String(id));
+                });
+
+                restoreSelections();
+                updateSelectedCount();
+            });
+        });
+
+        /* ========================================================
+           PAGINATION CLICK
+        ======================================================== */
+        $(document).on("click", ".recipient-list .pagination a", function(e) {
+            e.preventDefault();
+            const page = new URL($(this).attr("href")).searchParams.get("page") || 1;
+
+            if ($("#exhibitors-tab").hasClass("active")) {
+                loadExhibitors(page);
+            } else {
+                loadVisitors(page);
+            }
+        });
+
+        /* ========================================================
+           FORM SUBMIT (FIXED VERSION)
+        ======================================================== */
+
+        $("#campaignForm").validate({
+            errorClass: "text-danger validation-error",
+            rules: {
+                name: {
+                    required: true,
+                    minlength: 3
+                },
+                subject: {
+                    required: true,
+                    minlength: 3
+                },
+                type: {
+                    required: true
+                },
+                message: {
+                    required: true,
+                    minlength: 5,
+                    maxlength: 5000
+                },
+                scheduled_at: {
+                    required: false,
+                    futureDate: true
+                },
+            },
+
+            submitHandler: async function(form, event) {
+                event.preventDefault();
+
+                if (selectedRecipients.size === 0) {
+                    toastr.error("Please select at least one recipient.");
+                    return;
+                }
+
+                // Disable submit button
+                $("#submitBtn").prop("disabled", true).text("Processing...");
+
+                let recipientArray = Array.from(selectedRecipients);
+                let chunkSize = 1000;
+                let total = recipientArray.length;
+                let formData = new FormData(form);
+
+                // Show modal
+                let progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                $("#modalUploadProgressBar").css("width", "0%").text("0%");
+                $("#modalProgressText").text(`0 of ${total} completed`);
+                $("#modalMessage").text("Uploading recipients, please wait...");
+                progressModal.show();
+
+                try {
+                    // Step 1: create campaign
+                    const campaignResponse = await $.ajax({
+                        url: $("#campaignForm").attr("action"),
+                        type: "POST",
+                        data: formData,
+                        cache: false,
+                        processData: false,
+                        contentType: false,
+                        global: true,
+                    });
+
+                    if (!campaignResponse.status) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: campaignResponse.message
+                        });
+                        $("#submitBtn").prop("disabled", false).text("Create Campaign");
+                        progressModal.hide();
+                        return;
+                    }
+
+                    let campaignId = campaignResponse.campaign_id;
+                    let completed = 0;
+
+                    // Step 2: send recipients chunk by chunk
+                    for (let i = 0; i < total; i += chunkSize) {
+                        let chunk = recipientArray.slice(i, i + chunkSize);
+
+                        await $.ajax({
+                            url: "{{ route('campaigns.addRecipients') }}",
+                            type: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                campaign_id: campaignId,
+                                recipients: JSON.stringify(chunk),
+                            },
+                            global: false,
+                        });
+
+                        completed += chunk.length;
+                        let percent = Math.round((completed / total) * 100);
+                        $("#modalUploadProgressBar").css("width", percent + "%").text(percent + "%");
+                        $("#modalProgressText").text(`${completed} of ${total} completed`);
+                    }
+
+                    // Success alert
+                    Swal.fire({
+                        icon: "success",
+                        title: "Campaign Saved!",
+                        text: "All recipients processed successfully.",
+                    }).then(() => {
+                        // Reset form
+                        form.reset();
+
+                        // Clear selectedRecipients
+                        selectedRecipients.clear();
+
+                        // Uncheck all checkboxes
+                        $(".recipient-checkbox").prop("checked", false);
+
+                        // Update selected count
+                        updateSelectedCount();
+
+                        // Hide progress modal
+                        progressModal.hide();
+
+                        // Re-enable submit button
+                        $("#submitBtn").prop("disabled", false).text(`Create Campaign`);
+                    });
+
+                } catch (err) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: err.responseJSON?.message || "Something went wrong!"
+                    });
+
+                    // Re-enable submit button and hide modal in case of error
+                    $("#submitBtn").prop("disabled", false).text("Create Campaign");
+                    progressModal.hide();
+                }
+            }
+        });
+
+
+
+
+        $.validator.addMethod("futureDate", function(value, element) {
+            if (!value) return true; // optional field
+            let selected = new Date(value);
+            let now = new Date();
+            return selected > now;
+        }, "Selected date and time must be in the future.");
+        /* ========================================================
+           INITIAL LOAD
+        ======================================================== */
+        $(function() {
+            loadExhibitors();
+            loadVisitors();
+        });
+
+        /* ========================================================
+           WHATSAPP TEMPLATE MANAGEMENT
+        ======================================================== */
+        const base_url = "{{ url('/') }}";
+
+        // Show/hide template selection based on campaign type
+        $('#campaignType').on('change', function() {
+            if ($(this).val() === 'whatsapp') {
+                $('#templateSelectionDiv').slideDown();
+                loadApprovedTemplates();
+            } else {
+                $('#templateSelectionDiv').slideUp();
+                $('#whatsappTemplate').val('');
+                $('#templatePreview').hide();
+            }
+        });
+
+        // Load approved templates
+        function loadApprovedTemplates() {
+            $.ajax({
+                url: base_url + '/admin/ajax/approved-templates',
+                type: 'GET',
+                success: function(response) {
+                    if (response.status === true) {
+                        const select = $('#whatsappTemplate');
+                        select.html('<option value="">Select template...</option>');
+                        
+                        if (response.templates.length === 0) {
+                            select.html('<option value="">No approved templates available</option>');
+                            toastr.warning('No approved templates found. Please sync templates from API.');
+                        } else {
+                            response.templates.forEach(function(template) {
+                                select.append(`<option value="${template.name}">${template.name} (${template.category})</option>`);
+                            });
+                        }
+
+                        // Check if template was pre-selected from template management page
+                        const selectedTemplate = sessionStorage.getItem('selectedTemplate');
+                        if (selectedTemplate) {
+                            select.val(selectedTemplate);
+                            sessionStorage.removeItem('selectedTemplate');
+                            loadTemplatePreview(selectedTemplate);
+                        }
+                    } else {
+                        toastr.error(response.message || 'Failed to load templates');
+                    }
+                },
+                error: function() {
+                    toastr.error('Failed to load templates. Please try again.');
+                }
+            });
+        }
+
+        // Refresh templates
+        $('#refreshTemplatesBtn').on('click', function() {
+            const btn = $(this);
+            btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
+            
+            $.ajax({
+                url: base_url + '/admin/whatsapp-templates/sync',
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.status === true) {
+                        toastr.success(response.message || 'Templates synced successfully!');
+                        loadApprovedTemplates();
+                    } else {
+                        toastr.error(response.message || 'Failed to sync templates');
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'Failed to sync templates';
+                    toastr.error(error);
+                },
+                complete: function() {
+                    btn.prop('disabled', false).html('<i class="bx bx-refresh"></i>');
+                }
+            });
+        });
+
+        // Load template preview
+        $('#whatsappTemplate').on('change', function() {
+            const templateName = $(this).val();
+            if (templateName) {
+                loadTemplatePreview(templateName);
+            } else {
+                $('#templatePreview').hide();
+            }
+        });
+
+        function loadTemplatePreview(templateName) {
+            $.ajax({
+                url: base_url + '/admin/ajax/approved-templates',
+                type: 'GET',
+                success: function(response) {
+                    if (response.status === true) {
+                        const template = response.templates.find(t => t.name === templateName);
+                        if (template) {
+                            $('#templatePreviewContent').html(`
+                                <div><strong>Name:</strong> ${template.name}</div>
+                                <div><strong>Category:</strong> ${template.category}</div>
+                                <div><strong>Language:</strong> ${template.language.toUpperCase()}</div>
+                                <div class="mt-2"><strong>Body:</strong><br>${template.body_text || 'N/A'}</div>
+                            `);
+                            $('#templatePreview').slideDown();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Check if WhatsApp is pre-selected
+        if ($('#campaignType').val() === 'whatsapp') {
+            $('#templateSelectionDiv').show();
+            loadApprovedTemplates();
+        }
+    </script>
+@endsection

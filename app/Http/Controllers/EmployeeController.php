@@ -7,6 +7,7 @@ use App\Http\Requests\ChangePasswordRequest;
 use App\Services\EmployeeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class EmployeeController extends Controller
 {
@@ -20,18 +21,15 @@ class EmployeeController extends Controller
     /**
      * Display a listing of employees
      */
-    public function index(Request $request)
+    public function index(): View
     {
-        $filters = $request->only(['search', 'status']);
-        $employees = $this->employeeService->getAllEmployees($filters);
-        
-        return view('employees.index', compact('employees', 'filters'));
+        return view('employees.index');
     }
 
     /**
      * Show the form for creating a new employee
      */
-    public function create()
+    public function create(): View
     {
         return view('employees.create');
     }
@@ -42,16 +40,14 @@ class EmployeeController extends Controller
     public function store(EmployeeRequest $request): JsonResponse
     {
         try {
-            $employee = $this->employeeService->createEmployee($request->validated());
-            
+            $this->employeeService->createEmployee($request->validated());
             return response()->json([
-                'success' => true,
-                'message' => 'Employee created successfully!',
-                'redirect' => route('employees.index')
+                'status' => true,
+                'message' => 'Employee created successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to create employee: ' . $e->getMessage()
             ], 500);
         }
@@ -60,7 +56,7 @@ class EmployeeController extends Controller
     /**
      * Display the specified employee
      */
-    public function show($id)
+    public function show($id): View
     {
         $employee = $this->employeeService->getEmployeeById($id);
         return view('employees.show', compact('employee'));
@@ -69,10 +65,21 @@ class EmployeeController extends Controller
     /**
      * Show the form for editing the specified employee
      */
-    public function edit($id)
+    public function edit($id): JsonResponse
     {
-        $employee = $this->employeeService->getEmployeeById($id);
-        return view('employees.edit', compact('employee'));
+        try {
+            $employee = $this->employeeService->getEmployeeById($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'Employee fetched successfully!',
+                'data' => $employee,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to find employee: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -81,16 +88,14 @@ class EmployeeController extends Controller
     public function update(EmployeeRequest $request, $id): JsonResponse
     {
         try {
-            $employee = $this->employeeService->updateEmployee($id, $request->validated());
-            
+            $this->employeeService->updateEmployee($id, $request->validated());
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => 'Employee updated successfully!',
-                'redirect' => route('employees.index')
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to update employee: ' . $e->getMessage()
             ], 500);
         }
@@ -103,14 +108,13 @@ class EmployeeController extends Controller
     {
         try {
             $this->employeeService->deleteEmployee($id);
-            
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => 'Employee deleted successfully!'
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to delete employee: ' . $e->getMessage()
             ], 500);
         }
@@ -124,15 +128,14 @@ class EmployeeController extends Controller
         try {
             $employee = $this->employeeService->toggleStatus($id);
             $newStatus = $employee->status;
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => "Employee status changed to {$newStatus}!",
-                'newStatus' => $newStatus
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to toggle status: ' . $e->getMessage()
             ], 500);
         }
@@ -158,17 +161,26 @@ class EmployeeController extends Controller
                 $request->current_password,
                 $request->new_password
             );
-            
+
             return response()->json([
-                'success' => true,
+                'status' => true,
                 'message' => 'Password changed successfully!',
-                'redirect' => route('employees.index')
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'Failed to change password: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * server side rendoring data table
+     */
+
+    public function getAllEmployeesList(Request $request)
+    {
+        $filters = $request->only(['filter_status']);
+        return $this->employeeService->getAllEmployeesList($filters);
     }
 }

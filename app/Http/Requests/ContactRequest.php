@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class ContactRequest extends FormRequest
@@ -24,7 +26,7 @@ class ContactRequest extends FormRequest
     {
         $contactId = $this->route('contact');
         $type = $this->input('type', 'visitor');
-        
+
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'location' => ['required', 'string', 'max:255'],
@@ -64,5 +66,17 @@ class ContactRequest extends FormRequest
             'gst_number.unique' => 'This GST number is already registered.',
             'type.in' => 'Contact type must be either exhibitor or visitor.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        // Throw JSON response instead of HTML redirect
+        throw new HttpResponseException(response()->json([
+            'status' => 'validation_error',
+            'message' => $validator->errors()->all(),
+        ]));
     }
 }

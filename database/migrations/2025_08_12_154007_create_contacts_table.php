@@ -18,12 +18,17 @@ return new class extends Migration
             $table->string('phone')->unique()->nullable();
             $table->string('alternate_phone')->nullable();
             $table->string('location')->nullable();
+            $table->string('state')->nullable();
+            $table->string('city')->nullable();
             $table->string('product_type')->nullable();
             $table->string('brand_name')->nullable();
             $table->string('business_type')->nullable();
             $table->string('gst_number')->unique()->nullable();
             $table->string('type')->default('visitor');
             $table->timestamps();
+            $table->index('name');
+            $table->index('type'); //server-side filtering
+            $table->index('created_at'); //fast ordering
         });
     }
 
