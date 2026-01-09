@@ -48,6 +48,76 @@ class Campaign extends Model
         return $this->belongsToMany(Contacts::class, 'campaign_recipients', 'campaign_id', 'contact_id');
     }
 
+    // NEW relationships
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Get total leads generated from this campaign
+     */
+    public function getTotalLeadsGeneratedAttribute()
+    {
+        return $this->followUps()->count();
+    }
+
+    /**
+     * Get total bookings created from this campaign
+     */
+    public function getTotalBookingsCreatedAttribute()
+    {
+        return $this->bookings()->count();
+    }
+
+    /**
+     * Get total revenue from this campaign
+     */
+    public function getTotalRevenueAttribute()
+    {
+        return $this->bookings()
+            ->withRevenue()
+            ->sum('amount_paid');
+    }
+
+    /**
+     * Get conversion percentage (bookings / leads)
+     */
+    public function getConversionPercentageAttribute()
+    {
+        $leads = $this->total_leads_generated;
+        if ($leads === 0) {
+            return 0;
+        }
+        return round(($this->total_bookings_created / $leads) * 100, 2);
+    }
+
+    /**
+     * Get total messages sent
+     */
+    public function getTotalMessagesSentAttribute()
+    {
+        return $this->recipients()->where('status', 'sent')->count();
+    }
+
+    /**
+     * Scope: Get campaigns with revenue
+     */
+    public function scopeWithRevenue($query)
+    {
+        return $query->has('bookings');
+    }
+
     /**
      * Scope for draft campaigns
      */

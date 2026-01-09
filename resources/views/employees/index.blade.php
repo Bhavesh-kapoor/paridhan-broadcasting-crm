@@ -153,44 +153,72 @@
 
                             <!-- Security Information -->
                             <div class="col-12 mt-2">
-                                <h6 class="mb-3 fw-semibold d-flex align-items-center border-bottom py-2 ">
-                                    <i class="bx bx-shield"></i>&nbsp;Security Information
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="password" class="form-label">Password <span
-                                                    class="text-danger password-star">*</span>
-                                            </label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control" id="eml_password"
-                                                    name="password" placeholder="Enter password" autocomplete="off">
-                                                <span class="input-group-text cursor-pointer"
-                                                    onclick="togglePassword('eml_password')">
-                                                    <i class="bx bx-hide eml_password"></i>&nbsp;
-                                                </span>
+                                <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3 fw-semibold d-flex align-items-center">
+                                            <i class="bx bx-shield text-primary me-2"></i>Security Information
+                                        </h6>
+                                        
+                                        <!-- Password Update Toggle (for Edit Mode - Admin Only) -->
+                                        @if(auth()->user()->role == 'admin')
+                                        <div id="passwordUpdateToggle" class="mb-3" style="display: none;">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enablePasswordUpdate" 
+                                                    onchange="togglePasswordFields()">
+                                                <label class="form-check-label fw-semibold" for="enablePasswordUpdate">
+                                                    <i class="bx bx-lock-open me-1"></i>Update Password
+                                                </label>
                                             </div>
-                                            <div class="passwordInstruction">
-                                                <small class="form-text text-muted ">Password must be at
-                                                    least 8
-                                                    characters long.
-                                                </small>
-                                            </div>
+                                            <small class="text-muted d-block mt-1">Check this to change the employee's password</small>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="empl_password_confirmation" class="form-label">Confirm Password
-                                                <span class="text-danger confirm-star">*</span>
-                                            </label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control"
-                                                    id="empl_password_confirmation" name="password_confirmation" autocomplete="off"
-                                                    placeholder="Confirm password">
-                                                <span class="input-group-text cursor-pointer"
-                                                    onclick="togglePassword('empl_password_confirmation')">
-                                                    <i class="bx bx-hide empl_password_confirmation"></i>&nbsp;
-                                                </span>
+                                        @endif
+                                        
+                                        <div id="passwordFields">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="password" class="form-label fw-semibold">
+                                                            <i class="bx bx-key me-1"></i>Password 
+                                                            <span class="text-danger password-star">*</span>
+                                                        </label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light">
+                                                                <i class="bx bx-lock"></i>
+                                                            </span>
+                                                            <input type="password" class="form-control" id="eml_password"
+                                                                name="password" placeholder="Enter password" autocomplete="off">
+                                                            <span class="input-group-text cursor-pointer bg-light"
+                                                                onclick="togglePassword('eml_password')">
+                                                                <i class="bx bx-hide eml_password"></i>
+                                                            </span>
+                                                        </div>
+                                                        <div class="passwordInstruction mt-2">
+                                                            <small class="form-text text-muted">
+                                                                <i class="bx bx-info-circle me-1"></i>Password must be at least 8 characters long.
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="empl_password_confirmation" class="form-label fw-semibold">
+                                                            <i class="bx bx-key me-1"></i>Confirm Password
+                                                            <span class="text-danger confirm-star">*</span>
+                                                        </label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text bg-light">
+                                                                <i class="bx bx-lock"></i>
+                                                            </span>
+                                                            <input type="password" class="form-control"
+                                                                id="empl_password_confirmation" name="password_confirmation" autocomplete="off"
+                                                                placeholder="Confirm password">
+                                                            <span class="input-group-text cursor-pointer bg-light"
+                                                                onclick="togglePassword('empl_password_confirmation')">
+                                                                <i class="bx bx-hide empl_password_confirmation"></i>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -301,6 +329,30 @@
                 );
             })
 
+            // Toggle password fields for edit mode
+            function togglePasswordFields() {
+                const enableUpdate = $('#enablePasswordUpdate').is(':checked');
+                const isEditMode = $('#operation_type').val() === 'EDIT';
+                
+                if (isEditMode && enableUpdate) {
+                    $('#eml_password').prop('disabled', false).prop('required', true);
+                    $('#empl_password_confirmation').prop('disabled', false).prop('required', true);
+                    $('.password-star, .confirm-star').show();
+                } else if (isEditMode && !enableUpdate) {
+                    $('#eml_password').prop('disabled', true).prop('required', false).val('');
+                    $('#empl_password_confirmation').prop('disabled', true).prop('required', false).val('');
+                    $('.password-star, .confirm-star').hide();
+                } else {
+                    // Add mode - always enabled
+                    $('#eml_password').prop('disabled', false).prop('required', true);
+                    $('#empl_password_confirmation').prop('disabled', false).prop('required', true);
+                    $('.password-star, .confirm-star').show();
+                }
+                
+                // Re-validate form
+                $("#employeeForm").valid();
+            }
+
             // On click add button, open the modal
             $(document).on('click', '#addEmployeeBtn', function() {
                 document.getElementById("employeeForm").reset();
@@ -310,9 +362,18 @@
                 $("#hidden_id").val('');
                 $('#offcanvasEmployeeFormLabel').html('<i class="bx bx-plus"></i> Add New Employee');
                 $('#formSubmitBtn').html('<i class="bx bx-check-circle"></i> Create Employee');
-                $("#eml_password").prop('disabled', false);
-                $("#empl_password_confirmation").prop('disabled', false);
+                $("#eml_password").prop('disabled', false).prop('required', true);
+                $("#empl_password_confirmation").prop('disabled', false).prop('required', true);
+                @if(auth()->user()->role == 'admin')
                 $("#status").prop('disabled', false);
+                @else
+                $("#status").prop('disabled', true);
+                @endif
+                @if(auth()->user()->role == 'admin')
+                $('#passwordUpdateToggle').hide();
+                @endif
+                $('#enablePasswordUpdate').prop('checked', false);
+                $('.password-star, .confirm-star').show();
                 myOffcanvas.toggle();
             });
 
@@ -354,13 +415,17 @@
                     },
                     password: {
                         required: function() {
-                            return $('#operation_type').val() === 'ADD';
+                            const isAdd = $('#operation_type').val() === 'ADD';
+                            const isEditWithUpdate = $('#operation_type').val() === 'EDIT' && $('#enablePasswordUpdate').is(':checked');
+                            return isAdd || isEditWithUpdate;
                         },
                         minlength: 8
                     },
                     password_confirmation: {
                         required: function() {
-                            return $('#operation_type').val() === 'ADD';
+                            const isAdd = $('#operation_type').val() === 'ADD';
+                            const isEditWithUpdate = $('#operation_type').val() === 'EDIT' && $('#enablePasswordUpdate').is(':checked');
+                            return isAdd || isEditWithUpdate;
                         },
                         minlength: 8,
                         equalTo: "#eml_password"
@@ -418,6 +483,13 @@
                     var formData = new FormData(form);
                     const formAction = $('#form_action').val();
                     var operationType = $('#operation_type').val();
+                    
+                    // If edit mode and password update not enabled, remove password fields
+                    if (operationType == 'EDIT' && !$('#enablePasswordUpdate').is(':checked')) {
+                        formData.delete('password');
+                        formData.delete('password_confirmation');
+                    }
+                    
                     if (operationType == 'EDIT') {
                         formData.append('_method', 'PUT');
                     }
@@ -497,10 +569,27 @@
                             $('#status option[value="' + data.status + '"]').prop('selected',
                                 true);
 
-                            $("#eml_password").prop('disabled', true);
-                            $("#empl_password_confirmation").prop('disabled', true);
+                            // Password fields - disabled by default in edit mode
+                            $("#eml_password").prop('disabled', true).prop('required', false).val('');
+                            $("#empl_password_confirmation").prop('disabled', true).prop('required', false).val('');
+                            
+                            // Status field - only disable if not admin
+                            @if(auth()->user()->role == 'admin')
+                            $("#status").prop('disabled', false);
+                            @else
                             $("#status").prop('disabled', true);
-
+                            @endif
+                            
+                            // Show password update toggle for admins
+                            @if(auth()->user()->role == 'admin')
+                            $('#passwordUpdateToggle').show();
+                            $('#enablePasswordUpdate').prop('checked', false);
+                            $('.password-star, .confirm-star').hide();
+                            @else
+                            $('#passwordUpdateToggle').hide();
+                            $('#enablePasswordUpdate').prop('checked', false);
+                            $('.password-star, .confirm-star').hide();
+                            @endif
 
                             $('#offcanvasEmployeeFormLabel').html(
                                 '<i class="bx bx-edit"></i> Edit Employee');

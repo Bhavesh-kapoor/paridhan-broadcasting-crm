@@ -17,12 +17,10 @@ class LocationMngtTableDetail extends Model
     protected $table = 'location_mngt_table_details';
 
     /**
-     * The primary key type is ULID.
-     *
-     * @var string
+     * The primary key type is auto-increment integer.
      */
-    protected $keyType = 'string';
-    public $incrementing = false;
+    protected $keyType = 'int';
+    public $incrementing = true;
 
     /**
      * The attributes that are mass assignable.

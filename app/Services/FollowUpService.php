@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Booking;
 use App\Models\FollowUp;
+use App\Services\ConversationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
@@ -13,6 +14,12 @@ use Illuminate\Support\Str;
 
 class FollowUpService
 {
+    protected ConversationService $conversationService;
+
+    public function __construct(ConversationService $conversationService)
+    {
+        $this->conversationService = $conversationService;
+    }
     public function getFollowUpData($phone)
     {
         // ===========================
@@ -121,33 +128,175 @@ class FollowUpService
 
     public function create(array $data)
     {
-        // 1️⃣ Save follow-up
-        $followup = FollowUp::create([
-            'phone'             => $data['hidden_id'],  // phone number
-            'status'            => $data['status'],
-            'comment'           => $data['comment'],
-            'next_followup_date' => $data['next_followup_date'] ?? null,
-            'next_followup_time' => $data['next_followup_time'] ?? null,
-            'employee_id'       => auth()->id(),
-        ]);
+        DB::beginTransaction();
+        try {
+            // Find campaign recipient if campaign_id and visitor_id/phone are provided
+            $campaignRecipientId = null;
+            if (!empty($data['campaign_id'])) {
+                $visitorId = $data['visitor_id'] ?? null;
+                $phone = $data['hidden_id'] ?? null;
+                
+                // Try to find by visitor_id first
+                if ($visitorId) {
+                    $campaignRecipient = \App\Models\CampaignRecipient::where('campaign_id', $data['campaign_id'])
+                        ->where('contact_id', $visitorId)
+                        ->first();
+                    if ($campaignRecipient) {
+                        $campaignRecipientId = $campaignRecipient->id;
+                    }
+                }
+                
+                // If not found, try by phone
+                if (!$campaignRecipientId && $phone) {
+                    $campaignRecipient = \App\Models\CampaignRecipient::where('campaign_id', $data['campaign_id'])
+                        ->where('phone', $phone)
+                        ->first();
+                    if ($campaignRecipient) {
+                        $campaignRecipientId = $campaignRecipient->id;
+                        // Also set visitor_id if not set
+                        if (!$data['visitor_id'] && $campaignRecipient->contact_id) {
+                            $data['visitor_id'] = $campaignRecipient->contact_id;
+                        }
+                    }
+                }
+            }
 
-        // 2️⃣ If Materialised → store in bookings table
-        if ($data['status'] === 'materialised') {
-
-            Booking::create([
-                'id'               => (string) Str::ulid(),
-                'phone'            => $data['hidden_id'], // hidden_id = phone
-                'booking_date'     => $data['booking_date'],
-                'booking_location' => $data['booking_location'],
-                'table_no'         => $data['table_no'],
-                'price'            => $data['price'],
-                'amount_status'    => $data['amount_status'],
-                'amount_paid'      => $data['amount_paid'],
-                'employee_id'      => auth()->id(),
+            // 1️⃣ Save follow-up
+            $followup = FollowUp::create([
+                'phone'             => $data['hidden_id'],  // phone number
+                'status'            => $data['status'],
+                'comment'           => $data['comment'],
+                'next_followup_date' => $data['next_followup_date'] ?? null,
+                'next_followup_time' => $data['next_followup_time'] ?? null,
+                'employee_id'       => auth()->id(),
+                // NEW: Add context fields
+                'exhibitor_id'      => $data['exhibitor_id'] ?? null,
+                'visitor_id'        => $data['visitor_id'] ?? null,
+                'location_id'       => $data['location_id'] ?? null,
+                'table_id'          => $data['table_id'] ?? null,
+                'campaign_id'       => $data['campaign_id'] ?? null,
             ]);
-        }
 
-        return $followup;
+            // Auto-populate visitor_id from phone if not provided
+            if (empty($followup->visitor_id) && !empty($followup->phone)) {
+                $contact = \App\Models\Contacts::where('phone', $followup->phone)->first();
+                if ($contact) {
+                    $followup->visitor_id = $contact->id;
+                    $followup->save();
+                }
+            }
+
+            // Sync location_id with booking_location if booking_location is provided (backward compat)
+            if (empty($followup->location_id) && !empty($data['booking_location'])) {
+                $location = \App\Models\LocationMngt::where('loc_name', $data['booking_location'])->first();
+                if ($location) {
+                    $followup->location_id = $location->id;
+                    $followup->save();
+                }
+            }
+
+            // Sync table_id with table_no if table_no is provided (backward compat)
+            if (empty($followup->table_id) && !empty($data['table_no'])) {
+                // Try to find table by ID or table_no
+                $table = \App\Models\LocationMngtTableDetail::where('id', $data['table_no'])
+                    ->orWhere('table_no', $data['table_no'])
+                    ->first();
+                if ($table) {
+                    $followup->table_id = $table->id;
+                    $followup->save();
+                }
+            }
+
+            $booking = null;
+
+            // 2️⃣ If Materialised → store in bookings table
+            if ($data['status'] === 'materialised') {
+                $booking = Booking::create([
+                    'id'               => (string) Str::ulid(),
+                    'phone'            => $data['hidden_id'], // hidden_id = phone
+                    'booking_date'     => $data['booking_date'],
+                    'booking_location' => $data['booking_location'] ?? null, // Backward compat
+                    'table_no'         => $data['table_no'] ?? null, // Backward compat
+                    'price'            => $data['price'],
+                    'amount_status'    => $data['amount_status'],
+                    'amount_paid'      => $data['amount_paid'],
+                    'employee_id'      => auth()->id(),
+                    // NEW: Add context fields
+                    'exhibitor_id'     => $data['exhibitor_id'] ?? null,
+                    'visitor_id'       => $data['visitor_id'] ?? null,
+                    'location_id'      => $data['location_id'] ?? null,
+                    'table_id'         => $data['table_id'] ?? null,
+                    'campaign_id'      => $data['campaign_id'] ?? null,
+                ]);
+
+                // Auto-populate visitor_id from phone if not provided
+                if (empty($booking->visitor_id) && !empty($booking->phone)) {
+                    $contact = \App\Models\Contacts::where('phone', $booking->phone)->first();
+                    if ($contact) {
+                        $booking->visitor_id = $contact->id;
+                        $booking->save();
+                    }
+                }
+
+                // Sync location_id with booking_location if provided (backward compat)
+                if (empty($booking->location_id) && !empty($data['booking_location'])) {
+                    // Try to find by ID first, then by name
+                    $location = null;
+                    if (is_numeric($data['booking_location'])) {
+                        $location = \App\Models\LocationMngt::find($data['booking_location']);
+                    } else {
+                        $location = \App\Models\LocationMngt::where('loc_name', $data['booking_location'])->first();
+                    }
+                    if ($location) {
+                        $booking->location_id = $location->id;
+                        $booking->save();
+                    }
+                }
+
+                // Sync table_id with table_no if provided (backward compat)
+                if (empty($booking->table_id) && !empty($data['table_no'])) {
+                    // Try to find table by ID first (if numeric), then by table_no
+                    if (is_numeric($data['table_no'])) {
+                        $table = \App\Models\LocationMngtTableDetail::find($data['table_no']);
+                    } else {
+                        $table = \App\Models\LocationMngtTableDetail::where('table_no', $data['table_no'])->first();
+                    }
+                    if ($table) {
+                        $booking->table_id = $table->id;
+                        $booking->save();
+                    }
+                }
+
+                // Sync booking_location and table_no with location_id and table_id (for backward compat display)
+                if (!empty($booking->location_id)) {
+                    $location = \App\Models\LocationMngt::find($booking->location_id);
+                    if ($location && empty($booking->booking_location)) {
+                        $booking->booking_location = $location->loc_name;
+                        $booking->save();
+                    }
+                }
+
+                if (!empty($booking->table_id)) {
+                    $table = \App\Models\LocationMngtTableDetail::find($booking->table_id);
+                    if ($table && empty($booking->table_no)) {
+                        $booking->table_no = $table->table_no ?? $table->id;
+                        $booking->save();
+                    }
+                }
+
+                // Create conversation from booking
+                $this->conversationService->createFromBooking($booking);
+            } else {
+                // Create conversation from follow-up (will automatically link campaign_recipient)
+                $this->conversationService->createFromFollowUp($followup);
+            }
+
+            DB::commit();
+            return $followup->load(['exhibitor', 'visitor', 'location', 'table', 'campaign', 'conversation']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
 

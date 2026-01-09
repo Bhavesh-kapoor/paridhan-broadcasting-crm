@@ -103,51 +103,92 @@
                             </h6>
                         </div>
                         <div class="card-body">
-
                             <div class="row g-3">
-                                <!-- Total Recipients -->
-                                <div class=" col-6">
+                                <!-- Messages Sent -->
+                                <div class="col-6">
                                     <div class="countBox text-center rounded-3" style="background:#e9f2ff;">
-                                        <i class="bx bx-group fs-1 text-primary"></i>
-                                        <h4 class="fw-bold mb-0 mt-2 text-primary">{{ $campaign->recipient_count }}</h4>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Total Recipients</p>
+                                        <i class="bx bx-send fs-1 text-primary"></i>
+                                        <h4 class="fw-bold mb-0 mt-2 text-primary">{{ $analytics['total_messages_sent'] ?? 0 }}</h4>
+                                        <p class="mb-0 mt-1 fw-semibold text-dark">Messages Sent</p>
                                     </div>
                                 </div>
 
-                                <!-- Sent -->
-                                <div class=" col-6">
+                                <!-- Leads Generated -->
+                                <div class="col-6">
+                                    <div class="countBox text-center rounded-3" style="background:#fff8e6;">
+                                        <i class="bx bx-user-plus fs-1 text-warning"></i>
+                                        <h4 class="fw-bold mb-0 mt-2 text-warning">{{ $analytics['total_leads_generated'] ?? 0 }}</h4>
+                                        <p class="mb-0 mt-1 fw-semibold text-dark">Leads Generated</p>
+                                    </div>
+                                </div>
+
+                                <!-- Bookings Created -->
+                                <div class="col-6">
                                     <div class="countBox text-center rounded-3" style="background:#e9f8f3;">
                                         <i class="bx bx-check-circle fs-1 text-success"></i>
-                                        <h4 class="fw-bold mb-0 mt-2 text-success">
-                                            {{ $campaign->recipients->where('status', 'sent')->count() }}</h4>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Sent</p>
+                                        <h4 class="fw-bold mb-0 mt-2 text-success">{{ $analytics['total_bookings_created'] ?? 0 }}</h4>
+                                        <p class="mb-0 mt-1 fw-semibold text-dark">Bookings</p>
                                     </div>
                                 </div>
 
-                                <!-- Pending -->
-                                <div class=" col-6">
-                                    <div class="countBox text-center rounded-3" style="background:#fff8e6;">
-                                        <i class="bx bx-time-five fs-1 text-warning"></i>
-                                        <h4 class="fw-bold mb-0 mt-2 text-warning">
-                                            {{ $campaign->recipients->where('status', 'pending')->count() }}</h4>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Pending</p>
+                                <!-- Total Revenue -->
+                                <div class="col-6">
+                                    <div class="countBox text-center rounded-3" style="background:#f0e9ff;">
+                                        <i class="bx bx-rupee fs-1 text-purple" style="color: #764ba2;"></i>
+                                        <h4 class="fw-bold mb-0 mt-2" style="color: #764ba2;">₹{{ number_format($analytics['total_revenue'] ?? 0, 2) }}</h4>
+                                        <p class="mb-0 mt-1 fw-semibold text-dark">Revenue</p>
                                     </div>
                                 </div>
 
-                                <!-- Failed -->
-                                <div class=" col-6">
-                                    <div class="countBox text-center rounded-3" style="background:#ffeaea;">
-                                        <i class="bx bx-x-circle fs-1 text-danger"></i>
-                                        <h4 class="fw-bold mb-0 mt-2 text-danger">
-                                            {{ $campaign->recipients->where('status', 'failed')->count() }}</h4>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Failed</p>
+                                <!-- Conversion Rates -->
+                                <div class="col-12">
+                                    <div class="countBox text-center rounded-3 p-3" style="background:#e8f5e9;">
+                                        <i class="bx bx-trending-up fs-2 text-success"></i>
+                                        <h3 class="fw-bold mb-0 mt-2 text-success">{{ $analytics['lead_to_booking_conversion'] ?? 0 }}%</h3>
+                                        <p class="mb-0 mt-1 fw-semibold text-dark">Lead to Booking</p>
+                                        <small class="text-muted">(Bookings / Leads)</small>
                                     </div>
                                 </div>
-
+                                
+                                @if(isset($analytics['recipient_to_lead_conversion']))
+                                <div class="col-6">
+                                    <div class="countBox text-center rounded-3 p-2" style="background:#e3f2fd;">
+                                        <i class="bx bx-user-check fs-3 text-primary"></i>
+                                        <h5 class="fw-bold mb-0 mt-1 text-primary">{{ $analytics['recipient_to_lead_conversion'] ?? 0 }}%</h5>
+                                        <small class="text-muted">Recipient → Lead</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="countBox text-center rounded-3 p-2" style="background:#fff3e0;">
+                                        <i class="bx bx-check-double fs-3 text-warning"></i>
+                                        <h5 class="fw-bold mb-0 mt-1 text-warning">{{ $analytics['recipient_to_booking_conversion'] ?? 0 }}%</h5>
+                                        <small class="text-muted">Recipient → Booking</small>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
 
+                    <!-- Campaign Actions -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-light border-0 py-3">
+                            <h6 class="mb-0 fw-semibold text-dark">
+                                <i class="bx bx-conversation me-2 text-primary"></i>Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('campaigns.conversations', $campaign->id) }}" class="btn btn-primary">
+                                    <i class="bx bx-conversation me-1"></i>View Conversations
+                                </a>
+                                <a href="{{ route('campaigns.conversations.create', $campaign->id) }}" class="btn btn-success">
+                                    <i class="bx bx-plus me-1"></i>Add Conversation
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Campaign Actions -->
                     <div class="card">
                         <div class="card-body">
@@ -172,13 +213,73 @@
                 </div>
             </div>
 
+            <!-- Revenue Breakdown by Exhibitor -->
+            @if(isset($analytics['revenue_by_status']) && ($analytics['total_revenue'] ?? 0) > 0)
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light border-0 py-3">
+                            <h6 class="mb-0 fw-semibold text-dark">
+                                <i class="bx bx-rupee me-2 text-success"></i>Revenue Breakdown
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 rounded" style="background: #e9f8f3;">
+                                        <h5 class="fw-bold text-success mb-1">₹{{ number_format($analytics['revenue_by_status']['paid'] ?? 0, 2) }}</h5>
+                                        <small class="text-muted">Paid</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 rounded" style="background: #fff8e6;">
+                                        <h5 class="fw-bold text-warning mb-1">₹{{ number_format($analytics['revenue_by_status']['partial'] ?? 0, 2) }}</h5>
+                                        <small class="text-muted">Partial</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 rounded" style="background: #ffeaea;">
+                                        <h5 class="fw-bold text-danger mb-1">₹{{ number_format($analytics['revenue_by_status']['unpaid'] ?? 0, 2) }}</h5>
+                                        <small class="text-muted">Unpaid</small>
+                                    </div>
+                                </div>
+                            </div>
+                            @if(isset($revenueByExhibitor) && count($revenueByExhibitor) > 0)
+                            <h6 class="fw-semibold mb-3">Revenue by Exhibitor:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Exhibitor Name</th>
+                                            <th class="text-center">Bookings</th>
+                                            <th class="text-end">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($revenueByExhibitor as $exhibitor)
+                                        <tr>
+                                            <td>{{ $exhibitor->exhibitor_name }}</td>
+                                            <td class="text-center">{{ $exhibitor->bookings_count }}</td>
+                                            <td class="text-end fw-bold text-success">₹{{ number_format($exhibitor->total_revenue, 2) }}</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Recipients List -->
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-light border-0 py-3">
                             <h6 class="mb-0 fw-semibold text-dark">
-                                <i class="ph ph-users me-2 text-primary"></i>Campaign Recipients
+                                <i class="bx bx-users me-2 text-primary"></i>Campaign Recipients
                             </h6>
                         </div>
                         <div class="card-body">
@@ -187,12 +288,15 @@
                                     style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th>Sl.No</th>
-                                            <th>Name</th>
-                                            <th>Contact Info</th>
-                                            <th>Type</th>
-                                            <th>Status</th>
-                                            <th>Location</th>
+                                            <th class="text-center"><i class="bx bx-hash"></i> Sl.No</th>
+                                            <th><i class="bx bx-user"></i> Name</th>
+                                            <th><i class="bx bx-phone"></i> Contact Info</th>
+                                            <th class="text-center"><i class="bx bx-category"></i> Type</th>
+                                            <th class="text-center"><i class="bx bx-info-circle"></i> Message Status</th>
+                                            <th class="text-center"><i class="bx bx-conversation"></i> Conversation</th>
+                                            <th class="text-center"><i class="bx bx-check-circle"></i> Booking</th>
+                                            <th class="text-center"><i class="bx bx-rupee"></i> Revenue</th>
+                                            <th><i class="bx bx-map"></i> Location</th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -248,11 +352,31 @@
                     },
                     {
                         data: 'recipient_type',
-                        name: 'recipient_type'
+                        name: 'recipient_type',
+                        className: "text-center"
                     },
                     {
                         data: 'full_status',
-                        name: 'full_status'
+                        name: 'full_status',
+                        className: "text-center"
+                    },
+                    {
+                        data: 'conversation_status',
+                        name: 'conversation_status',
+                        className: "text-center",
+                        orderable: false
+                    },
+                    {
+                        data: 'booking_status',
+                        name: 'booking_status',
+                        className: "text-center",
+                        orderable: false
+                    },
+                    {
+                        data: 'revenue',
+                        name: 'revenue',
+                        className: "text-center",
+                        orderable: false
                     },
                     {
                         data: 'recipient_location',
@@ -260,7 +384,7 @@
                     },
                 ],
                 "columnDefs": [{
-                    "targets": [1, 2, 3, 4, 5],
+                    "targets": [1, 2, 3, 4, 5, 6, 7, 8],
                     "orderable": false,
                     "sorting": false
                 }],

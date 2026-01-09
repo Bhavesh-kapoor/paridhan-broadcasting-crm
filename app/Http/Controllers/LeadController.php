@@ -10,6 +10,7 @@ use App\Models\LocationMngt;
 use App\Models\LocationMngtTableDetail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LeadController extends Controller
 {
@@ -74,11 +75,120 @@ class LeadController extends Controller
         ]);
     }
 
-    // Get Tables by Location ID
-    public function getTables($locationId)
+    /**
+     * Search contact by phone number
+     */
+    public function searchContactByPhone(Request $request): JsonResponse
     {
-        $tables = LocationMngtTableDetail::where('id', $locationId)->get();
-        return response()->json($tables);
+        $phone = $request->input('phone');
+        
+        if (empty($phone)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Phone number is required'
+            ], 400);
+        }
+
+        $contact = \App\Models\Contacts::where('phone', $phone)->first();
+
+        if ($contact) {
+            return response()->json([
+                'status' => true,
+                'contact' => [
+                    'id' => $contact->id,
+                    'name' => $contact->name,
+                    'phone' => $contact->phone,
+                    'type' => $contact->type,
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Contact not found'
+        ]);
+    }
+
+    // Get Tables by Location ID (with search and pagination support)
+    public function getTables($locationId, Request $request)
+    {
+        try {
+            $search = $request->input('search', '');
+            $page = $request->input('page', 1);
+            $perPage = 50; // Load 50 tables per page for Select2
+            
+            // Check if locationId is numeric (ID) or string (name)
+            if (is_numeric($locationId)) {
+                $query = LocationMngtTableDetail::where('location_mngt_id', $locationId);
+            } else {
+                // Try to find location by name first
+                $location = LocationMngt::where('loc_name', $locationId)->first();
+                if ($location) {
+                    $query = LocationMngtTableDetail::where('location_mngt_id', $location->id);
+                } else {
+                    return response()->json(['results' => [], 'pagination' => ['more' => false]]);
+                }
+            }
+            
+            // Add search functionality
+            if (!empty($search)) {
+                $query->where(function($q) use ($search) {
+                    $q->where('table_no', 'LIKE', '%' . $search . '%')
+                      ->orWhere('id', 'LIKE', '%' . $search . '%');
+                });
+            }
+            
+            // Check if this is a Select2 AJAX request
+            if ($request->has('search') || $request->has('page')) {
+                $total = $query->count();
+                $tables = $query->skip(($page - 1) * $perPage)
+                    ->take($perPage)
+                    ->get();
+                
+                $results = $tables->map(function($table) {
+                    // Check if table is booked or in use
+                    $isBooked = Booking::where('table_id', $table->id)
+                        ->where('booking_date', '>=', now()->toDateString())
+                        ->exists();
+                    $isInUse = \App\Models\Conversation::where('table_id', $table->id)
+                        ->where('conversation_date', '>=', now()->subDays(1))
+                        ->exists();
+                    $status = ($isBooked || $isInUse) ? ' (Unavailable)' : '';
+                    
+                    return [
+                        'id' => $table->id,
+                        'text' => $table->table_no . ' - ₹' . number_format($table->price ?? 0, 2) . ($table->table_size ? ' (' . $table->table_size . ')' : '') . $status,
+                        'table_no' => $table->table_no,
+                        'price' => $table->price ?? 0,
+                        'table_size' => $table->table_size ?? null,
+                        'available' => !($isBooked || $isInUse),
+                    ];
+                })->values()->all();
+                
+                return response()->json([
+                    'results' => $results,
+                    'pagination' => [
+                        'more' => ($page * $perPage) < $total
+                    ]
+                ]);
+            }
+            
+            // Regular request - return all tables (limited to first 500 for performance)
+            $tables = $query->take(500)->get();
+            
+            return response()->json($tables->map(function($table) {
+                return [
+                    'id' => $table->id,
+                    'table_no' => $table->table_no,
+                    'table_name' => $table->table_no ?? ('Table ' . $table->id),
+                    'price' => $table->price ?? 0,
+                    'table_size' => $table->table_size ?? null,
+                ];
+            })->values()->all());
+        } catch (\Exception $e) {
+            \Log::error('Error loading tables: ' . $e->getMessage());
+            return response()->json(['results' => [], 'pagination' => ['more' => false]], 500);
+        }
     }
 
     // Get Price by Table ID

@@ -66,6 +66,10 @@ return [
         // Template management endpoint
         'template_endpoint' => env('WHATSAPP_TEMPLATE_ENDPOINT',
             'http://meta.webpayservices.in/{version}/{wabaId}/message_templates'),
+        
+        // Default image URL for WhatsApp template headers
+        'default_image_url' => env('WHATSAPP_DEFAULT_IMAGE_URL',
+            'http://meta.webpayservices.in/WhatsAppMedia/Template/Image/ParidhanWPY/x2iNz14yqSk-MQ(4).jpg'),
     ],
 
 

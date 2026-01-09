@@ -68,34 +68,61 @@
                     </li>
                 </ul>
             </li>
+            <li>
+                <a href="{{ route('conversations.index') }}">
+                    <div class="parent-icon"><i class="bx bx-conversation"></i>
+                    </div>
+                    <div class="menu-title">Conversations</div>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('invoices.index') }}">
+                    <div class="parent-icon"><i class="bx bx-file"></i>
+                    </div>
+                    <div class="menu-title">Invoices</div>
+                </a>
+            </li>
         @endif
         @if (auth()->user()->role == 'employee')
             <li>
-                <a href="{{ route('leads.index') }}">
-                    <div class="parent-icon"><i class="bx bx-crown"></i>
+                <a href="javascript:;" class="has-arrow">
+                    <div class="parent-icon"><i class="bx bxs-megaphone"></i>
                     </div>
-                    <div class="menu-title">Lead Management</div>
+                    <div class="menu-title">Campaigns</div>
+                </a>
+                <ul>
+                    <li> <a href="{{ route('employee.campaigns.index') }}"><i class='bx bx-radio-circle'></i>All Campaigns</a>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <a href="{{ route('table-availability.index') }}">
+                    <div class="parent-icon"><i class="bx bx-table"></i>
+                    </div>
+                    <div class="menu-title">Table Availability</div>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('employee.bookings.index') }}">
+                    <div class="parent-icon"><i class="bx bx-calendar-check"></i>
+                    </div>
+                    <div class="menu-title">My Bookings</div>
                 </a>
             </li>
         @endif
 
-
-        {{-- <hr>
-        <li class="menu-label"><strong>Settings</strong></li>
+        <hr>
+        <li class="menu-label"><strong>Account</strong></li>
         <li>
-            <a href="{{ route('admin.change-password') }}">
-                <div class="parent-icon"><i class="bx bx-lock"></i>
-                </div>
-                <div class="menu-title">Change Password</div>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('logout') }}">
+            <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <div class="parent-icon"><i class="bx bx-log-out-circle"></i>
                 </div>
                 <div class="menu-title">Logout</div>
             </a>
-        </li> --}}
+            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                @csrf
+            </form>
+        </li>
 
     </ul>
     <!--end navigation-->

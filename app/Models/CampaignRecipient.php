@@ -112,4 +112,30 @@ class CampaignRecipient extends Model
     {
         return $this->status === 'failed';
     }
+
+    /**
+     * Get conversations from this campaign recipient
+     */
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class, 'campaign_recipient_id');
+    }
+
+    /**
+     * Get follow-ups from this campaign recipient
+     */
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class, 'campaign_id', 'campaign_id')
+            ->where('visitor_id', $this->contact_id);
+    }
+
+    /**
+     * Get bookings from this campaign recipient
+     */
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'campaign_id', 'campaign_id')
+            ->where('visitor_id', $this->contact_id);
+    }
 }

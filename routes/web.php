@@ -63,6 +63,27 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     Route::resource('templates', \App\Http\Controllers\TemplateController::class);
     Route::get('templates-fetch', [\App\Http\Controllers\TemplateController::class, 'getTemplates'])->name('templates.fetch');
     Route::get('templates-refresh', [\App\Http\Controllers\TemplateController::class, 'refreshCache'])->name('templates.refresh');
+
+    // Company Dashboard routes
+    Route::get('companies/{id}/dashboard', [\App\Http\Controllers\CompanyController::class, 'dashboard'])->name('companies.dashboard');
+    Route::get('companies/{id}/conversations', [\App\Http\Controllers\CompanyController::class, 'getConversations'])->name('companies.conversations');
+    
+    // Campaign Analytics route
+    Route::get('campaigns/{id}/analytics', [\App\Http\Controllers\CampaignController::class, 'analytics'])->name('campaigns.analytics');
+    
+    // Dashboard Revenue Filter route
+    Route::post('/dashboard/revenue', [\App\Http\Controllers\DashboardController::class, 'getRevenueData'])->name('admin.dashboard.revenue');
+    
+    // Conversation Management routes (Admin only)
+    Route::resource('conversations', \App\Http\Controllers\ConversationController::class);
+    Route::post('/ajax/get/all-conversations', [\App\Http\Controllers\ConversationController::class, 'getAllConversationsList'])->name('conversations.list');
+    Route::get('/conversations/location/{locationId}/tables', [\App\Http\Controllers\ConversationController::class, 'getTables'])->name('conversations.getTables');
+    
+    // Invoice Management routes
+    Route::get('/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
+    Route::post('/ajax/get/all-invoices', [\App\Http\Controllers\InvoiceController::class, 'getAllInvoices'])->name('invoices.list');
+    Route::get('/bookings/{bookingId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generate'])->name('bookings.invoice');
+    Route::get('/conversations/{conversationId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generateFromConversation'])->name('conversations.invoice');
 });
 
 
@@ -82,8 +103,39 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
     // get price by table id
     Route::get('/get-price/{tableId}', [LeadController::class, 'getPrice'])
         ->name('booking.getPrice');
-    // search location
-    // Route::get('/api/search-location', [LeadController::class, 'searchLocation'])->name('booking.searchLocation');
+    // search contact by phone
+    Route::post('/contacts/search-by-phone', [LeadController::class, 'searchContactByPhone'])
+        ->name('contacts.searchByPhone');
+    
+    // Table Availability routes
+    Route::get('/table-availability', [\App\Http\Controllers\TableAvailabilityController::class, 'index'])->name('table-availability.index');
+    Route::get('/table-availability/search', [\App\Http\Controllers\TableAvailabilityController::class, 'searchLocations'])->name('table-availability.search-locations');
+    Route::get('/table-availability/location/{locationId}', [\App\Http\Controllers\TableAvailabilityController::class, 'getLocationTables'])->name('table-availability.location');
+    Route::post('/table-availability/conversation', [\App\Http\Controllers\TableAvailabilityController::class, 'createConversation'])->name('table-availability.conversation');
+    Route::post('/table-availability/booking', [\App\Http\Controllers\TableAvailabilityController::class, 'createBooking'])->name('table-availability.booking');
+    
+    // Campaign Management routes for employees
+    Route::get('/campaigns', [\App\Http\Controllers\CampaignController::class, 'employeeIndex'])->name('employee.campaigns.index');
+    Route::get('/campaigns/{campaignId}/recipients', [\App\Http\Controllers\CampaignController::class, 'recipients'])->name('employee.campaigns.recipients');
+    Route::post('/campaigns/{campaignId}/recipients/list', [\App\Http\Controllers\CampaignController::class, 'getRecipientsList'])->name('employee.campaigns.recipients.list');
+    
+    // Campaign Conversations routes
+    Route::get('/campaigns/{campaignId}/conversations', [\App\Http\Controllers\CampaignController::class, 'conversations'])->name('campaigns.conversations');
+    Route::post('/campaigns/{campaignId}/conversations', [\App\Http\Controllers\CampaignController::class, 'storeConversation'])->name('campaigns.conversations.store');
+    Route::get('/campaigns/{campaignId}/conversations/create', [\App\Http\Controllers\CampaignController::class, 'createConversation'])->name('campaigns.conversations.create');
+    
+    // Invoice routes for employees
+    Route::get('/conversations/{conversationId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generateFromConversation'])->name('conversations.invoice');
+    
+    // Employee Bookings routes
+    Route::get('/bookings', [\App\Http\Controllers\InvoiceController::class, 'employeeBookings'])->name('employee.bookings.index');
+    Route::post('/bookings/list', [\App\Http\Controllers\InvoiceController::class, 'getEmployeeBookings'])->name('employee.bookings.list');
+});
+
+// Admin Company Dashboard Routes
+Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->group(function () {
+    Route::get('companies/{id}/dashboard', [\App\Http\Controllers\CompanyController::class, 'dashboard'])->name('admin.companies.dashboard');
+    Route::get('companies/{id}/conversations', [\App\Http\Controllers\CompanyController::class, 'getConversations'])->name('admin.companies.conversations');
 });
 
 

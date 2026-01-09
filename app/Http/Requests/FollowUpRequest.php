@@ -21,14 +21,21 @@ class FollowUpRequest extends FormRequest
             'status' => 'required|in:busy,interested,materialised',
             'comment' => 'required|string|max:1000',
 
+            // Context Fields (new)
+            'exhibitor_id' => 'nullable|exists:contacts,id',
+            'visitor_id' => 'nullable|exists:contacts,id',
+            'location_id' => 'nullable|exists:location_mngt,id',
+            'table_id' => 'nullable|exists:location_mngt_table_details,id',
+            'campaign_id' => 'nullable|exists:campaigns,id',
+
             // Busy
             'next_followup_date' => 'required_if:status,busy|nullable|date',
             'next_followup_time' => 'required_if:status,busy|nullable',
 
             // Materialised
             'booking_date'     => 'required_if:status,materialised|nullable|date',
-            'booking_location' => 'required_if:status,materialised|nullable|string',
-            'table_no'         => 'required_if:status,materialised|nullable|string',
+            'booking_location' => 'required_if:status,materialised|nullable|string', // Backward compat
+            'table_no'         => 'required_if:status,materialised|nullable|string', // Backward compat
             'price'            => 'required_if:status,materialised|nullable|numeric',
             'amount_status' => 'required_if:status,materialised|nullable|in:paid,partial,unpaid',
             // amount_paid required only if paid or partial

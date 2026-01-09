@@ -1,4 +1,7 @@
 @extends('layouts.app_layout')
+@section('style')
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
+@endsection
 @section('wrapper')
     <div class="page-wrapper">
         <div class="page-content">
@@ -72,6 +75,72 @@
                                 </h6>
 
                                 <div class="row">
+                                    <!-- Context Fields Section -->
+                                    <div class="col-12 mb-3">
+                                        <h6 class="mb-2 fw-semibold d-flex align-items-center border-bottom py-2">
+                                            <i class="bx bx-info-circle"></i>&nbsp;Context Information
+                                        </h6>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="bx bx-store-alt"></i> Company/Exhibitor</label>
+                                        <select name="exhibitor_id" id="exhibitor_id" class="form-select form-control select2">
+                                            <option value="">-- Select Exhibitor --</option>
+                                            @php
+                                                $exhibitors = \App\Models\Contacts::where('type', 'exhibitor')->get();
+                                            @endphp
+                                            @foreach($exhibitors as $exhibitor)
+                                                <option value="{{ $exhibitor->id }}">{{ $exhibitor->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-muted">Select the company this lead is related to</small>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="bx bx-user"></i> Visitor/Lead Contact</label>
+                                        <select name="visitor_id" id="visitor_id" class="form-select form-control select2">
+                                            <option value="">-- Auto-detect from phone --</option>
+                                        </select>
+                                        <small class="text-muted">Will be auto-populated based on phone number</small>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="bx bx-megaphone"></i> Source Campaign</label>
+                                        <select name="campaign_id" id="campaign_id" class="form-select form-control select2">
+                                            <option value="">-- Select Campaign (Optional) --</option>
+                                            @php
+                                                $campaigns = \App\Models\Campaign::where('status', 'sent')->orderBy('created_at', 'desc')->get();
+                                            @endphp
+                                            @foreach($campaigns as $campaign)
+                                                <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-muted">Campaign that generated this lead</small>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="bx bx-map"></i> Location</label>
+                                        <select name="location_id" id="location_id" class="form-select form-control select2">
+                                            <option value="">-- Select Location --</option>
+                                            @foreach ($location as $loc)
+                                                <option value="{{ $loc->id }}">{{ $loc->loc_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="bx bx-table"></i> Table/Stall</label>
+                                        <select name="table_id" id="table_id" class="form-select form-control select2">
+                                            <option value="">-- Select Table (After Location) --</option>
+                                        </select>
+                                        <small class="text-muted">Select location first to load tables</small>
+                                    </div>
+
+                                    <!-- Divider -->
+                                    <div class="col-12 mb-3 mt-2">
+                                        <hr>
+                                    </div>
+
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Type <span class="text-danger">*</span></label>
                                         <select name="status" id="status" class="form-select form-control" required>
@@ -116,10 +185,11 @@
                                                         class="form-select form-control select2" required>
                                                         <option value="">-- Select Location --</option>
                                                         @foreach ($location as $loc)
-                                                            <option value="{{ $loc->id }}">
+                                                            <option value="{{ $loc->loc_name }}" data-location-id="{{ $loc->id }}">
                                                                 {{ $loc->loc_name }}</option>
                                                         @endforeach
                                                     </select>
+                                                    <small class="text-muted">This will sync with Location field above</small>
                                                 </div>
 
                                                 <div class="col-md-6 mb-3">
@@ -127,8 +197,7 @@
                                                             class="text-danger">*</span></label>
                                                     <select name="table_no" id="table_no"
                                                         class="form-select form-control select2"></select>
-                                                    {{-- <option value="">-- Select Table No --</option> --}}
-
+                                                    <small class="text-muted">This will sync with Table field above</small>
                                                 </div>
 
                                                 <div class="col-md-6 mb-3">
@@ -347,8 +416,31 @@
                 $("#hidden_id").val(phone);
                 $('#offcanvasFormLabel').html('<i class="bx bx-plus"></i> Save Follow-Up');
                 $('#formSubmitBtn').html('<i class="bx bx-check-circle me-1"></i> Create Lead');
+                
+                // Auto-detect visitor_id from phone
+                autoDetectVisitor(phone);
+                
                 myOffcanvas.toggle();
             });
+
+            // Auto-detect visitor_id from phone when form opens
+            function autoDetectVisitor(phone) {
+                if (phone) {
+                    $.ajax({
+                        url: `${base_url}/employee/contacts/search-by-phone`,
+                        type: 'POST',
+                        data: { phone: phone },
+                        success: function(response) {
+                            if (response.status && response.contact) {
+                                $('#visitor_id').val(response.contact.id).trigger('change');
+                            }
+                        },
+                        error: function() {
+                            // Silently fail - contact may not exist
+                        }
+                    });
+                }
+            }
 
             // Filter functionality
             $('#filter_lead_type').on('change', () => dataTableList.ajax.reload());
@@ -642,36 +734,131 @@
 
 
             // Booking location change - load table numbers
-            $('#booking_location').on('change', function() {
-
+            // Sync location_id with booking_location
+            $('#location_id').on('change', function() {
                 let locationId = $(this).val();
-
-                $('#table_no').empty();
-                $('#table_no').append('<option value="">-- Select Table No --</option>');
-
+                let locationName = $(this).find('option:selected').text();
+                
+                // Update booking_location dropdown
+                $('#booking_location').val($('#booking_location option').filter(function() {
+                    return $(this).data('location-id') == locationId;
+                }).val()).trigger('change');
+                
+                // Load tables for this location
                 if (locationId) {
+                    loadTables(locationId);
+                }
+            });
 
-                    let url = "{{ route('booking.getTables', ':id') }}";
-                    url = url.replace(':id', locationId);
+            // Sync booking_location with location_id (reverse sync)
+            $('#booking_location').on('change', function() {
+                let selectedOption = $(this).find('option:selected');
+                let locationId = selectedOption.data('location-id');
+                
+                if (locationId) {
+                    $('#location_id').val(locationId).trigger('change');
+                }
+            });
 
-                    $.ajax({
-                        url: url,
-                        type: "GET",
-                        success: function(response) {
+            // Load tables function - unified handler
+            function loadTablesForBothDropdowns(locationId) {
+                if (!locationId) {
+                    $('#table_id').empty().append('<option value="">-- Select Table --</option>');
+                    $('#table_no').empty().append('<option value="">-- Select Table No --</option>');
+                    return;
+                }
+
+                // Load for table_id (new)
+                $('#table_id').empty().append('<option value="">-- Loading Tables --</option>');
+                
+                // Load for table_no (backward compat)
+                $('#table_no').empty().append('<option value="">-- Loading Tables --</option>');
+
+                let url = "{{ route('booking.getTables', ':id') }}";
+                url = url.replace(':id', locationId);
+
+                $.ajax({
+                    url: url,
+                    type: "GET",
+                    success: function(response) {
+                        // Populate table_id dropdown
+                        $('#table_id').empty().append('<option value="">-- Select Table --</option>');
+                        // Populate table_no dropdown
+                        $('#table_no').empty().append('<option value="">-- Select Table No --</option>');
+
+                        if (Array.isArray(response) && response.length > 0) {
                             $.each(response, function(index, table) {
+                                let tableDisplayName = table.table_no || table.table_name || ('Table ' + table.id);
+                                
+                                // Add to table_id (new FK field)
+                                $('#table_id').append(
+                                    '<option value="' + table.id + '" data-table-no="' + (table.table_no || '') + '" data-price="' + (table.price || '') + '">' + tableDisplayName + '</option>'
+                                );
+                                
+                                // Add to table_no (backward compat - stores ID as string)
                                 $('#table_no').append(
-                                    '<option value="' + table.id + '">' + table
-                                    .table_no + '</option>'
+                                    '<option value="' + table.id + '" data-table-id="' + table.id + '" data-price="' + (table.price || '') + '">' + tableDisplayName + '</option>'
                                 );
                             });
+                        }
+                    },
+                    error: function() {
+                        $('#table_id').empty().append('<option value="">-- Error loading tables --</option>');
+                        $('#table_no').empty().append('<option value="">-- Error loading tables --</option>');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to load tables.'
+                        });
+                    }
+                });
+            }
+
+            // Location ID change - sync with booking_location and load tables
+            $('#location_id').on('change', function() {
+                let locationId = $(this).val();
+                
+                // Sync booking_location dropdown (find option with matching data-location-id)
+                if (locationId) {
+                    $('#booking_location option').each(function() {
+                        if ($(this).data('location-id') == locationId || $(this).val() == locationId) {
+                            $('#booking_location').val($(this).val());
+                            break;
+                        }
+                    });
+                }
+                
+                // Load tables for both dropdowns
+                loadTablesForBothDropdowns(locationId);
+            });
+
+            // Booking location change - sync with location_id (backward compatibility)
+            $('#booking_location').on('change', function() {
+                let selectedOption = $(this).find('option:selected');
+                let locationId = selectedOption.data('location-id');
+                
+                // If data-location-id exists, sync with location_id
+                if (locationId) {
+                    $('#location_id').val(locationId).trigger('change');
+                    return; // Don't proceed with legacy loading
+                }
+                
+                // Legacy behavior - load by location name/ID
+                let bookingLocation = $(this).val();
+                if (bookingLocation) {
+                    // Try to find location by name and get ID
+                    $.ajax({
+                        url: `${base_url}/admin/locations/search`,
+                        type: 'POST',
+                        data: { name: bookingLocation },
+                        success: function(response) {
+                            if (response.status && response.location) {
+                                $('#location_id').val(response.location.id).trigger('change');
+                            }
                         },
                         error: function() {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Validation Error',
-                                html: 'Failed to load table numbers.'
-                            });
-
+                            // Fallback: load tables directly using booking_location value
+                            loadTablesForBothDropdowns(bookingLocation);
                         }
                     });
                 }
@@ -680,6 +867,30 @@
 
 
             // Table no change - load price
+            // Sync table_id with table_no
+            $('#table_id').on('change', function() {
+                let tableId = $(this).val();
+                let selectedOption = $(this).find('option:selected');
+                let tableNo = selectedOption.data('table-no') || selectedOption.text();
+                let price = selectedOption.data('price') || '';
+                
+                // Update table_no dropdown
+                $('#table_no').val($('#table_no option').filter(function() {
+                    return $(this).data('table-id') == tableId;
+                }).val()).trigger('change');
+                
+                // Auto-fill price if available
+                if (price) {
+                    $('[name="price"]').val(price);
+                }
+                
+                // Load price if table selected
+                if (tableId) {
+                    loadPrice(tableId);
+                }
+            });
+
+            // Sync table_no with table_id (reverse sync for backward compatibility)
             $('#table_no').on('change', function() {
 
                 let tableId = $(this).val();

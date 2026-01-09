@@ -64,4 +64,54 @@ class Contacts extends Model
     {
         return $this->type === 'visitor';
     }
+
+    // NEW relationships (only for exhibitors)
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class, 'exhibitor_id');
+    }
+
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class, 'exhibitor_id');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'exhibitor_id');
+    }
+
+    /**
+     * Get recent conversations (last 10)
+     */
+    public function recentConversations()
+    {
+        return $this->conversations()->recent(10);
+    }
+
+    /**
+     * Get total leads for this exhibitor
+     */
+    public function getTotalLeadsAttribute()
+    {
+        return $this->followUps()->count();
+    }
+
+    /**
+     * Get total bookings for this exhibitor
+     */
+    public function getTotalBookingsAttribute()
+    {
+        return $this->bookings()->count();
+    }
+
+    /**
+     * Get total revenue for this exhibitor
+     */
+    public function getTotalRevenueAttribute()
+    {
+        return $this->bookings()
+            ->withRevenue()
+            ->sum('amount_paid');
+    }
 }

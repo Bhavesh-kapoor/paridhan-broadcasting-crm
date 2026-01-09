@@ -188,6 +188,16 @@
                                     @endif
                                     <td class="px-3 py-3 text-center">
                                         <div class="d-flex gap-1 justify-content-center">
+                                            @if($type === 'exhibitor')
+                                            <a href="{{ route('admin.companies.dashboard', $contact->id) }}"
+                                               class="btn btn-action btn-view"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="top"
+                                               title="View Company Dashboard">
+                                                <i class="bx bx-line-chart"></i>
+                                                <span class="d-none d-md-inline">Dashboard</span>
+                                            </a>
+                                            @endif
                                             <a href="{{ route('contacts.edit', $contact) }}"
                                                class="btn btn-action btn-edit"
                                                data-bs-toggle="tooltip"

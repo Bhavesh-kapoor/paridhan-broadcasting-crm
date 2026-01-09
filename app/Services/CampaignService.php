@@ -40,20 +40,59 @@ class CampaignService
 
     public function getAllCampaignsList()
     {
-        $result = Campaign::withCount('recipients')->
-            orderBy('created_at', 'desc');
+        $result = Campaign::withCount([
+            'recipients',
+            'recipients as messages_sent_count' => function ($query) {
+                $query->where('status', 'sent');
+            },
+            'followUps as leads_count',
+            'bookings as bookings_count',
+        ])
+        ->withSum(['bookings as total_revenue'], 'amount_paid')
+        ->orderBy('created_at', 'desc');
+        
         return DataTables::of($result)
             ->addIndexColumn()
             ->addColumn('full_type', function ($data) {
                 return   '<span class="badge bg-light text-dark px-3 py-2 border">
-                            <i class="bx bx-tag me-1"></i>' . $data->type . '
+                            <i class="bx bx-tag me-1"></i>' . strtoupper($data->type) . '
                         </span>';
             })
             ->addColumn('recipient_count', function ($data) {
-
-                return '    <span class="badge bg-info px-3 py-2">
-                                                <i class="lni lni-users me-1"></i>' . $data->recipients_count . ' Recipients
-                                            </span>';
+                return '<span class="badge bg-info px-3 py-2">
+                    <i class="bx bx-user me-1"></i>' . $data->recipients_count . ' Recipients
+                </span>';
+            })
+            ->addColumn('messages_sent', function ($data) {
+                return '<span class="badge bg-primary px-3 py-2">
+                    <i class="bx bx-send me-1"></i>' . ($data->messages_sent_count ?? 0) . ' Sent
+                </span>';
+            })
+            ->addColumn('leads_generated', function ($data) {
+                $leadsCount = $data->leads_count ?? 0;
+                return '<span class="badge bg-warning px-3 py-2">
+                    <i class="bx bx-user-plus me-1"></i>' . $leadsCount . ' Leads
+                </span>';
+            })
+            ->addColumn('bookings_created', function ($data) {
+                $bookingsCount = $data->bookings_count ?? 0;
+                return '<span class="badge bg-success px-3 py-2">
+                    <i class="bx bx-check-circle me-1"></i>' . $bookingsCount . ' Bookings
+                </span>';
+            })
+            ->addColumn('revenue', function ($data) {
+                $revenue = $data->total_revenue ?? 0;
+                $conversion = 0;
+                if (($data->leads_count ?? 0) > 0) {
+                    $conversion = round((($data->bookings_count ?? 0) / $data->leads_count) * 100, 2);
+                }
+                
+                return '<div>
+                    <span class="badge bg-gradient-primary px-3 py-2 mb-1 d-block" style="color: #000000 !important;">
+                        <i class="bx bx-rupee me-1"></i> ₹' . number_format($revenue, 2) . '
+                    </span>
+                    ' . ($conversion > 0 ? '<small class="text-muted">' . $conversion . '% conversion</small>' : '') . '
+                </div>';
             })
             ->editColumn('created_at', function ($data) {
                 return   $data->created_at->format('M d, Y');
@@ -62,21 +101,18 @@ class CampaignService
                 $id = $data->id;
                 $button = '<div class="d-flex gap-1 justify-content-center">';
                 
-                $button .= '<button class="btn btn-action btn-view btnView" route="' . route('campaigns.show', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="View Campaign Details">
+                $button .= '<button class="btn btn-sm btn-action btn-view btnView" route="' . route('campaigns.show', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="View Campaign Details">
                     <i class="bx bx-show"></i>
-                    <span class="d-none d-md-inline">View</span>
                 </button>';
 
                 if ($data->isDraft()):
-                    $button .= '<button class="btn btn-action btn-send sendCampaign" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Campaign Now">
+                    $button .= '<button class="btn btn-sm btn-action btn-send sendCampaign" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Campaign Now">
                         <i class="bx bx-paper-plane"></i>
-                        <span class="d-none d-md-inline">Send</span>
                     </button>';
                 endif;
                 
-                $button .= '<button class="btn btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Campaign">
+                $button .= '<button class="btn btn-sm btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Campaign">
                     <i class="bx bx-trash"></i>
-                    <span class="d-none d-md-inline">Delete</span>
                 </button>';
                 
                 $button .= '</div>';
@@ -100,13 +136,13 @@ class CampaignService
                                             ' . $data->status . '
                                         </span>';
             })
-            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count'])
+            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count', 'messages_sent', 'leads_generated', 'bookings_created', 'revenue'])
             ->make(true);
     }
 
     public function getAllCampaignsRecipientsList($id)
     {
-        $query = CampaignRecipient::with('contact')
+        $query = CampaignRecipient::with(['contact', 'conversations.booking'])
             ->where('campaign_id', $id);
 
         return DataTables::of($query)
@@ -130,10 +166,6 @@ class CampaignService
             </span>';
             })
 
-            ->addColumn('recipient_location', function ($d) {
-                return $d->contact->location ?? '-';
-            })
-
             ->addColumn('full_status', function ($d) {
                 $status = $d->status ?? 'pending';
                 $icon = match ($status) {
@@ -155,6 +187,63 @@ class CampaignService
                 return '<span class="badge ' . $color . ' px-2 py-2 border">
                 <i class="' . $icon . ' me-1"></i>' . $status . '
             </span>';
+            })
+
+            ->addColumn('conversation_status', function ($d) {
+                $conversations = $d->conversations;
+                if ($conversations->isEmpty()) {
+                    return '<span class="badge bg-secondary">No Conversation</span>';
+                }
+                
+                $latestConversation = $conversations->sortByDesc('conversation_date')->first();
+                $outcome = $latestConversation->outcome ?? 'interested';
+                
+                $badgeClass = match($outcome) {
+                    'materialised' => 'bg-success',
+                    'busy' => 'bg-warning',
+                    'interested' => 'bg-info',
+                    default => 'bg-secondary'
+                };
+                
+                return '<span class="badge ' . $badgeClass . '">
+                    <i class="bx bx-conversation me-1"></i>' . ucfirst($outcome) . '
+                </span>';
+            })
+
+            ->addColumn('booking_status', function ($d) {
+                $conversations = $d->conversations;
+                $materialisedConversation = $conversations->where('outcome', 'materialised')->first();
+                
+                if (!$materialisedConversation || !$materialisedConversation->booking) {
+                    return '<span class="badge bg-secondary">No Booking</span>';
+                }
+                
+                $booking = $materialisedConversation->booking;
+                return '<span class="badge bg-success">
+                    <i class="bx bx-check-circle me-1"></i>Booked
+                </span>';
+            })
+
+            ->addColumn('revenue', function ($d) {
+                $conversations = $d->conversations;
+                $materialisedConversation = $conversations->where('outcome', 'materialised')->first();
+                
+                if (!$materialisedConversation || !$materialisedConversation->booking) {
+                    return '<span class="text-muted">-</span>';
+                }
+                
+                $booking = $materialisedConversation->booking;
+                $revenue = $booking->amount_paid ?? 0;
+                
+                if ($revenue > 0) {
+                    return '<span class="fw-bold text-success">₹' . number_format($revenue, 2) . '</span>';
+                }
+                
+                return '<span class="text-muted">₹0.00</span>';
+            })
+
+            ->addColumn('recipient_location', function ($d) {
+                return $d->contact->location ?? '-';
             })
 
             /** SEARCH FOR RELATION FIELDS */
@@ -195,7 +284,7 @@ class CampaignService
                     ->orderBy('contacts.location', $order);
             })
 
-            ->rawColumns(['recipient_contact', 'recipient_type', 'full_status'])
+            ->rawColumns(['recipient_contact', 'recipient_type', 'full_status', 'conversation_status', 'booking_status', 'revenue'])
             ->make(true);
     }
 

@@ -1,6 +1,105 @@
 @extends('layouts.app_layout')
 @section('style')
     <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
+    <style>
+        /* Campaigns table specific styling */
+        #data_table {
+            margin-top: 0 !important;
+        }
+        
+        #data_table thead th {
+            padding: 10px 8px !important;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        #data_table tbody td {
+            padding: 6px 8px !important;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        
+        #data_table tbody tr {
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        #data_table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Responsive table wrapper */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            #data_table {
+                font-size: 0.8rem;
+            }
+            
+            #data_table thead th,
+            #data_table tbody td {
+                padding: 5px 6px !important;
+            }
+            
+            #data_table .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Compact action buttons */
+        #data_table .btn-action {
+            padding: 0.25rem 0.5rem;
+            margin: 0 1px;
+            font-size: 0.8rem;
+            min-width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #data_table .btn-action i {
+            font-size: 0.9rem;
+        }
+        
+        /* Compact badges in table */
+        #data_table .badge {
+            padding: 0.35em 0.65em;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Better spacing for DataTables controls */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            margin: 10px 0;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0.3rem 0.6rem;
+            margin: 0 2px;
+        }
+        
+        /* Ensure revenue field text is always black */
+        #data_table tbody td .badge.bg-gradient-primary {
+            color: #000000 !important;
+        }
+        
+        #data_table .revenue-cell {
+            color: #000000 !important;
+        }
+        
+        #data_table .revenue-cell * {
+            color: #000000 !important;
+        }
+    </style>
 @endsection
 @section('wrapper')
     <div class="page-wrapper">
@@ -20,22 +119,35 @@
             </div>
             <!--end breadcrumb-->
             <!--table wrapper -->
-            <div class="card mb-0">
-                <div class="card-body pt-0">
+            <div class="card mb-0 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bx bx-megaphone me-2"></i>Campaigns List
+                        </h5>
+                    </div>
+                </div>
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table id="data_table" class="table table-striped table-bordered mt-2" style="width:100%">
-                            <thead>
+                        <table id="data_table" class="table table-hover mb-0" style="width:100%">
+                            <thead class="table-header-gradient">
                                 <tr>
-                                    <th class="text-center"><i class="bx bx-hash"></i> Sl.No</th>
+                                    <th class="text-center" style="width: 60px;"><i class="bx bx-hash"></i> #</th>
                                     <th><i class="bx bx-rename"></i> Campaign Name</th>
                                     <th><i class="bx bx-text"></i> Subject</th>
-                                    <th class="text-center"><i class="bx bx-group"></i> Recipients</th>
+                                    <th class="text-center"><i class="bx bx-send"></i> Sent</th>
+                                    <th class="text-center"><i class="bx bx-user-plus"></i> Leads</th>
+                                    <th class="text-center"><i class="bx bx-check-circle"></i> Bookings</th>
+                                    <th class="text-end"><i class="bx bx-rupee"></i> Revenue</th>
                                     <th class="text-center"><i class="bx bx-category"></i> Type</th>
                                     <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
-                                    <th class="text-center"><i class="bx bx-calendar"></i> Created Date</th>
-                                    <th class="text-center"><i class="bx bx-cog"></i> Actions</th>
+                                    <th class="text-center"><i class="bx bx-calendar"></i> Created</th>
+                                    <th class="text-center" style="width: 150px;"><i class="bx bx-cog"></i> Actions</th>
                                 </tr>
                             </thead>
+                            <tbody>
+                                <!-- DataTables will populate this -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -72,10 +184,12 @@
         const dataTableList = $('#data_table').DataTable({
             processing: true,
             serverSide: true,
-            autoWidth: true,
-            scrollX: true,
-            scrollCollapse: true,
+            autoWidth: false,
+            scrollX: false,
+            scrollCollapse: false,
+            responsive: true,
             pagination: true,
+            pageLength: 25,
             deferRender: true,
             ajax: {
                 url: `${base_url}/admin/ajax/get/all-campaigns`,
@@ -99,21 +213,46 @@
                     name: 'subject'
                 },
                 {
-                    data: 'recipient_count',
-                    name: 'recipient_count'
+                    data: 'messages_sent',
+                    name: 'messages_sent',
+                    className: "text-center",
+                    orderable: false
+                },
+                {
+                    data: 'leads_generated',
+                    name: 'leads_generated',
+                    className: "text-center",
+                    orderable: false
+                },
+                {
+                    data: 'bookings_created',
+                    name: 'bookings_created',
+                    className: "text-center",
+                    orderable: false
+                },
+                {
+                    data: 'revenue',
+                    name: 'revenue',
+                    className: "text-end",
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return '<div style="color: #000000 !important;">' + data + '</div>';
+                    }
                 },
                 {
                     data: 'full_type',
-                    name: 'full_type'
+                    name: 'full_type',
+                    className: "text-center"
                 },
-
                 {
                     data: 'full_status',
-                    name: 'full_status'
+                    name: 'full_status',
+                    className: "text-center"
                 },
                 {
                     data: 'created_at',
-                    name: 'created_at'
+                    name: 'created_at',
+                    className: "text-center"
                 },
                 {
                     data: 'action',
@@ -125,13 +264,17 @@
                 },
             ],
             "columnDefs": [{
-                "targets": [1, 2, 3, 4, 5, 6, 7],
+                "targets": [1, 2, 3, 4, 5, 6, 7, 8, 9],
                 "orderable": false,
                 "sorting": false
             }],
-            dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
+            dom: "<'row g-2 mb-2'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
                 "<'row'<'col-12'tr>>" +
-                "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+                "<'row g-2 mt-2'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+            language: {
+                emptyTable: "No campaigns found",
+                zeroRecords: "No matching campaigns found"
+            },
             buttons: [],
 
         });

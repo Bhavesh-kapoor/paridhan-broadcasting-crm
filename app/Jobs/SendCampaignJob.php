@@ -125,7 +125,9 @@ class SendCampaignJob implements ShouldQueue
                     return $type === 'HEADER';
                 });
 
-                $defaultImageUrl = 'http://meta.webpayservices.in/WhatsAppMedia/Template/Image/ParidhanWPY/x2iNz14yqSk-MQ(4).jpg';
+                // Get default image URL from config
+                $defaultImageUrl = config('services.whatsapp.default_image_url', 
+                    'http://meta.webpayservices.in/WhatsAppMedia/Template/Image/ParidhanWPY/x2iNz14yqSk-MQ(4).jpg');
                 $imageUrl = $campaign->image ?? $defaultImageUrl;
                 
                 // Convert local path to full URL if needed
