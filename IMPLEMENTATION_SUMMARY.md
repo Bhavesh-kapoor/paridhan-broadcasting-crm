@@ -230,3 +230,4 @@ All database schemas are ready. Next step is to:
 - Nullable columns for backward compatibility
 - Composite indexes for common query patterns
 
+

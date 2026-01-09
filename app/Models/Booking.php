@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
@@ -34,12 +35,14 @@ class Booking extends Model
         'table_id',
         'campaign_id',
         'conversation_id',
+        'released_at',
     ];
 
     protected $casts = [
         'booking_date' => 'date',
         'price' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'released_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -78,6 +81,14 @@ class Booking extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    /**
+     * Get payment history for this booking
+     */
+    public function paymentHistory(): HasMany
+    {
+        return $this->hasMany(PaymentHistory::class, 'booking_id')->orderBy('payment_date', 'desc');
     }
 
     /**

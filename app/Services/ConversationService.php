@@ -17,7 +17,7 @@ class ConversationService
         DB::beginTransaction();
         try {
             $conversation = Conversation::create([
-                'exhibitor_id' => $data['exhibitor_id'],
+                'exhibitor_id' => $data['exhibitor_id'] ?? null,
                 'visitor_id' => $data['visitor_id'] ?? null,
                 'visitor_phone' => $data['visitor_phone'] ?? null,
                 'employee_id' => $data['employee_id'],

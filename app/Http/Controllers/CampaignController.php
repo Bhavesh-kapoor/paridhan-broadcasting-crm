@@ -223,6 +223,44 @@ class CampaignController extends Controller
         }
     }
 
+    /**
+     * Resend campaign with optional recipient selection
+     */
+    public function resend($id, Request $request): JsonResponse
+    {
+        try {
+            $campaign = $this->campaignService->getCampaignById($id);
+            
+            // If recipients are specified, update campaign recipients first
+            if ($request->has('recipients') && is_array($request->recipients) && count($request->recipients) > 0) {
+                // Remove existing recipients
+                \App\Models\CampaignRecipient::where('campaign_id', $id)->delete();
+                
+                // Add selected recipients
+                foreach ($request->recipients as $contactId) {
+                    \App\Models\CampaignRecipient::create([
+                        'campaign_id' => $id,
+                        'contact_id' => $contactId,
+                        'status' => 'pending',
+                        'sent_at' => null
+                    ]);
+                }
+            }
+            
+            $this->campaignService->sendCampaign($id, true);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Campaign resent successfully to selected recipients!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to resend campaign: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     public function progress($id)
     {
@@ -253,11 +291,18 @@ class CampaignController extends Controller
     /**
      * Show conversations for a campaign
      */
-    public function conversations($campaignId)
+    public function conversations($campaignId, Request $request)
     {
         $campaign = Campaign::findOrFail($campaignId);
-        $conversations = \App\Models\Conversation::where('campaign_id', $campaignId)
-            ->with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'booking'])
+        
+        $query = \App\Models\Conversation::where('campaign_id', $campaignId);
+        
+        // Filter by visitor_id if provided
+        if ($request->has('visitor_id') && $request->visitor_id) {
+            $query->where('visitor_id', $request->visitor_id);
+        }
+        
+        $conversations = $query->with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'booking'])
             ->orderBy('conversation_date', 'desc')
             ->get();
         
@@ -272,7 +317,13 @@ class CampaignController extends Controller
         $locations = \App\Models\LocationMngt::orderBy('loc_name')->get();
         $employees = \App\Models\User::where('role', 'employee')->where('status', 'active')->orderBy('name')->get();
         
-        return view('campaigns.conversations', compact('campaign', 'conversations', 'recipients', 'exhibitors', 'locations', 'employees'));
+        // Get filtered contact if visitor_id is provided
+        $filteredContact = null;
+        if ($request->has('visitor_id') && $request->visitor_id) {
+            $filteredContact = \App\Models\Contacts::find($request->visitor_id);
+        }
+        
+        return view('campaigns.conversations', compact('campaign', 'conversations', 'recipients', 'exhibitors', 'locations', 'employees', 'filteredContact'));
     }
 
     /**
@@ -314,6 +365,59 @@ class CampaignController extends Controller
     }
 
     /**
+     * Get conversations for a specific visitor/contact (AJAX)
+     */
+    public function getVisitorConversations(Request $request, $campaignId): JsonResponse
+    {
+        $request->validate([
+            'visitor_id' => 'required|ulid|exists:contacts,id'
+        ]);
+        
+        $campaign = Campaign::findOrFail($campaignId);
+        $contact = \App\Models\Contacts::findOrFail($request->visitor_id);
+        
+        // Check conversations for both visitor_id and exhibitor_id (since exhibitors can also have conversations)
+        $conversations = \App\Models\Conversation::where('campaign_id', $campaignId)
+            ->where(function($query) use ($request) {
+                $query->where('visitor_id', $request->visitor_id)
+                      ->orWhere('exhibitor_id', $request->visitor_id);
+            })
+            ->with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'booking'])
+            ->orderBy('conversation_date', 'desc')
+            ->get();
+        
+        $conversationsData = $conversations->map(function($conv) {
+            return [
+                'id' => $conv->id,
+                'exhibitor_name' => $conv->exhibitor->name ?? 'N/A',
+                'visitor_name' => $conv->visitor->name ?? $conv->visitor_phone ?? 'N/A',
+                'employee_name' => $conv->employee->name ?? 'N/A',
+                'location_name' => $conv->location->loc_name ?? 'N/A',
+                'table_no' => $conv->table->table_no ?? 'N/A',
+                'outcome' => $conv->outcome,
+                'notes' => $conv->notes,
+                'conversation_date' => $conv->conversation_date->format('M d, Y H:i'),
+                'has_booking' => $conv->booking ? true : false,
+                'booking_id' => $conv->booking ? $conv->booking->id : null,
+                'price' => $conv->booking ? number_format($conv->booking->price ?? 0, 2) : null,
+                'amount_paid' => $conv->booking ? number_format($conv->booking->amount_paid ?? 0, 2) : null,
+            ];
+        });
+        
+        return response()->json([
+            'status' => true,
+            'contact' => [
+                'id' => $contact->id,
+                'name' => $contact->name,
+                'phone' => $contact->phone,
+                'email' => $contact->email,
+            ],
+            'conversations' => $conversationsData,
+            'total' => $conversations->count()
+        ]);
+    }
+
+    /**
      * Get campaign recipients list (AJAX)
      */
     public function getRecipientsList(Request $request, $campaignId): JsonResponse
@@ -328,14 +432,29 @@ class CampaignController extends Controller
             
             // Check if conversation exists (with booking relationship)
             $conversation = \App\Models\Conversation::where('campaign_id', $campaignId)
-                ->where('visitor_id', $contact->id)
+                ->where(function($query) use ($contact) {
+                    $query->where('visitor_id', $contact->id)
+                          ->orWhere('exhibitor_id', $contact->id);
+                })
                 ->with('booking')
                 ->first();
             
-            // Check if booking exists
-            $booking = \App\Models\Booking::where('campaign_id', $campaignId)
-                ->where('visitor_id', $contact->id)
-                ->first();
+            // Check if booking exists - check both visitor_id and exhibitor_id
+            // Also check if booking exists through conversation relationship
+            $booking = null;
+            
+            // First check if there's a booking through conversation
+            if ($conversation && $conversation->booking) {
+                $booking = $conversation->booking;
+            } else {
+                // Otherwise, check directly for bookings
+                $booking = \App\Models\Booking::where('campaign_id', $campaignId)
+                    ->where(function($query) use ($contact) {
+                        $query->where('visitor_id', $contact->id)
+                              ->orWhere('exhibitor_id', $contact->id);
+                    })
+                    ->first();
+            }
             
             $data[] = [
                 'id' => $recipient->id,
@@ -351,7 +470,8 @@ class CampaignController extends Controller
                 'has_booking' => $booking ? true : false,
                 'booking_id' => $booking ? $booking->id : null,
                 'booking_amount' => $booking ? number_format($booking->amount_paid ?? 0, 2) : '0.00',
-                'has_invoice' => ($conversation && $conversation->booking) ? true : false,
+                'booking_price' => $booking ? number_format($booking->price ?? 0, 2) : '0.00',
+                'has_invoice' => ($conversation && $conversation->booking) || $booking ? true : false,
             ];
         }
         
@@ -364,7 +484,7 @@ class CampaignController extends Controller
     public function storeConversation(Request $request, $campaignId): JsonResponse
     {
         $validated = $request->validate([
-            'exhibitor_id' => 'required|ulid|exists:contacts,id',
+            'exhibitor_id' => 'nullable|ulid|exists:contacts,id',
             'visitor_id' => 'nullable|ulid|exists:contacts,id',
             'visitor_phone' => 'nullable|string|max:20',
             'employee_id' => 'required|ulid|exists:users,id',
@@ -379,6 +499,11 @@ class CampaignController extends Controller
             $validated['campaign_id'] = $campaignId;
             $validated['employee_id'] = $validated['employee_id'] ?? auth()->id();
             $validated['conversation_date'] = $validated['conversation_date'] ?? now();
+
+            // Remove exhibitor_id if it's empty or null
+            if (empty($validated['exhibitor_id'])) {
+                unset($validated['exhibitor_id']);
+            }
 
             // Find campaign recipient if visitor_id is provided
             if (!empty($validated['visitor_id'])) {

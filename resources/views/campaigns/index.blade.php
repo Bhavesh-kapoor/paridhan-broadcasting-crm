@@ -136,7 +136,6 @@
                                     <th><i class="bx bx-rename"></i> Campaign Name</th>
                                     <th><i class="bx bx-text"></i> Subject</th>
                                     <th class="text-center"><i class="bx bx-send"></i> Sent</th>
-                                    <th class="text-center"><i class="bx bx-user-plus"></i> Leads</th>
                                     <th class="text-center"><i class="bx bx-check-circle"></i> Bookings</th>
                                     <th class="text-end"><i class="bx bx-rupee"></i> Revenue</th>
                                     <th class="text-center"><i class="bx bx-category"></i> Type</th>
@@ -215,12 +214,6 @@
                 {
                     data: 'messages_sent',
                     name: 'messages_sent',
-                    className: "text-center",
-                    orderable: false
-                },
-                {
-                    data: 'leads_generated',
-                    name: 'leads_generated',
                     className: "text-center",
                     orderable: false
                 },

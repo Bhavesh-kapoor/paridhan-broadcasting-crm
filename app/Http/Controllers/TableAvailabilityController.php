@@ -79,9 +79,10 @@ class TableAvailabilityController extends Controller
     {
         $location = LocationMngt::with('tables')->findOrFail($locationId);
         
-        // Get all bookings for this location
+        // Get all bookings for this location (exclude released bookings)
         $bookings = Booking::where('location_id', $locationId)
             ->whereNotNull('table_id')
+            ->whereNull('released_at') // Exclude released bookings
             ->with(['visitor', 'exhibitor', 'employee'])
             ->get();
         
@@ -97,7 +98,7 @@ class TableAvailabilityController extends Controller
         $tables = $location->tables->map(function($table) use ($usedTableIds, $bookings, $conversations) {
             $isUsed = $usedTableIds->contains($table->id);
             
-            // Get booking/conversation info if used
+            // Get booking/conversation info if used (only non-released bookings)
             $booking = $bookings->firstWhere('table_id', $table->id);
             $conversation = $conversations->firstWhere('table_id', $table->id);
             
@@ -191,7 +192,7 @@ class TableAvailabilityController extends Controller
     {
         $validated = $request->validate([
             'campaign_id' => 'nullable|ulid|exists:campaigns,id',
-            'exhibitor_id' => 'required|ulid|exists:contacts,id',
+            'exhibitor_id' => 'nullable|ulid|exists:contacts,id',
             'visitor_id' => 'nullable|ulid|exists:contacts,id',
             'phone' => 'nullable|string|max:20',
             'location_id' => 'required|exists:location_mngt,id',
@@ -204,6 +205,27 @@ class TableAvailabilityController extends Controller
 
         try {
             $validated['employee_id'] = auth()->id();
+            
+            // Get phone from visitor if visitor_id is provided but phone is not
+            if (empty($validated['phone']) && !empty($validated['visitor_id'])) {
+                $visitor = \App\Models\Contacts::find($validated['visitor_id']);
+                if ($visitor && $visitor->phone) {
+                    $validated['phone'] = $visitor->phone;
+                }
+            }
+            
+            // Get phone from exhibitor if exhibitor_id is provided but phone is still not set
+            if (empty($validated['phone']) && !empty($validated['exhibitor_id'])) {
+                $exhibitor = \App\Models\Contacts::find($validated['exhibitor_id']);
+                if ($exhibitor && $exhibitor->phone) {
+                    $validated['phone'] = $exhibitor->phone;
+                }
+            }
+            
+            // Remove phone from validated array if it's empty (let it be NULL in database)
+            if (empty($validated['phone'])) {
+                $validated['phone'] = null;
+            }
             
             // Get table to set backward compatibility fields
             $table = LocationMngtTableDetail::find($validated['table_id']);

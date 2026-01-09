@@ -1646,3 +1646,4 @@ $bookings = Booking::where('location_id', $locationId)->get();
 5. Deploy to staging
 6. Monitor and optimize
 
+

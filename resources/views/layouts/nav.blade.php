@@ -76,10 +76,10 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('invoices.index') }}">
-                    <div class="parent-icon"><i class="bx bx-file"></i>
+                <a href="{{ route('admin.bookings.index') }}">
+                    <div class="parent-icon"><i class="bx bx-calendar-check"></i>
                     </div>
-                    <div class="menu-title">Invoices</div>
+                    <div class="menu-title">Bookings</div>
                 </a>
             </li>
         @endif

@@ -292,3 +292,4 @@ $funnel = [
 
 The complete flow is now connected and traceable from campaign send to revenue generation!
 
+

@@ -113,15 +113,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Leads Generated -->
-                                <div class="col-6">
-                                    <div class="countBox text-center rounded-3" style="background:#fff8e6;">
-                                        <i class="bx bx-user-plus fs-1 text-warning"></i>
-                                        <h4 class="fw-bold mb-0 mt-2 text-warning">{{ $analytics['total_leads_generated'] ?? 0 }}</h4>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Leads Generated</p>
-                                    </div>
-                                </div>
-
                                 <!-- Bookings Created -->
                                 <div class="col-6">
                                     <div class="countBox text-center rounded-3" style="background:#e9f8f3;">
@@ -140,29 +131,12 @@
                                     </div>
                                 </div>
 
-                                <!-- Conversion Rates -->
+                                @if(isset($analytics['recipient_to_booking_conversion']))
                                 <div class="col-12">
-                                    <div class="countBox text-center rounded-3 p-3" style="background:#e8f5e9;">
-                                        <i class="bx bx-trending-up fs-2 text-success"></i>
-                                        <h3 class="fw-bold mb-0 mt-2 text-success">{{ $analytics['lead_to_booking_conversion'] ?? 0 }}%</h3>
-                                        <p class="mb-0 mt-1 fw-semibold text-dark">Lead to Booking</p>
-                                        <small class="text-muted">(Bookings / Leads)</small>
-                                    </div>
-                                </div>
-                                
-                                @if(isset($analytics['recipient_to_lead_conversion']))
-                                <div class="col-6">
-                                    <div class="countBox text-center rounded-3 p-2" style="background:#e3f2fd;">
-                                        <i class="bx bx-user-check fs-3 text-primary"></i>
-                                        <h5 class="fw-bold mb-0 mt-1 text-primary">{{ $analytics['recipient_to_lead_conversion'] ?? 0 }}%</h5>
-                                        <small class="text-muted">Recipient → Lead</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
                                     <div class="countBox text-center rounded-3 p-2" style="background:#fff3e0;">
                                         <i class="bx bx-check-double fs-3 text-warning"></i>
                                         <h5 class="fw-bold mb-0 mt-1 text-warning">{{ $analytics['recipient_to_booking_conversion'] ?? 0 }}%</h5>
-                                        <small class="text-muted">Recipient → Booking</small>
+                                        <small class="text-muted">Recipient → Booking Conversion</small>
                                     </div>
                                 </div>
                                 @endif
@@ -197,6 +171,11 @@
                                     <button type="button" class="btn btn-success d-flex  align-content-center sendCampaign"
                                         id="{{ $campaign->id }}" title="Send Campaign">
                                         <i class="bx bx-paper-plane me-2"></i>Send
+                                    </button>
+                                @elseif($campaign->status === 'sent')
+                                    <button type="button" class="btn btn-warning d-flex align-content-center resendCampaign me-2"
+                                        data-campaign-id="{{ $campaign->id }}">
+                                        <i class="bx bx-refresh me-1"></i>Resend Campaign
                                     </button>
                                 @endif
                                 <a href="{{ route('campaigns.edit', $campaign->id) }}"
@@ -272,6 +251,81 @@
                 </div>
             </div>
             @endif
+
+            <!-- Resend Campaign Modal -->
+            <div class="modal fade" id="resendCampaignModal" tabindex="-1" aria-labelledby="resendCampaignModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-white">
+                            <h5 class="modal-title" id="resendCampaignModalLabel">
+                                <i class="bx bx-refresh me-2"></i>Resend Campaign - Select Recipients
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="resendCampaignForm">
+                            @csrf
+                            <div class="modal-body">
+                                <input type="hidden" name="campaign_id" id="resend_campaign_id">
+                                
+                                <div class="alert alert-info">
+                                    <i class="bx bx-info-circle me-2"></i>
+                                    Select the recipients you want to resend this campaign to. You can select all or choose specific exhibitors/visitors.
+                                </div>
+
+                                <!-- Recipient Selection Tabs -->
+                                <ul class="nav nav-tabs mb-3" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="resend-exhibitors-tab" data-bs-toggle="tab" data-bs-target="#resend-exhibitorsTab" type="button" role="tab">
+                                            <i class="bx bx-store-alt me-1"></i>Exhibitors
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="resend-visitors-tab" data-bs-toggle="tab" data-bs-target="#resend-visitorsTab" type="button" role="tab">
+                                            <i class="bx bx-user me-1"></i>Visitors
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content">
+                                    <!-- Exhibitors TAB -->
+                                    <div class="tab-pane fade show active" id="resend-exhibitorsTab" role="tabpanel">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select exhibitors:</span>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="resendSelectAllExhibitors">Select All</button>
+                                        </div>
+                                        <div id="resendExhibitorsContainer" class="recipient-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;"></div>
+                                    </div>
+
+                                    <!-- Visitors TAB -->
+                                    <div class="tab-pane fade" id="resend-visitorsTab" role="tabpanel">
+                                        <div class="d-flex justify-content-between mb-2 align-items-center">
+                                            <span class="fw-semibold">Select visitors:</span>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="resendSelectAllVisitors">Select All</button>
+                                        </div>
+                                        <div id="resendVisitorsContainer" class="recipient-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Selected Count -->
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="fw-semibold">Selected Recipients:</span>
+                                        </div>
+                                        <span class="badge bg-primary" id="resendSelectedCount">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bx bx-refresh me-1"></i>Resend Campaign
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
             <!-- Recipients List -->
             <div class="row">
@@ -491,6 +545,188 @@
                         });
                     }
 
+                });
+            });
+            
+            // Global state for resend modal
+            let resendSelectedRecipients = new Set();
+            let resendExhibitorsToggle = false;
+            let resendVisitorsToggle = false;
+
+            // Resend Campaign Handler - Open modal
+            $(document).on('click', '.resendCampaign', function() {
+                var id = $(this).data('campaign-id');
+
+                if (!id) {
+                    toastr.error('Something went wrong. Please try again.');
+                    return;
+                }
+
+                // Set campaign ID
+                $('#resend_campaign_id').val(id);
+                
+                // Reset selections
+                resendSelectedRecipients.clear();
+                resendExhibitorsToggle = false;
+                resendVisitorsToggle = false;
+                updateResendSelectedCount();
+                
+                // Load recipients
+                loadResendExhibitors();
+                loadResendVisitors();
+                
+                // Open modal
+                const modal = new bootstrap.Modal(document.getElementById('resendCampaignModal'));
+                modal.show();
+            });
+
+            // Load Exhibitors for Resend
+            function loadResendExhibitors(page = 1) {
+                $.get("{{ route('ajax.exhibitors') }}", { page: page }, function(html) {
+                    $("#resendExhibitorsContainer").html(html);
+                    restoreResendSelections();
+                }).fail(function(xhr) {
+                    console.error("Error loading exhibitors:", xhr);
+                    toastr.error("Failed to load exhibitors. Please try again.");
+                });
+            }
+
+            // Load Visitors for Resend
+            function loadResendVisitors(page = 1) {
+                $.get("{{ route('ajax.visitors') }}", { page: page }, function(html) {
+                    $("#resendVisitorsContainer").html(html);
+                    restoreResendSelections();
+                }).fail(function(xhr) {
+                    console.error("Error loading visitors:", xhr);
+                    toastr.error("Failed to load visitors. Please try again.");
+                });
+            }
+
+            // Restore selections
+            function restoreResendSelections() {
+                $("#resendCampaignModal .recipient-checkbox").each(function() {
+                    const id = String($(this).data("id"));
+                    $(this).prop("checked", resendSelectedRecipients.has(id));
+                });
+                updateResendSelectedCount();
+            }
+
+            // Handle pagination in resend modal
+            $(document).on("click", "#resendCampaignModal .recipient-list .pagination a", function(e) {
+                e.preventDefault();
+                const href = $(this).attr("href");
+                const url = new URL(href, window.location.origin);
+                const page = url.searchParams.get("page") || 1;
+                const target = $(this).closest(".tab-pane");
+                
+                if (target.is("#resend-exhibitorsTab")) {
+                    loadResendExhibitors(page);
+                } else if (target.is("#resend-visitorsTab")) {
+                    loadResendVisitors(page);
+                }
+            });
+
+            // Update selected count
+            function updateResendSelectedCount() {
+                $("#resendSelectedCount").text(resendSelectedRecipients.size);
+                $("#resendSelectAllExhibitors").text(resendExhibitorsToggle ? "Unselect All" : "Select All");
+                $("#resendSelectAllVisitors").text(resendVisitorsToggle ? "Unselect All" : "Select All");
+            }
+
+            // Single checkbox handler for resend modal
+            $(document).on("change", "#resendCampaignModal .recipient-checkbox", function() {
+                const id = String($(this).data("id"));
+                const type = $(this).data("type");
+
+                if ($(this).is(":checked")) {
+                    resendSelectedRecipients.add(id);
+                } else {
+                    resendSelectedRecipients.delete(id);
+                    if (type === "exhibitor") resendExhibitorsToggle = false;
+                    if (type === "visitor") resendVisitorsToggle = false;
+                }
+                updateResendSelectedCount();
+            });
+
+            // Select All Exhibitors for Resend (using event delegation)
+            $(document).on("click", "#resendSelectAllExhibitors", function() {
+                resendExhibitorsToggle = !resendExhibitorsToggle;
+                $.get("{{ route('ajax.exhibitors.all') }}", function(data) {
+                    data.forEach(id => {
+                        if (resendExhibitorsToggle) {
+                            resendSelectedRecipients.add(String(id));
+                        } else {
+                            resendSelectedRecipients.delete(String(id));
+                        }
+                    });
+                    restoreResendSelections();
+                    updateResendSelectedCount();
+                }).fail(function(xhr) {
+                    console.error("Error loading exhibitors:", xhr);
+                    toastr.error("Failed to load exhibitors. Please try again.");
+                });
+            });
+
+            // Select All Visitors for Resend (using event delegation)
+            $(document).on("click", "#resendSelectAllVisitors", function() {
+                resendVisitorsToggle = !resendVisitorsToggle;
+                $.get("{{ route('ajax.visitors.all') }}", function(data) {
+                    data.forEach(id => {
+                        if (resendVisitorsToggle) {
+                            resendSelectedRecipients.add(String(id));
+                        } else {
+                            resendSelectedRecipients.delete(String(id));
+                        }
+                    });
+                    restoreResendSelections();
+                    updateResendSelectedCount();
+                }).fail(function(xhr) {
+                    console.error("Error loading visitors:", xhr);
+                    toastr.error("Failed to load visitors. Please try again.");
+                });
+            });
+
+            // Handle resend form submission
+            $('#resendCampaignForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const campaignId = $('#resend_campaign_id').val();
+                const recipients = Array.from(resendSelectedRecipients);
+                
+                if (recipients.length === 0) {
+                    toastr.error('Please select at least one recipient to resend the campaign.');
+                    return;
+                }
+
+                $.ajax({
+                    url: base_url + `/admin/campaigns/${campaignId}/resend`,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        recipients: recipients
+                    },
+                    success: function(response) {
+                        if (response.status === true) {
+                            $('#resendCampaignModal').modal('hide');
+                            Swal.fire({
+                                icon: "success",
+                                title: "Campaign Resent!",
+                                html: response.message,
+                                showCancelButton: false,
+                                confirmButtonText: "OK",
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.reload(true);
+                                }
+                            });
+                        } else {
+                            toastr.error(response.message || "Something went wrong!");
+                        }
+                    },
+                    error: function(xhr) {
+                        const errorMessage = xhr.responseJSON?.message || "Server error! Please try again.";
+                        toastr.error(errorMessage);
+                    }
                 });
             });
         });

@@ -1,6 +1,6 @@
 @extends('layouts.app_layout')
 
-@section('title', 'My Bookings & Revenue')
+@section('title', 'All Bookings & Revenue')
 
 @section('style')
     <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
@@ -25,12 +25,12 @@
         <div class="page-content">
             <!--breadcrumb-->
             <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-                <div class="breadcrumb-title pe-3">My Bookings & Revenue</div>
+                <div class="breadcrumb-title pe-3">All Bookings & Revenue</div>
                 <div class="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0 p-0">
-                            <li class="breadcrumb-item"><a href="{{ route('employee.dashboard') }}"><i class="bx bx-home-alt"></i></a></li>
-                            <li class="breadcrumb-item active">My Bookings</li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}"><i class="bx bx-home-alt"></i></a></li>
+                            <li class="breadcrumb-item active">All Bookings</li>
                         </ol>
                     </nav>
                 </div>
@@ -40,13 +40,12 @@
             <!-- Revenue Summary Cards -->
             <div class="row g-3 mb-4">
                 @php
-                    $employeeId = auth()->id();
-                    $totalBookings = \App\Models\Booking::where('employee_id', $employeeId)->count();
-                    $totalRevenue = \App\Models\Booking::where('employee_id', $employeeId)->sum('amount_paid') ?? 0;
-                    $paidRevenue = \App\Models\Booking::where('employee_id', $employeeId)->where('amount_status', 'paid')->sum('amount_paid') ?? 0;
-                    $pendingRevenue = \App\Models\Booking::where('employee_id', $employeeId)->where('amount_status', 'pending')->sum('price') ?? 0;
-                    $partialRevenue = \App\Models\Booking::where('employee_id', $employeeId)->where('amount_status', 'partial')->sum('amount_paid') ?? 0;
-                    $totalPrice = \App\Models\Booking::where('employee_id', $employeeId)->sum('price') ?? 0;
+                    $totalBookings = \App\Models\Booking::count();
+                    $totalRevenue = \App\Models\Booking::sum('amount_paid') ?? 0;
+                    $paidRevenue = \App\Models\Booking::where('amount_status', 'paid')->sum('amount_paid') ?? 0;
+                    $pendingRevenue = \App\Models\Booking::where('amount_status', 'pending')->sum('price') ?? 0;
+                    $partialRevenue = \App\Models\Booking::where('amount_status', 'partial')->sum('amount_paid') ?? 0;
+                    $totalPrice = \App\Models\Booking::sum('price') ?? 0;
                 @endphp
                 
                 <div class="col-md-3">
@@ -119,7 +118,7 @@
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">
-                            <i class="bx bx-calendar-check me-2" style="color: var(--sidebar-end, #3b82f6);"></i>All My Bookings
+                            <i class="bx bx-calendar-check me-2" style="color: var(--sidebar-end, #3b82f6);"></i>All Bookings
                         </h5>
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
                             <i class="bx bx-filter me-1"></i>Filters
@@ -129,7 +128,7 @@
                     <!-- Filters Section -->
                     <div class="collapse" id="filtersCollapse">
                         <div class="row g-3 pb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Status</label>
                                 <select class="form-select form-select-sm" id="filterStatus">
                                     <option value="">All Status</option>
@@ -138,13 +137,22 @@
                                     <option value="pending">Pending</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Date From</label>
                                 <input type="date" class="form-control form-control-sm" id="filterDateFrom">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Date To</label>
                                 <input type="date" class="form-control form-control-sm" id="filterDateTo">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Employee</label>
+                                <select class="form-select form-select-sm" id="filterEmployee">
+                                    <option value="">All Employees</option>
+                                    @foreach(\App\Models\User::where('role', 'employee')->get() as $emp)
+                                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-md-12">
                                 <button type="button" class="btn btn-sm btn-primary" onclick="applyFilters()">
@@ -166,6 +174,7 @@
                                     <th><i class="bx bx-calendar"></i> Booking Date</th>
                                     <th><i class="bx bx-building"></i> Exhibitor</th>
                                     <th><i class="bx bx-user"></i> Visitor</th>
+                                    <th><i class="bx bx-user-circle"></i> Employee</th>
                                     <th><i class="bx bx-map"></i> Location</th>
                                     <th><i class="bx bx-table"></i> Table</th>
                                     <th class="text-end"><i class="bx bx-rupee"></i> Total Price</th>
@@ -281,11 +290,12 @@
                 processing: true,
                 serverSide: false,
                 ajax: {
-                    url: '{{ route("employee.bookings.list") }}',
+                    url: '{{ route("admin.bookings.list") }}',
                     type: 'POST',
                     data: function(d) {
                         return {
                             status: $('#filterStatus').val(),
+                            employee_id: $('#filterEmployee').val(),
                             date_from: $('#filterDateFrom').val(),
                             date_to: $('#filterDateTo').val()
                         };
@@ -305,6 +315,7 @@
                     { data: 'booking_date' },
                     { data: 'exhibitor' },
                     { data: 'visitor' },
+                    { data: 'employee' },
                     { data: 'location' },
                     { data: 'table' },
                     { 
@@ -344,6 +355,11 @@
                         orderable: false,
                         render: function(data, type, row) {
                             let buttons = '';
+                            
+                            // View button - always show
+                            buttons += '<a href="{{ route("bookings.invoice", ":id") }}'.replace(':id', row.id) + '" target="_blank" class="btn btn-sm btn-action btn-primary me-1" title="View Details">' +
+                                      '<i class="bx bx-show"></i> View' +
+                                      '</a>';
                             
                             // Check if booking is already released
                             const isReleased = row.released_at !== null && row.released_at !== '';
@@ -399,7 +415,7 @@
                 submitBtn.prop('disabled', true).html('<i class="bx bx-loader bx-spin me-1"></i>Settling...');
                 
                 $.ajax({
-                    url: '{{ route("employee.bookings.settle") }}',
+                    url: '{{ route("admin.bookings.settle") }}',
                     type: 'POST',
                     data: {
                         _token: '{{ csrf_token() }}',
@@ -479,7 +495,7 @@
             
             $('#paymentHistoryContainer').html('<div class="text-center text-muted py-3"><i class="bx bx-loader bx-spin"></i> Loading...</div>');
             
-            const routeUrl = '{{ route("employee.bookings.payment-history", ":id") }}'.replace(':id', bookingId);
+            const routeUrl = '{{ route("admin.bookings.payment-history", ":id") }}'.replace(':id', bookingId);
             
             $.ajax({
                 url: routeUrl,
@@ -519,7 +535,7 @@
                     $('#paymentHistoryContainer').html('<div class="text-center text-danger py-3">Failed to load payment history</div>');
                 }
             });
-        }
+        });
         
         function applyFilters() {
             bookingsTable.ajax.reload();
@@ -527,6 +543,7 @@
         
         function clearFilters() {
             $('#filterStatus').val('');
+            $('#filterEmployee').val('');
             $('#filterDateFrom').val('');
             $('#filterDateTo').val('');
             bookingsTable.ajax.reload();
@@ -538,7 +555,7 @@
             }
             
             $.ajax({
-                url: '{{ route("employee.bookings.release", ":id") }}'.replace(':id', bookingId),
+                url: '{{ route("admin.bookings.release", ":id") }}'.replace(':id', bookingId),
                 type: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}'

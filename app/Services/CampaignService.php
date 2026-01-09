@@ -68,12 +68,6 @@ class CampaignService
                     <i class="bx bx-send me-1"></i>' . ($data->messages_sent_count ?? 0) . ' Sent
                 </span>';
             })
-            ->addColumn('leads_generated', function ($data) {
-                $leadsCount = $data->leads_count ?? 0;
-                return '<span class="badge bg-warning px-3 py-2">
-                    <i class="bx bx-user-plus me-1"></i>' . $leadsCount . ' Leads
-                </span>';
-            })
             ->addColumn('bookings_created', function ($data) {
                 $bookingsCount = $data->bookings_count ?? 0;
                 return '<span class="badge bg-success px-3 py-2">
@@ -136,7 +130,7 @@ class CampaignService
                                             ' . $data->status . '
                                         </span>';
             })
-            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count', 'messages_sent', 'leads_generated', 'bookings_created', 'revenue'])
+            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count', 'messages_sent', 'bookings_created', 'revenue'])
             ->make(true);
     }
 
@@ -411,28 +405,45 @@ class CampaignService
     }
 
     /**
-     * Send campaign
+     * Send campaign (can resend multiple times)
      */
-    public function sendCampaign($id)
+    public function sendCampaign($id, $resend = false)
     {
         DB::beginTransaction();
 
         try {
             $campaign = $this->getCampaignById($id);
 
-            if ($campaign->status !== 'draft') {
-                throw new \Exception('Campaign can only be sent from draft status.');
+            // Allow resending - reset recipient statuses if resending
+            if ($resend) {
+                // Reset all recipients status to pending for resend
+                \App\Models\CampaignRecipient::where('campaign_id', $id)
+                    ->update([
+                        'status' => 'pending',
+                        'sent_at' => null
+                    ]);
+            } else {
+                // Original logic - only send if draft
+                if ($campaign->status !== 'draft') {
+                    throw new \Exception('Campaign can only be sent from draft status. Use resend option for already sent campaigns.');
+                }
             }
 
-            $campaign->update([
-                'status' => 'sent',
-                'sent_at' => now(),
-            ]);
+            // Update campaign status if it's not already sent
+            if ($campaign->status !== 'sent') {
+                $campaign->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                ]);
+            } else {
+                // Update sent_at for resend
+                $campaign->update([
+                    'sent_at' => now(),
+                ]);
+            }
 
-            // Here you would integrate with your messaging service (Wati, etc.)
-           dispatch(new SendCampaignJob($id));
-
-            // For now, we'll just mark it as sent
+            // Dispatch job to send campaign messages
+            dispatch(new SendCampaignJob($id));
 
             DB::commit();
             return $campaign;

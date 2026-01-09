@@ -61,6 +61,14 @@
                                         <i class="bx bx-megaphone me-2"></i>{{ $campaign->name }}
                                     </h4>
                                     <p class="text-white-50 mb-0">{{ $campaign->subject }}</p>
+                                    @if(isset($filteredContact) && $filteredContact)
+                                    <p class="text-white-75 mb-0 mt-2">
+                                        <i class="bx bx-filter me-1"></i>Showing conversations for: <strong>{{ $filteredContact->name }}</strong>
+                                        <a href="{{ route('campaigns.conversations', $campaign->id) }}" class="btn btn-sm btn-light ms-2">
+                                            <i class="bx bx-x"></i> Clear Filter
+                                        </a>
+                                    </p>
+                                    @endif
                                 </div>
                                 <div class="text-end text-white">
                                     <div class="d-flex gap-3">
@@ -157,7 +165,7 @@
                                             <div class="mt-3 pt-2 border-top">
                                                 <div class="d-flex gap-2 flex-wrap">
                                                     @if($hasConversation)
-                                                    <a href="{{ route('campaigns.conversations', $campaign->id) }}" class="btn btn-sm btn-info flex-fill" title="View Conversation">
+                                                    <a href="{{ route('campaigns.conversations', $campaign->id) }}?visitor_id={{ $contact->id ?? '' }}" class="btn btn-sm btn-info flex-fill" title="View Conversation">
                                                         <i class="bx bx-show me-1"></i>View
                                                     </a>
                                                     @php
