@@ -31,16 +31,6 @@ class ProcessRecipientsJob implements ShouldQueue
 
     public function handle()
     {
-        // Check if campaign exists
-        $campaign = \App\Models\Campaign::find($this->campaignId);
-        if (!$campaign) {
-            Log::channel('process_recipients')->error("Campaign not found", [
-                'campaign_id' => $this->campaignId,
-                'recipients_count' => count($this->recipientIds ?? [])
-            ]);
-            return;
-        }
-
         if (empty($this->recipientIds)) {
             Log::channel('process_recipients')->warning("No recipients to process", ['campaign_id' => $this->campaignId]);
             return;
@@ -90,9 +80,6 @@ class ProcessRecipientsJob implements ShouldQueue
                 $totalInserted += count($insertData);
             }
         }
-
-        // Close database connection to free up resources
-        \Illuminate\Support\Facades\DB::disconnect();
     }
 
     public function failed(Throwable $e)

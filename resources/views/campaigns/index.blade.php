@@ -1,4 +1,7 @@
 @extends('layouts.app_layout')
+@section('style')
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
+@endsection
 @section('wrapper')
     <div class="page-wrapper">
         <div class="page-content">
@@ -23,14 +26,14 @@
                         <table id="data_table" class="table table-striped table-bordered mt-2" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Sl.No</th>
-                                    <th>Name</th>
-                                    <th>Subject</th>
-                                    <th>Recipients</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Action</th>
+                                    <th class="text-center"><i class="bx bx-hash"></i> Sl.No</th>
+                                    <th><i class="bx bx-rename"></i> Campaign Name</th>
+                                    <th><i class="bx bx-text"></i> Subject</th>
+                                    <th class="text-center"><i class="bx bx-group"></i> Recipients</th>
+                                    <th class="text-center"><i class="bx bx-category"></i> Type</th>
+                                    <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
+                                    <th class="text-center"><i class="bx bx-calendar"></i> Created Date</th>
+                                    <th class="text-center"><i class="bx bx-cog"></i> Actions</th>
                                 </tr>
                             </thead>
                         </table>

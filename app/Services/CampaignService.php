@@ -60,21 +60,26 @@ class CampaignService
             })
             ->addColumn('action', function ($data) {
                 $id = $data->id;
-                $button = ' <button class="btn btn-info btn-sm border btnView" route="' . route('campaigns.show', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="View Campaign">
-                <i class="lni lni-eye"></i>
+                $button = '<div class="d-flex gap-1 justify-content-center">';
+                
+                $button .= '<button class="btn btn-action btn-view btnView" route="' . route('campaigns.show', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="View Campaign Details">
+                    <i class="bx bx-show"></i>
+                    <span class="d-none d-md-inline">View</span>
                 </button>';
 
-                // $button .= ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('campaigns.edit', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Edit Campaign">
-                // <i class="bx bx-pencil"></i>
-                // </button>';
                 if ($data->isDraft()):
-                    $button .= '<button class="btn btn-success btn-sm sendCampaign mx-1" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Send Campaign">
-                    <i class="bx bx-paper-plane"></i>
-                </button>';
+                    $button .= '<button class="btn btn-action btn-send sendCampaign" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Send Campaign Now">
+                        <i class="bx bx-paper-plane"></i>
+                        <span class="d-none d-md-inline">Send</span>
+                    </button>';
                 endif;
-                $button .= ' <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete Campaign">
+                
+                $button .= '<button class="btn btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Campaign">
                     <i class="bx bx-trash"></i>
+                    <span class="d-none d-md-inline">Delete</span>
                 </button>';
+                
+                $button .= '</div>';
                 return $button;
             })
 
@@ -219,8 +224,8 @@ class CampaignService
                 'subject' => $data['subject'],
                 'message' => $data['message'],
                 'type' => $data['type'],
+                'template_name' => $data['template_name'] ?? null,
                 'status' => 'draft',
-                'image' => $data['image'] ?? null,
                 'scheduled_at' => $data['scheduled_at'] ?? null,
             ]);
 
@@ -252,13 +257,9 @@ class CampaignService
                 'subject' => $data['subject'],
                 'message' => $data['message'],
                 'type' => $data['type'],
+                'template_name' => $data['template_name'] ?? null,
                 'scheduled_at' => $data['scheduled_at'] ?? null,
             ];
-
-            // Update image if provided
-            if (isset($data['image'])) {
-                $updateData['image'] = $data['image'];
-            }
 
             $campaign->update($updateData);
 

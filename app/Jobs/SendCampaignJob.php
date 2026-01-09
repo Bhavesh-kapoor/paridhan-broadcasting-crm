@@ -9,6 +9,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Campaign;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class SendCampaignJob implements ShouldQueue
 {
@@ -66,130 +68,251 @@ class SendCampaignJob implements ShouldQueue
         foreach ($recipients as $index => $recipient) {
             try {
 
-                /* ---------------- BUILD COMPONENTS ---------------- */
-
-                $components = [];
-
-                // HEADER IMAGE (optional) - must be public HTTPS URL
-                // Default test image for local development if no image provided
-                $defaultTestImage = 'https://d8iqbmvu05s9c.cloudfront.net/ajprhqgqg1otf7d5sm7u3brf27gv';
+                /* ---------------- FETCH TEMPLATE DATA ---------------- */
                 
-                if (!empty($campaign->image)) {
-                    // Convert local path to full HTTPS URL if needed
-                    $imageUrl = $campaign->image;
-
-                    // If it's a local path, convert to full URL
-                    if (!str_starts_with($imageUrl, 'http')) {
-                        $imageUrl = url('uploads/campaign_images/' . $campaign->image);
-                    }
-
-                    // Try to convert HTTP to HTTPS if possible
-                    if (str_starts_with($imageUrl, 'http://') && !str_starts_with($imageUrl, 'https://')) {
-                        $imageUrl = str_replace('http://', 'https://', $imageUrl);
-                        Log::channel('campaign_progress')->info('Converted HTTP to HTTPS for image URL', [
-                            'campaign_id' => $campaign->id,
-                            'image_url' => $imageUrl,
-                        ]);
-                    }
-
-                    // Validate HTTPS (Meta requires HTTPS)
-                    if (!str_starts_with($imageUrl, 'https://')) {
-                        // If not HTTPS, use default test image in local development
-                        if (app()->environment('local')) {
-                            $imageUrl = $defaultTestImage;
-                            Log::channel('campaign_progress')->info('Using default test image for local development', [
-                                'campaign_id' => $campaign->id,
-                                'original_url' => $campaign->image,
-                                'using_url' => $imageUrl,
-                            ]);
-                        } else {
-                            Log::channel('campaign_progress')->warning('Image URL is not HTTPS, skipping header. Template may require image header!', [
-                                'campaign_id' => $campaign->id,
-                                'image_url' => $imageUrl,
-                                'warning' => 'If template requires image header, this will cause error 132012. Use HTTPS image URL or template without image requirement.',
-                            ]);
-                            // Don't add header if not HTTPS in production
-                            $imageUrl = null;
-                        }
-                    }
-                } else {
-                    // No image provided - use default test image in local development
-                    if (app()->environment('local')) {
-                        $imageUrl = $defaultTestImage;
-                        Log::channel('campaign_progress')->info('No image provided, using default test image for local development', [
-                            'campaign_id' => $campaign->id,
-                            'image_url' => $imageUrl,
-                        ]);
-                    } else {
-                        Log::channel('campaign_progress')->warning('Campaign has no image. If template requires image header, this may cause error 132012.', [
-                            'campaign_id' => $campaign->id,
-                        ]);
-                    }
+                // Get template name from campaign (required for WhatsApp campaigns)
+                $templateName = $campaign->template_name ?? null;
+                
+                if (empty($templateName)) {
+                    throw new \Exception('Template name is required for WhatsApp campaigns. Please select a template when creating the campaign.');
                 }
 
-                // Add image header if we have a valid HTTPS URL
-                if (!empty($imageUrl) && str_starts_with($imageUrl, 'https://')) {
+                // Fetch template from cache or API
+                $templates = Cache::get('whatsapp_templates', []);
+                $template = collect($templates)->firstWhere('name', $templateName);
+                
+                if (!$template) {
+                    // Try to fetch from API if not in cache
+                    Log::channel('campaign_progress')->warning('Template not found in cache, attempting to fetch from API', [
+                        'campaign_id' => $campaign->id,
+                        'template_name' => $templateName,
+                    ]);
+                    
+                    // You may want to fetch from API here if needed
+                    // For now, throw an error
+                    throw new \Exception("Template '{$templateName}' not found. Please refresh the templates list or ensure the template is approved.");
+                }
+
+                // Validate template is approved
+                if (strtoupper($template['status'] ?? '') !== 'APPROVED') {
+                    throw new \Exception("Template '{$templateName}' is not approved. Status: " . ($template['status'] ?? 'UNKNOWN'));
+                }
+
+                Log::channel('campaign_progress')->info('Template found for campaign', [
+                    'campaign_id' => $campaign->id,
+                    'template_name' => $templateName,
+                    'template_status' => $template['status'] ?? 'UNKNOWN',
+                    'template_language' => $template['language'] ?? 'en',
+                    'template_components' => json_encode($template['components'] ?? [], JSON_PRETTY_PRINT),
+                ]);
+
+                /* ---------------- BUILD COMPONENTS DYNAMICALLY ---------------- */
+
+                $components = [];
+                $templateComponents = $template['components'] ?? [];
+
+                // Log template components structure for debugging
+                Log::channel('campaign_progress')->debug('Template components structure', [
+                    'campaign_id' => $campaign->id,
+                    'components_count' => count($templateComponents),
+                    'components' => json_encode($templateComponents, JSON_PRETTY_PRINT),
+                ]);
+
+                // Build header component based on template structure
+                // Check for header component - API might return it as 'HEADER' or 'header'
+                $headerComponent = collect($templateComponents)->first(function ($comp) {
+                    $type = strtoupper($comp['type'] ?? '');
+                    return $type === 'HEADER';
+                });
+
+                $defaultImageUrl = 'http://meta.webpayservices.in/WhatsAppMedia/Template/Image/ParidhanWPY/x2iNz14yqSk-MQ(4).jpg';
+                $imageUrl = $campaign->image ?? $defaultImageUrl;
+                
+                // Convert local path to full URL if needed
+                if (!empty($campaign->image) && !str_starts_with($imageUrl, 'http')) {
+                    $imageUrl = url('uploads/campaign_images/' . $campaign->image);
+                }
+
+                // Ensure URL is valid
+                if (empty($imageUrl) || !is_string($imageUrl) || !str_starts_with($imageUrl, 'http')) {
+                    $imageUrl = $defaultImageUrl;
+                }
+
+                if ($headerComponent) {
+                    // Try to detect header format from various possible structures
+                    $headerFormat = strtoupper($headerComponent['format'] ?? '');
+                    
+                    // Also check if format is in sub-array or different location
+                    if (empty($headerFormat) && isset($headerComponent['example'])) {
+                        // Sometimes format info is in example
+                        $headerFormat = 'IMAGE'; // Default to IMAGE if example exists
+                    }
+                    
+                    // If still no format, check if there's a text field (TEXT header) or not (likely IMAGE)
+                    if (empty($headerFormat)) {
+                        if (!empty($headerComponent['text'])) {
+                            $headerFormat = 'TEXT';
+                        } else {
+                            // No text means it's likely IMAGE, VIDEO, or DOCUMENT
+                            // Based on error message saying "expected IMAGE", default to IMAGE
+                            $headerFormat = 'IMAGE';
+                        }
+                    }
+
+                    Log::channel('campaign_progress')->info('Building header component', [
+                        'campaign_id' => $campaign->id,
+                        'header_format' => $headerFormat,
+                        'header_component' => json_encode($headerComponent, JSON_PRETTY_PRINT),
+                    ]);
+
+                    $headerParameters = [];
+
+                    if ($headerFormat === 'IMAGE') {
+                        $headerParameters[] = [
+                            'type' => 'image',
+                            'image' => [
+                                'link' => trim($imageUrl),
+                            ],
+                        ];
+                    } elseif ($headerFormat === 'TEXT' && !empty($headerComponent['text'])) {
+                        $headerParameters[] = [
+                            'type' => 'text',
+                            'text' => $headerComponent['text'],
+                        ];
+                    } elseif ($headerFormat === 'VIDEO' && !empty($campaign->video_url)) {
+                        $headerParameters[] = [
+                            'type' => 'video',
+                            'video' => [
+                                'link' => $campaign->video_url,
+                            ],
+                        ];
+                    } elseif ($headerFormat === 'DOCUMENT' && !empty($campaign->document_url)) {
+                        $headerParameters[] = [
+                            'type' => 'document',
+                            'document' => [
+                                'link' => $campaign->document_url,
+                            ],
+                        ];
+                    } else {
+                        // Default to IMAGE if format is unknown but header exists
+                        // This handles cases where API doesn't return format clearly
+                        Log::channel('campaign_progress')->warning('Header format unclear, defaulting to IMAGE', [
+                            'campaign_id' => $campaign->id,
+                            'detected_format' => $headerFormat,
+                            'header_component' => json_encode($headerComponent, JSON_PRETTY_PRINT),
+                        ]);
+                        $headerParameters[] = [
+                            'type' => 'image',
+                            'image' => [
+                                'link' => trim($imageUrl),
+                            ],
+                        ];
+                    }
+
+                    if (!empty($headerParameters)) {
+                        $components[] = [
+                            'type' => 'header',
+                            'parameters' => $headerParameters,
+                        ];
+                    }
+                } else {
+                    // No header component found in template - add IMAGE header as default
+                    // This ensures we always have a header if template requires it
+                    Log::channel('campaign_progress')->info('No header component in template, adding default IMAGE header', [
+                        'campaign_id' => $campaign->id,
+                        'template_name' => $templateName,
+                    ]);
+                    
                     $components[] = [
                         'type' => 'header',
                         'parameters' => [
                             [
                                 'type' => 'image',
                                 'image' => [
-                                    'link' => $imageUrl,
+                                    'link' => trim($imageUrl),
                                 ],
                             ],
                         ],
                     ];
                 }
 
-                // BODY VARIABLES ({{1}}, {{2}})
-                $components[] = [
-                    'type' => 'body',
-                    'parameters' => [
-                        [
+                // Build body component with variables
+                $bodyComponent = collect($templateComponents)->first(function ($comp) {
+                    return strtoupper($comp['type'] ?? '') === 'BODY';
+                });
+
+                if ($bodyComponent && !empty($bodyComponent['text'])) {
+                    // Extract variables from body text ({{1}}, {{2}}, etc.)
+                    $bodyText = $bodyComponent['text'];
+                    preg_match_all('/\{\{(\d+)\}\}/', $bodyText, $matches);
+                    $variableCount = !empty($matches[1]) ? max(array_map('intval', $matches[1])) : 0;
+
+                    // Map campaign data to variables
+                    // For now, use campaign name and message as default variables
+                    // You can customize this based on your template structure
+                    $bodyParameters = [];
+                    
+                    if ($variableCount >= 1) {
+                        $bodyParameters[] = [
                             'type' => 'text',
-                            'text' => $campaign->name,    // {{1}}
-                        ],
-                        [
+                            'text' => $campaign->name ?? '',
+                        ];
+                    }
+                    
+                    if ($variableCount >= 2) {
+                        $bodyParameters[] = [
                             'type' => 'text',
-                            'text' => $campaign->message, // {{2}}
-                        ],
-                    ],
-                ];
+                            'text' => $campaign->message ?? '',
+                        ];
+                    }
+                    
+                    // Handle additional variables if template has more than 2
+                    for ($i = 3; $i <= $variableCount; $i++) {
+                        $bodyParameters[] = [
+                            'type' => 'text',
+                            'text' => '', // Default empty, you can customize based on campaign data
+                        ];
+                    }
+
+                    if (!empty($bodyParameters)) {
+                        $components[] = [
+                            'type' => 'body',
+                            'parameters' => $bodyParameters,
+                        ];
+                    }
+                }
 
                 /* ---------------- PAYLOAD ---------------- */
 
-                // Format phone number: Ensure it has country code (India = 91)
-                $phoneNumber = $recipient->phone;
-                
-                // Remove any spaces, dashes, or special characters
-                $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
-                
-                // If phone doesn't start with country code, add India code (91)
-                if (!str_starts_with($phoneNumber, '91') && strlen($phoneNumber) == 10) {
-                    $phoneNumber = '91' . $phoneNumber;
-                    Log::channel('campaign_progress')->info('Added country code to phone number', [
-                        'campaign_id' => $campaign->id,
-                        'recipient_id' => $recipient->id,
-                        'original_phone' => $recipient->phone,
-                        'formatted_phone' => $phoneNumber,
-                    ]);
+                // Validate components before building payload
+                if (empty($components)) {
+                    throw new \Exception('No components built for template. Cannot send message without components.');
                 }
 
                 $payload = [
                     'messaging_product' => 'whatsapp',
                     'recipient_type' => 'individual',
-                    'to' => $phoneNumber,
+                    'to' => $recipient->phone,
                     'type' => 'template',
                     'template' => [
-                        'name' => config('services.whatsapp.template_name', 'campaign_message_v2'),
+                        'name' => $templateName,
                         'language' => [
-                            'code' => 'en',
+                            'code' => strtolower($template['language'] ?? 'en'),
                         ],
                         'components' => $components,
                     ],
                     'biz_opaque_callback_data' => 'campaign_' . $campaign->id,
                 ];
+
+                // Log full payload for debugging
+                Log::channel('campaign_progress')->info('Payload built for WhatsApp message', [
+                    'campaign_id' => $campaign->id,
+                    'recipient_id' => $recipient->id ?? null,
+                    'template_name' => $templateName,
+                    'components_count' => count($components),
+                    'components' => json_encode($components, JSON_PRETTY_PRINT),
+                    'full_payload' => json_encode($payload, JSON_PRETTY_PRINT),
+                ]);
 
                 /* ---------------- SEND REQUEST ---------------- */
 
@@ -202,19 +325,41 @@ class SendCampaignJob implements ShouldQueue
                 }
 
                 // Use Bearer token if available, otherwise use X-API-KEY
-                // Documentation supports both: 'authorization: Bearer <token>' OR 'X-API-KEY: <token>'
+                // Working curl example uses: 'authorization: Bearer <token>'
                 $headers = [
-                    'Content-Type' => 'application/json',
+                    'content-type' => 'application/json',
                 ];
 
                 if (!empty($bearerToken)) {
-                    $headers['Authorization'] = 'Bearer ' . $bearerToken;
+                    $headers['authorization'] = 'Bearer ' . $bearerToken;
                 } else {
                     $headers['X-API-KEY'] = $apiKey;
                 }
 
+                // Construct endpoint URL according to working curl example:
+                // https://meta.webpayservices.in/V23.0/920609244473081/messages
+                // Format: {base_url}/{API_VERSION}/{phone_number_id}/messages
+                $baseUrl = rtrim(config('services.whatsapp.base_url', 'https://meta.webpayservices.in'), '/');
+                $apiVersion = strtoupper(config('services.whatsapp.api_version', 'v23.0')); // Capital V in working example
+                $phoneNumberId = config('services.whatsapp.phone_number_id', '920609244473081');
+                
+                // Use configured endpoint if set, otherwise construct from components
+                $endpointUrl = config('services.whatsapp.endpoint');
+                if (empty($endpointUrl)) {
+                    $endpointUrl = "{$baseUrl}/{$apiVersion}/{$phoneNumberId}/messages";
+                }
+                
+                // Log endpoint and headers before sending
+                Log::channel('campaign_progress')->info('Sending WhatsApp message', [
+                    'campaign_id' => $campaign->id,
+                    'recipient_id' => $recipient->id ?? null,
+                    'endpoint' => $endpointUrl,
+                    'phone' => $recipient->phone,
+                    'template_name' => $payload['template']['name'],
+                ]);
+
                 $response = \Illuminate\Support\Facades\Http::withHeaders($headers)->post(
-                    config('services.whatsapp.endpoint'),
+                    $endpointUrl,
                     $payload
                 );
 
@@ -222,17 +367,10 @@ class SendCampaignJob implements ShouldQueue
                     $status = 'sent';
                     $sent++;
 
-                    $responseBody = $response->json();
-                    $messageId = $responseBody['messages'][0]['id'] ?? 'unknown';
-                    $waId = $responseBody['contacts'][0]['wa_id'] ?? 'unknown';
-
                     Log::channel('campaign_progress')->info('Message sent successfully', [
                         'campaign_id' => $campaign->id,
                         'recipient_id' => $recipient->id,
-                        'phone' => $phoneNumber,
-                        'wa_id' => $waId,
-                        'message_id' => $messageId,
-                        'api_response' => $responseBody,
+                        'phone' => $recipient->phone,
                     ]);
                 } else {
                     $status = 'failed';
@@ -241,17 +379,20 @@ class SendCampaignJob implements ShouldQueue
                     $responseBody = $response->json();
                     $errorCode = $responseBody['error']['code'] ?? 'unknown';
                     $errorMessage = $responseBody['error']['message'] ?? $response->body();
+                    $errorDetails = $responseBody['error']['error_data']['details'] ?? null;
 
                     $errorContext = [
                         'campaign_id' => $campaign->id,
                         'recipient_id' => $recipient->id,
-                        'phone' => $phoneNumber,
-                        'original_phone' => $recipient->phone,
+                        'phone' => $recipient->phone,
                         'http_status' => $response->status(),
                         'error_code' => $errorCode,
                         'error_message' => $errorMessage,
+                        'error_details' => $errorDetails,
                         'full_response' => $response->body(),
-                        'request_payload' => $payload,
+                        'sent_payload' => json_encode($payload, JSON_PRETTY_PRINT),
+                        'header_component' => $components[0] ?? 'NOT_FOUND',
+                        'image_url' => $imageUrl,
                     ];
 
                     // Log to campaign progress
@@ -260,9 +401,8 @@ class SendCampaignJob implements ShouldQueue
                     // Also log to dedicated API errors channel
                     Log::channel('whatsapp_api_errors')->error('WhatsApp API error', $errorContext);
 
-                    // Handle specific error codes
+                    // Log specific Meta policy violations
                     if ($errorCode == 131049) {
-                        // Meta Policy Violation
                         Log::channel('campaign_progress')->critical('Meta Policy Violation - Healthy Ecosystem', [
                             'campaign_id' => $campaign->id,
                             'recipient_id' => $recipient->id,
@@ -273,26 +413,6 @@ class SendCampaignJob implements ShouldQueue
                             'campaign_id' => $campaign->id,
                             'recipient_id' => $recipient->id,
                             'message' => 'Message blocked by Meta to maintain healthy ecosystem engagement. Check account quality rating.',
-                        ]);
-                    } elseif ($errorCode == 132012) {
-                        // Template format mismatch - usually means template requires image header but we didn't send it
-                        $hasImageHeader = !empty($campaign->image) && str_starts_with($campaign->image, 'https://');
-                        
-                        Log::channel('campaign_progress')->critical('Template Format Mismatch - Image Header Required', [
-                            'campaign_id' => $campaign->id,
-                            'recipient_id' => $recipient->id,
-                            'error_code' => 132012,
-                            'message' => 'Template requires an IMAGE header, but campaign image is missing or not HTTPS.',
-                            'campaign_has_image' => !empty($campaign->image),
-                            'image_is_https' => $hasImageHeader,
-                            'solution' => 'Either: 1) Add a valid HTTPS image to the campaign, OR 2) Use a template without image header requirement.',
-                        ]);
-
-                        Log::channel('whatsapp_api_errors')->critical('Template Format Mismatch - Image Header Required', [
-                            'campaign_id' => $campaign->id,
-                            'recipient_id' => $recipient->id,
-                            'error_code' => 132012,
-                            'message' => 'Template requires an IMAGE header, but campaign image is missing or not HTTPS.',
                         ]);
                     }
                 }
@@ -330,8 +450,5 @@ class SendCampaignJob implements ShouldQueue
             'failed' => $failed,
             'pending' => $pending,
         ]);
-
-        // Close database connection to free up resources
-        \Illuminate\Support\Facades\DB::disconnect();
     }
 }

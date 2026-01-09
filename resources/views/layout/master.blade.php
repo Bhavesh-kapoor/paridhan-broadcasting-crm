@@ -34,6 +34,10 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/jquery-jvectormap-2.0.5.css') }}">
     <!-- Main css -->
     <link rel="stylesheet" href="{{ asset('/assets/css/main.css') }}">
+    <!-- Custom Sidebar Styling -->
+    <link rel="stylesheet" href="{{ asset('/assets/css/custom-sidebar.css') }}">
+    <!-- Enhanced Tables Styling -->
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
     @yield('css')
 </head>
 

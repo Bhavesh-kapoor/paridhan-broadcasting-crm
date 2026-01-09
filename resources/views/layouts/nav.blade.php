@@ -49,7 +49,7 @@
                 <a href="{{ route('locations.index') }}">
                     <div class="parent-icon"><i class="bx bx-location-plus"></i>
                     </div>
-                    <div class="menu-title">Locations</div>
+                    <div class="menu-title">Location Management</div>
                 </a>
             </li>
 
@@ -60,18 +60,21 @@
                     <div class="menu-title">Campaign Management</div>
                 </a>
                 <ul>
-                    <li> <a href="{{ route('campaigns.index') }}"><i class='bx bx-radio-circle'></i> All Campaigns</a>
+                    <li> <a href="{{ route('campaigns.index') }}"><i class='bx bx-radio-circle'></i>All Campaigns</a>
                     </li>
                     <li> <a href="{{ route('campaigns.create') }}"><i class='bx bx-radio-circle'></i>Create Campaign</a>
+                    </li>
+                    <li> <a href="{{ route('templates.index') }}"><i class='bx bx-radio-circle'></i>Templates</a>
+                    </li>
                 </ul>
             </li>
         @endif
         @if (auth()->user()->role == 'employee')
             <li>
                 <a href="{{ route('leads.index') }}">
-                    <div class="parent-icon"><i class="bx bx-location-plus"></i>
+                    <div class="parent-icon"><i class="bx bx-crown"></i>
                     </div>
-                    <div class="menu-title">Leads</div>
+                    <div class="menu-title">Lead Management</div>
                 </a>
             </li>
         @endif

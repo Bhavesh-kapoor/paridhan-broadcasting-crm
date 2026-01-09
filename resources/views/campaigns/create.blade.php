@@ -87,34 +87,42 @@
                                         <input type="datetime-local" class="form-control" name="scheduled_at">
                                     </div>
 
-                                    <!-- WhatsApp Template Selection -->
-                                    <div class="col-12" id="templateSelectionDiv" style="display: none;">
-                                        <label class="form-label">WhatsApp Template <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <select class="form-select" name="whatsapp_template" id="whatsappTemplate">
-                                                <option value="">Select template...</option>
-                                            </select>
-                                            <button type="button" class="btn btn-outline-primary" id="refreshTemplatesBtn" title="Refresh templates">
-                                                <i class="bx bx-refresh"></i>
-                                            </button>
-                                            <a href="{{ route('whatsapp-templates.index') }}" target="_blank" class="btn btn-outline-info" title="Manage templates">
-                                                <i class="bx bx-cog"></i>
-                                            </a>
-                                        </div>
+                                    <!-- WhatsApp Template Selection (shown only for WhatsApp campaigns) -->
+                                    <div class="col-12" id="templateSelectionDiv" style="display:none;">
+                                        <hr class="my-3">
+                                        <h6 class="fw-semibold text-primary">
+                                            <i class="bx bx-message-square-detail"></i> WhatsApp Template
+                                        </h6>
+                                    </div>
+
+                                    <div class="col-md-6" id="templateDropdownDiv" style="display:none;">
+                                        <label class="form-label">Select Template <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="template_name" id="templateSelect">
+                                            <option value="">Loading templates...</option>
+                                        </select>
                                         <small class="text-muted">
-                                            <i class="bx bx-info-circle me-1"></i>
-                                            Select an approved template. 
-                                            <a href="{{ route('whatsapp-templates.index') }}" target="_blank">Sync templates from API</a> if none available.
+                                            <i class="bx bx-info-circle"></i> Only approved templates are shown
                                         </small>
-                                        <div id="templatePreview" class="mt-2 p-3 bg-light rounded" style="display: none;">
-                                            <strong>Template Preview:</strong>
-                                            <div id="templatePreviewContent" class="mt-2"></div>
+                                    </div>
+
+                                    <div class="col-md-6" id="templateInfoDiv" style="display:none;">
+                                        <label class="form-label">Template Info</label>
+                                        <div class="alert alert-info mb-0 py-2" id="templateInfo">
+                                            <small>Select a template to see details</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Template Variables (dynamically populated) -->
+                                    <div class="col-12" id="templateVariablesDiv" style="display:none;">
+                                        <label class="form-label">Template Variables</label>
+                                        <div id="templateVariablesContainer">
+                                            <!-- Variables will be added here dynamically -->
                                         </div>
                                     </div>
 
                                     <div class="col-12">
                                         <label class="form-label">Message <span class="text-danger">*</span></label>
-                                        <textarea class="form-control" name="message" rows="7" placeholder="Enter campaign message..."></textarea>
+                                        <textarea class="form-control" name="message" id="messageField" rows="7" placeholder="Enter campaign message..."></textarea>
                                         <small class="text-muted"><i class="bx bx-info-circle me-1"></i>Max 5000
                                             characters</small>
                                     </div>
@@ -246,6 +254,163 @@
 
 @section('script')
     <script>
+        /* ========================================================
+           TEMPLATE MANAGEMENT FOR WHATSAPP CAMPAIGNS
+        ======================================================== */
+        let templatesData = [];
+        let selectedTemplate = null;
+
+        // Fetch templates when page loads
+        $(document).ready(function() {
+            fetchTemplates();
+        });
+
+        function fetchTemplates() {
+            $.ajax({
+                url: `${base_url}/admin/templates-fetch`,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        templatesData = response.data.filter(t => t.status === 'APPROVED');
+                        populateTemplateDropdown();
+                    }
+                },
+                error: function() {
+                    console.error('Failed to fetch templates');
+                }
+            });
+        }
+
+        function populateTemplateDropdown() {
+            const $select = $('#templateSelect');
+            $select.empty();
+            $select.append('<option value="">Select a template</option>');
+
+            templatesData.forEach(template => {
+                $select.append(`<option value="${template.name}">${template.name} (${template.category})</option>`);
+            });
+        }
+
+        // Show/hide template fields based on campaign type
+        $('#campaignType').on('change', function() {
+            const type = $(this).val();
+
+            if (type === 'whatsapp') {
+                $('#templateSelectionDiv').show();
+                $('#templateDropdownDiv').show();
+                $('#templateInfoDiv').show();
+                $('#messageField').prop('readonly', true).attr('placeholder', 'Message will be generated from template');
+            } else {
+                $('#templateSelectionDiv').hide();
+                $('#templateDropdownDiv').hide();
+                $('#templateInfoDiv').hide();
+                $('#templateVariablesDiv').hide();
+                $('#messageField').prop('readonly', false).attr('placeholder', 'Enter campaign message...');
+                $('#templateSelect').val('');
+                selectedTemplate = null;
+            }
+        });
+
+        // Handle template selection
+        $('#templateSelect').on('change', function() {
+            const templateName = $(this).val();
+
+            if (!templateName) {
+                $('#templateVariablesDiv').hide();
+                $('#templateInfo').html('<small>Select a template to see details</small>');
+                selectedTemplate = null;
+                return;
+            }
+
+            selectedTemplate = templatesData.find(t => t.name === templateName);
+
+            if (selectedTemplate) {
+                // Show template info
+                $('#templateInfo').html(`
+                    <small>
+                        <strong>Language:</strong> ${selectedTemplate.language.toUpperCase()} |
+                        <strong>Category:</strong> ${selectedTemplate.category}
+                    </small>
+                `);
+
+                // Extract and show variables from template body
+                const bodyComponent = selectedTemplate.components.find(c => c.type === 'BODY' || c.type === 'body');
+                if (bodyComponent && bodyComponent.text) {
+                    const variables = extractVariables(bodyComponent.text);
+                    if (variables.length > 0) {
+                        renderVariableInputs(variables, bodyComponent.text);
+                        $('#templateVariablesDiv').show();
+                    } else {
+                        $('#templateVariablesDiv').hide();
+                    }
+
+                    // Update message field with template preview
+                    updateMessagePreview(bodyComponent.text, {});
+                }
+            }
+        });
+
+        function extractVariables(text) {
+            const regex = /\{\{(\d+)\}\}/g;
+            const matches = [];
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                if (!matches.includes(match[1])) {
+                    matches.push(match[1]);
+                }
+            }
+
+            return matches.sort((a, b) => parseInt(a) - parseInt(b));
+        }
+
+        function renderVariableInputs(variables, templateText) {
+            const container = $('#templateVariablesContainer');
+            container.empty();
+
+            variables.forEach((varNum, index) => {
+                const inputHtml = `
+                    <div class="mb-3">
+                        <label class="form-label">Variable @{{${varNum}}} <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control template-variable" data-var="${varNum}"
+                               placeholder="Enter value for @{{${varNum}}}" required>
+                        <input type="hidden" name="template_variables[${varNum}]" class="template-variable-hidden-${varNum}">
+                    </div>
+                `;
+                container.append(inputHtml);
+            });
+
+            // Update message preview when variables change
+            $('.template-variable').on('input', function() {
+                updateMessagePreviewFromInputs(templateText);
+            });
+        }
+
+        function updateMessagePreviewFromInputs(templateText) {
+            const values = {};
+            $('.template-variable').each(function() {
+                const varNum = $(this).data('var');
+                const value = $(this).val();
+                values[varNum] = value;
+
+                // Update hidden field
+                $(`.template-variable-hidden-${varNum}`).val(value);
+            });
+
+            updateMessagePreview(templateText, values);
+        }
+
+        function updateMessagePreview(templateText, values) {
+            let preview = templateText;
+
+            Object.keys(values).forEach(varNum => {
+                const value = values[varNum] || `@{{${varNum}}}`;
+                preview = preview.replace(new RegExp(`\\{\\{${varNum}\\}\\}`, 'g'), value);
+            });
+
+            $('#messageField').val(preview);
+        }
+
         /* ========================================================
                                                            GLOBAL STATE
                                                         ======================================================== */
@@ -521,124 +686,5 @@
             loadExhibitors();
             loadVisitors();
         });
-
-        /* ========================================================
-           WHATSAPP TEMPLATE MANAGEMENT
-        ======================================================== */
-        const base_url = "{{ url('/') }}";
-
-        // Show/hide template selection based on campaign type
-        $('#campaignType').on('change', function() {
-            if ($(this).val() === 'whatsapp') {
-                $('#templateSelectionDiv').slideDown();
-                loadApprovedTemplates();
-            } else {
-                $('#templateSelectionDiv').slideUp();
-                $('#whatsappTemplate').val('');
-                $('#templatePreview').hide();
-            }
-        });
-
-        // Load approved templates
-        function loadApprovedTemplates() {
-            $.ajax({
-                url: base_url + '/admin/ajax/approved-templates',
-                type: 'GET',
-                success: function(response) {
-                    if (response.status === true) {
-                        const select = $('#whatsappTemplate');
-                        select.html('<option value="">Select template...</option>');
-                        
-                        if (response.templates.length === 0) {
-                            select.html('<option value="">No approved templates available</option>');
-                            toastr.warning('No approved templates found. Please sync templates from API.');
-                        } else {
-                            response.templates.forEach(function(template) {
-                                select.append(`<option value="${template.name}">${template.name} (${template.category})</option>`);
-                            });
-                        }
-
-                        // Check if template was pre-selected from template management page
-                        const selectedTemplate = sessionStorage.getItem('selectedTemplate');
-                        if (selectedTemplate) {
-                            select.val(selectedTemplate);
-                            sessionStorage.removeItem('selectedTemplate');
-                            loadTemplatePreview(selectedTemplate);
-                        }
-                    } else {
-                        toastr.error(response.message || 'Failed to load templates');
-                    }
-                },
-                error: function() {
-                    toastr.error('Failed to load templates. Please try again.');
-                }
-            });
-        }
-
-        // Refresh templates
-        $('#refreshTemplatesBtn').on('click', function() {
-            const btn = $(this);
-            btn.prop('disabled', true).html('<i class="bx bx-loader bx-spin"></i>');
-            
-            $.ajax({
-                url: base_url + '/admin/whatsapp-templates/sync',
-                type: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.status === true) {
-                        toastr.success(response.message || 'Templates synced successfully!');
-                        loadApprovedTemplates();
-                    } else {
-                        toastr.error(response.message || 'Failed to sync templates');
-                    }
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON?.message || 'Failed to sync templates';
-                    toastr.error(error);
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="bx bx-refresh"></i>');
-                }
-            });
-        });
-
-        // Load template preview
-        $('#whatsappTemplate').on('change', function() {
-            const templateName = $(this).val();
-            if (templateName) {
-                loadTemplatePreview(templateName);
-            } else {
-                $('#templatePreview').hide();
-            }
-        });
-
-        function loadTemplatePreview(templateName) {
-            $.ajax({
-                url: base_url + '/admin/ajax/approved-templates',
-                type: 'GET',
-                success: function(response) {
-                    if (response.status === true) {
-                        const template = response.templates.find(t => t.name === templateName);
-                        if (template) {
-                            $('#templatePreviewContent').html(`
-                                <div><strong>Name:</strong> ${template.name}</div>
-                                <div><strong>Category:</strong> ${template.category}</div>
-                                <div><strong>Language:</strong> ${template.language.toUpperCase()}</div>
-                                <div class="mt-2"><strong>Body:</strong><br>${template.body_text || 'N/A'}</div>
-                            `);
-                            $('#templatePreview').slideDown();
-                        }
-                    }
-                }
-            });
-        }
-
-        // Check if WhatsApp is pre-selected
-        if ($('#campaignType').val() === 'whatsapp') {
-            $('#templateSelectionDiv').show();
-            loadApprovedTemplates();
-        }
     </script>
 @endsection

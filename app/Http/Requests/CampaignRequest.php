@@ -24,15 +24,23 @@ class CampaignRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:5000'],
             'type' => ['required', 'in:email,sms,whatsapp'],
             'scheduled_at' => ['nullable', 'date', 'after:now'],
+            'template_name' => ['nullable', 'string', 'max:512'],
             // 'recipients' => ['required', 'array', 'min:1'],
             // 'recipients.*' => ['required', 'string', 'exists:contacts,id'],
         ];
+
+        // Template name is required for WhatsApp campaigns
+        if ($this->input('type') === 'whatsapp') {
+            $rules['template_name'] = ['required', 'string', 'max:512'];
+        }
+
+        return $rules;
     }
 
     /**

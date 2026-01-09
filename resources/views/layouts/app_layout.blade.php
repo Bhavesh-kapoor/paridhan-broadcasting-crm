@@ -26,6 +26,10 @@
     <link rel="stylesheet" href="{{ asset('/assets/css/dark-theme.css') }}" />
     <link rel="stylesheet" href="{{ asset('/assets/css/semi-dark.css') }}" />
     <link rel="stylesheet" href="{{ asset('/assets/css/header-colors.css') }}" />
+    <!-- Custom Sidebar Styling -->
+    <link rel="stylesheet" href="{{ asset('/assets/css/custom-sidebar.css') }}">
+    <!-- Enhanced Tables Styling -->
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/plugins/sweetalert2/sweetalert2.min.css') }}">
     <link rel="stylesheet" href="{{ asset('/assets/plugins/toastr/toastr.min.css') }}">
     <link href="{{ asset('/assets/plugins/datatable/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet" />

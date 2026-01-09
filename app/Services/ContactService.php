@@ -64,11 +64,19 @@ class ContactService
             ->addIndexColumn()
             ->addColumn('action', function ($employee) {
                 $id = $employee->id;
-                $button = ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('contacts.edit', $id) . '" updateRoute="' . route('contacts.update', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="Edit Employee">
-                <i class="bx bx-pencil"></i>
-                </button>  <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete Employee">
-                    <i class="bx bx-trash"></i>
+                $button = '<div class="d-flex gap-1 justify-content-center">';
+                
+                $button .= '<button class="btn btn-action btn-edit editBtn" editRoute="' . route('contacts.edit', $id) . '" updateRoute="' . route('contacts.update', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Contact">
+                    <i class="bx bx-edit"></i>
+                    <span class="d-none d-md-inline">Edit</span>
                 </button>';
+                
+                $button .= '<button class="btn btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Contact">
+                    <i class="bx bx-trash"></i>
+                    <span class="d-none d-md-inline">Delete</span>
+                </button>';
+                
+                $button .= '</div>';
                 return $button;
             })
             ->rawColumns(['action'])

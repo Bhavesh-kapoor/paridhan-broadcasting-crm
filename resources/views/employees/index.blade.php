@@ -1,5 +1,6 @@
 @extends('layouts.app_layout')
 @section('style')
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
     <style>
         #eml_password-error {
             position: absolute;
@@ -49,13 +50,13 @@
                         <table id="employee_table" class="table table-striped table-bordered" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Sl.No</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Position</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
+                                    <th class="text-center"><i class="bx bx-hash"></i> Sl.No</th>
+                                    <th><i class="bx bx-user"></i> Name</th>
+                                    <th><i class="bx bx-envelope"></i> Email</th>
+                                    <th><i class="bx bx-phone"></i> Phone</th>
+                                    <th><i class="bx bx-briefcase"></i> Position</th>
+                                    <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
+                                    <th class="text-center"><i class="bx bx-cog"></i> Actions</th>
                                 </tr>
                             </thead>
                         </table>

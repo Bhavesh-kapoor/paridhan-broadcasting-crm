@@ -92,27 +92,27 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0" id="contactsTable">
-                            <thead class="bg-light">
+                            <thead>
                                 <tr>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center" style="width: 60px;">
-                                        <i class="ph ph-hash me-1 text-muted"></i>#
+                                    <th class="text-center" style="width: 60px;">
+                                        <i class="bx bx-hash"></i> #
                                     </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-{{ $type === 'exhibitor' ? 'storefront' : 'user-circle' }} me-2 text-muted"></i>{{ ucfirst($type) }}
+                                    <th>
+                                        <i class="bx bx-{{ $type === 'exhibitor' ? 'store-alt' : 'user-circle' }}"></i> {{ ucfirst($type) }} Name
                                     </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-map-pin me-2 text-muted"></i>Location
+                                    <th>
+                                        <i class="bx bx-map"></i> Location
                                     </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-phone me-2 text-muted"></i>Contact
+                                    <th>
+                                        <i class="bx bx-phone"></i> Contact Info
                                     </th>
                                     @if($type === 'exhibitor')
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-package me-2 text-muted"></i>Business Info
+                                    <th>
+                                        <i class="bx bx-package"></i> Business Info
                                     </th>
                                     @endif
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center">
-                                        <i class="ph ph-gear me-2 text-muted"></i>Actions
+                                    <th class="text-center">
+                                        <i class="bx bx-cog"></i> Actions
                                     </th>
                                 </tr>
                             </thead>
@@ -187,25 +187,23 @@
                                     </td>
                                     @endif
                                     <td class="px-3 py-3 text-center">
-                                        <div class="btn-group btn-group-sm shadow-sm" role="group">
-                                            <!-- <a href="{{ route('contacts.show', $contact) }}"
-                                               class="btn btn-info btn-sm border"
-                                               title="View Details"
-                                               style="min-width: 40px;">
-                                                <i class="ph ph-eye"></i>
-                                            </a> -->
+                                        <div class="d-flex gap-1 justify-content-center">
                                             <a href="{{ route('contacts.edit', $contact) }}"
-                                               class="btn btn-primary btn-sm border"
-                                               title="Edit {{ ucfirst($type) }}"
-                                               style="min-width: 40px;">
-                                                <i class="ph ph-pencil"></i>
+                                               class="btn btn-action btn-edit"
+                                               data-bs-toggle="tooltip"
+                                               data-bs-placement="top"
+                                               title="Edit {{ ucfirst($type) }}">
+                                                <i class="bx bx-edit"></i>
+                                                <span class="d-none d-md-inline">Edit</span>
                                             </a>
                                             <button type="button"
-                                                    class="btn btn-danger btn-sm border"
+                                                    class="btn btn-action btn-delete"
                                                     onclick="deleteContact('{{ $contact->id }}')"
-                                                    title="Delete {{ ucfirst($type) }}"
-                                                    style="min-width: 40px;">
-                                                <i class="ph ph-trash"></i>
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="top"
+                                                    title="Delete {{ ucfirst($type) }}">
+                                                <i class="bx bx-trash"></i>
+                                                <span class="d-none d-md-inline">Delete</span>
                                             </button>
                                         </div>
                                     </td>

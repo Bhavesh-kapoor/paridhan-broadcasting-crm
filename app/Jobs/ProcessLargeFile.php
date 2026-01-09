@@ -52,13 +52,8 @@ class ProcessLargeFile implements ShouldQueue
                 ['phone'], // unique key to detect existing records
                 ['name', 'email', 'location', 'state', 'city', 'type', 'updated_at'] // columns to update
             );
-
-            // Close database connection to free up resources
-            \Illuminate\Support\Facades\DB::disconnect();
         } catch (\Throwable $e) {
             Log::error("Error processing file: " . $e->getMessage());
-            // Close connection even on error
-            \Illuminate\Support\Facades\DB::disconnect();
         }
     }
 }

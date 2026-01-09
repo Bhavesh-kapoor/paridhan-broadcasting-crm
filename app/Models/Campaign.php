@@ -19,8 +19,8 @@ class Campaign extends Model
         'subject',
         'message',
         'type',
+        'template_name',
         'status',
-        'image',
         'scheduled_at',
         'sent_at',
     ];

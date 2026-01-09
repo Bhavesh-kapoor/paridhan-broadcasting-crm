@@ -58,24 +58,34 @@ class EmployeeService
             ->addIndexColumn()
             ->addColumn('action', function ($employee) {
                 $id = $employee->id;
-                $button = '';
                 $status = $employee->status;
                 $button_class = 'success';
                 $button_icon_class = 'pause';
+                $button_text = 'Deactivate';
                 if ($status === 'inactive') {
                     $button_class = 'warning';
                     $button_icon_class = 'play';
+                    $button_text = 'Activate';
                 }
 
-                $button .= ' <button class="btn btn-primary btn-sm editBtn" editRoute="' . route('employees.edit', $id) . '" updateRoute="' . route('employees.update', $id) . '"  data-bs-toggle="tooltip" data-bs-placement="left" title="Edit Employee">
-                <i class="bx bx-pencil"></i>
+                $button = '<div class="d-flex gap-1 justify-content-center">';
+                
+                $button .= '<button class="btn btn-action btn-edit editBtn" editRoute="' . route('employees.edit', $id) . '" updateRoute="' . route('employees.update', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Employee">
+                    <i class="bx bx-edit"></i>
+                    <span class="d-none d-md-inline">Edit</span>
                 </button>';
-                $button .= '<button class="btn btn-' . $button_class . ' btn-sm deactivateBtn mx-1" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Change Status">
+                
+                $button .= '<button class="btn btn-action btn-' . $button_class . ' deactivateBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="' . $button_text . ' Employee">
                     <i class="bx bx-' . $button_icon_class . '"></i>
+                    <span class="d-none d-md-inline">' . $button_text . '</span>
                 </button>';
-                $button .= ' <button class="btn btn-danger btn-sm deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete Employee">
+                
+                $button .= '<button class="btn btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Employee">
                     <i class="bx bx-trash"></i>
+                    <span class="d-none d-md-inline">Delete</span>
                 </button>';
+                
+                $button .= '</div>';
                 return $button;
             })
 

@@ -141,6 +141,13 @@ return [
             'permission' => 0777,
         ],
 
+        'whatsapp_api_errors' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/whatsapp_api_errors.log'),
+            'level' => 'error',
+            'permission' => 0777,
+        ],
+
     ],
 
 ];

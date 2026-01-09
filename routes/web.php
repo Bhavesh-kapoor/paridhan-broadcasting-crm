@@ -59,12 +59,10 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     Route::resource('locations', LocationController::class);
     Route::post('/ajax/get/all-locations', [LocationController::class, 'getAllLocationsList']);
 
-    // WhatsApp Template routes
-    Route::resource('whatsapp-templates', \App\Http\Controllers\WhatsAppTemplateController::class);
-    Route::post('/ajax/get/all-whatsapp-templates', [\App\Http\Controllers\WhatsAppTemplateController::class, 'getAllTemplatesList']);
-    Route::post('/whatsapp-templates/sync', [\App\Http\Controllers\WhatsAppTemplateController::class, 'sync'])->name('whatsapp-templates.sync');
-    Route::get('/whatsapp-templates/{id}/details', [\App\Http\Controllers\WhatsAppTemplateController::class, 'getTemplateDetails'])->name('whatsapp-templates.details');
-    Route::get('/ajax/approved-templates', [\App\Http\Controllers\WhatsAppTemplateController::class, 'getApprovedTemplates'])->name('whatsapp-templates.approved');
+    // Template routes
+    Route::resource('templates', \App\Http\Controllers\TemplateController::class);
+    Route::get('templates-fetch', [\App\Http\Controllers\TemplateController::class, 'getTemplates'])->name('templates.fetch');
+    Route::get('templates-refresh', [\App\Http\Controllers\TemplateController::class, 'refreshCache'])->name('templates.refresh');
 });
 
 
