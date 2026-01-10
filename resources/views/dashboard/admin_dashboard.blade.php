@@ -3,11 +3,11 @@
     <style>
         /* Sidebar-inspired color scheme - smooth and modern */
         :root {
-            --sidebar-start: #1e3a8a; /* Dark blue from sidebar */
-            --sidebar-end: #3b82f6; /* Light blue from sidebar */
-            --primary-color: #3b82f6; /* Primary blue */
-            --primary-light: #60a5fa;
-            --primary-dark: #1e40af;
+            --sidebar-start: #ec268f; /* Pink from sidebar */
+            --sidebar-end: #f06292; /* Light pink from sidebar */
+            --primary-color: #ec268f; /* Primary pink */
+            --primary-light: #f48fb1;
+            --primary-dark: #c2185b;
             --neutral-bg: #f8fafc;
             --neutral-border: #e2e8f0;
             --text-primary: #1e293b;
@@ -38,7 +38,7 @@
         .dashboard-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: none;
-            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(236, 38, 143, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
             border-radius: 12px;
             background: white;
             overflow: hidden;
@@ -49,7 +49,7 @@
         
         .dashboard-card:hover {
             border-left-color: var(--sidebar-end);
-            box-shadow: 0 4px 16px rgba(30, 58, 138, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(236, 38, 143, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         @keyframes slideInUp {
@@ -102,12 +102,12 @@
             background: linear-gradient(135deg, var(--sidebar-start) 0%, var(--sidebar-end) 100%);
             color: white;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+            box-shadow: 0 4px 12px rgba(236, 38, 143, 0.2);
         }
 
         .stat-card:hover .stat-icon {
             transform: scale(1.05) translateY(-2px);
-            box-shadow: 0 6px 16px rgba(30, 58, 138, 0.3);
+            box-shadow: 0 6px 16px rgba(236, 38, 143, 0.3);
         }
 
         .stat-value {
@@ -133,7 +133,7 @@
             padding: 18px 24px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             animation: fadeInDown 0.5s ease-out;
-            box-shadow: 0 4px 16px rgba(30, 58, 138, 0.2);
+            box-shadow: 0 4px 16px rgba(236, 38, 143, 0.2);
         }
 
         @keyframes fadeInDown {
@@ -148,7 +148,7 @@
         }
 
         .welcome-header:hover {
-            box-shadow: 0 6px 20px rgba(30, 58, 138, 0.3);
+            box-shadow: 0 6px 20px rgba(236, 38, 143, 0.3);
             transform: translateY(-2px);
         }
 
@@ -191,7 +191,7 @@
             border: none;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
+            box-shadow: 0 2px 8px rgba(236, 38, 143, 0.2);
         }
 
         .quick-action-btn::before {
@@ -224,13 +224,13 @@
             border: none;
             background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(236, 38, 143, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
             border-left: 4px solid transparent;
         }
 
         .chart-card:hover {
             border-left-color: var(--sidebar-end);
-            box-shadow: 0 4px 16px rgba(30, 58, 138, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(236, 38, 143, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
             transform: translateY(-2px);
         }
 
@@ -621,14 +621,14 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="card stat-card border-0" style="background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%); border-left: 4px solid #3b82f6;">
+                                    <div class="card stat-card border-0" style="background: linear-gradient(135deg, #fce7f3 0%, #ffffff 100%); border-left: 4px solid #ec268f;">
                                         <div class="card-body p-3">
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <div>
                                                     <p class="stat-label mb-1">Paid Amount</p>
                                                     <h4 class="stat-value mb-0" id="paidRevenueDisplay">₹{{ number_format($paidBookings, 2) }}</h4>
                                                 </div>
-                                                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                                                <div class="stat-icon" style="background: linear-gradient(135deg, #ec268f 0%, #f06292 100%);">
                                                     <i class="bx bx-wallet"></i>
                                                 </div>
                                             </div>

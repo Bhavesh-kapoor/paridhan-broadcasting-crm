@@ -9,6 +9,9 @@ use App\Services\CampaignService;
 use App\Services\CampaignAnalyticsService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class CampaignController extends Controller
 {
@@ -568,6 +571,174 @@ class CampaignController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to create conversation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send reminder to campaign recipient using Wati reminder template
+     */
+    public function sendReminder(Request $request, $campaignId): JsonResponse
+    {
+        $request->validate([
+            'recipient_id' => 'required|ulid|exists:campaign_recipients,id',
+            'template_name' => 'required|string',
+        ]);
+
+        try {
+            $recipient = \App\Models\CampaignRecipient::with('contact')->findOrFail($request->recipient_id);
+            
+            if (!$recipient->contact || !$recipient->contact->phone) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Recipient phone number not found'
+                ], 400);
+            }
+
+            // Fetch template from cache or API
+            $templates = Cache::get('whatsapp_templates', []);
+            $template = collect($templates)->firstWhere('name', $request->template_name);
+            
+            if (!$template) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Template '{$request->template_name}' not found. Please refresh the templates list."
+                ], 404);
+            }
+
+            // Validate template is approved
+            if (strtoupper($template['status'] ?? '') !== 'APPROVED') {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Template '{$request->template_name}' is not approved. Status: {$template['status']}"
+                ], 400);
+            }
+
+            // Build components
+            $components = [];
+            $headerParameters = [];
+            $bodyParameters = [];
+
+            // Process template components
+            foreach ($template['components'] ?? [] as $component) {
+                if ($component['type'] === 'HEADER') {
+                    $format = strtoupper($component['format'] ?? '');
+                    if ($format === 'IMAGE' || $format === 'VIDEO' || $format === 'DOCUMENT') {
+                        $headerParameters[] = [
+                            'type' => strtolower($format),
+                            strtolower($format) => [
+                                'link' => config('services.whatsapp.default_image_url')
+                            ]
+                        ];
+                    } else if ($format === 'TEXT' && isset($component['text'])) {
+                        // Count variables in header text
+                        preg_match_all('/\{\{(\d+)\}\}/', $component['text'], $matches);
+                        foreach ($matches[1] ?? [] as $varNum) {
+                            $headerParameters[] = [
+                                'type' => 'text',
+                                'text' => $recipient->contact->name ?? 'Customer'
+                            ];
+                        }
+                    }
+                } else if ($component['type'] === 'BODY') {
+                    $bodyText = $component['text'] ?? '';
+                    preg_match_all('/\{\{(\d+)\}\}/', $bodyText, $matches);
+                    foreach ($matches[1] ?? [] as $varNum) {
+                        $bodyParameters[] = [
+                            'type' => 'text',
+                            'text' => $recipient->contact->name ?? 'Customer'
+                        ];
+                    }
+                }
+            }
+
+            // Build components array
+            if (!empty($headerParameters)) {
+                $components[] = [
+                    'type' => 'header',
+                    'parameters' => $headerParameters,
+                ];
+            }
+
+            if (!empty($bodyParameters)) {
+                $components[] = [
+                    'type' => 'body',
+                    'parameters' => $bodyParameters,
+                ];
+            }
+
+            // Build payload
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
+                'to' => $recipient->contact->phone,
+                'type' => 'template',
+                'template' => [
+                    'name' => $request->template_name,
+                    'language' => [
+                        'code' => strtolower($template['language'] ?? 'en'),
+                    ],
+                    'components' => $components,
+                ],
+            ];
+
+            // Send request
+            $apiKey = config('services.whatsapp.api_key');
+            $bearerToken = config('services.whatsapp.bearer_token');
+
+            if (empty($apiKey) && empty($bearerToken)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'WhatsApp API Key is not configured.'
+                ], 500);
+            }
+
+            $headers = ['Content-Type' => 'application/json'];
+            if (!empty($bearerToken)) {
+                $headers['Authorization'] = 'Bearer ' . $bearerToken;
+            } else {
+                $headers['X-API-KEY'] = $apiKey;
+            }
+
+            $baseUrl = rtrim(config('services.whatsapp.base_url', 'https://meta.webpayservices.in'), '/');
+            $apiVersion = strtoupper(config('services.whatsapp.api_version', 'v23.0'));
+            $phoneNumberId = config('services.whatsapp.phone_number_id', '920609244473081');
+            $endpointUrl = "{$baseUrl}/{$apiVersion}/{$phoneNumberId}/messages";
+
+            $response = Http::withHeaders($headers)->post($endpointUrl, $payload);
+
+            if ($response->successful()) {
+                Log::info('Reminder sent successfully', [
+                    'recipient_id' => $recipient->id,
+                    'phone' => $recipient->contact->phone,
+                    'template' => $request->template_name,
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Reminder sent successfully!',
+                ]);
+            } else {
+                $error = $response->json();
+                Log::error('Failed to send reminder', [
+                    'recipient_id' => $recipient->id,
+                    'error' => $error,
+                ]);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => $error['error']['message'] ?? 'Failed to send reminder',
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception while sending reminder', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to send reminder: ' . $e->getMessage()
             ], 500);
         }
     }

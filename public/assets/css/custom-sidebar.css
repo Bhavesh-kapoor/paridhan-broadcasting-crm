@@ -1,15 +1,15 @@
 /* ============================ Custom Sidebar Styling ============================ */
 
-/* Sidebar Background - Modern Blue/Purple Gradient */
+/* Sidebar Background - Pink Gradient */
 .sidebar {
-    background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%) !important;
+    background: linear-gradient(180deg, #ec268f 0%, #f06292 100%) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Metismenu Sidebar (for app_layout) - Modern Blue/Purple Gradient */
+/* Metismenu Sidebar (for app_layout) - Pink Gradient */
 .sidebar-wrapper {
-    background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%) !important;
+    background: linear-gradient(180deg, #ec268f 0%, #f06292 100%) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
 }

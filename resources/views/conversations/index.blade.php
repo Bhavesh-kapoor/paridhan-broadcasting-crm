@@ -76,6 +76,9 @@
                 ajax: {
                     url: `{{ route('conversations.list') }}`,
                     type: 'POST',
+                    data: function(d) {
+                        d.status = '{{ $status ?? '' }}';
+                    }
                 },
                 columns: [{
                         data: null,

@@ -1647,3 +1647,4 @@ $bookings = Booking::where('location_id', $locationId)->get();
 6. Monitor and optimize
 
 
+

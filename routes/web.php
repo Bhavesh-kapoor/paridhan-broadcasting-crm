@@ -89,6 +89,7 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     // Admin Bookings routes
     Route::get('/bookings', [\App\Http\Controllers\InvoiceController::class, 'adminBookings'])->name('admin.bookings.index');
     Route::post('/bookings/list', [\App\Http\Controllers\InvoiceController::class, 'getAdminBookings'])->name('admin.bookings.list');
+    Route::get('/bookings/remaining-balance', [\App\Http\Controllers\InvoiceController::class, 'getAdminRemainingBalanceBookings'])->name('admin.bookings.remainingBalance');
     Route::post('/bookings/settle', [\App\Http\Controllers\InvoiceController::class, 'settleAdminBookingAmount'])->name('admin.bookings.settle');
     Route::get('/bookings/{bookingId}/payment-history', [\App\Http\Controllers\InvoiceController::class, 'getPaymentHistory'])->name('admin.bookings.payment-history');
     Route::post('/bookings/{bookingId}/release', [\App\Http\Controllers\InvoiceController::class, 'releaseTable'])->name('admin.bookings.release');
@@ -126,6 +127,7 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
     Route::get('/campaigns', [\App\Http\Controllers\CampaignController::class, 'employeeIndex'])->name('employee.campaigns.index');
     Route::get('/campaigns/{campaignId}/recipients', [\App\Http\Controllers\CampaignController::class, 'recipients'])->name('employee.campaigns.recipients');
     Route::post('/campaigns/{campaignId}/recipients/list', [\App\Http\Controllers\CampaignController::class, 'getRecipientsList'])->name('employee.campaigns.recipients.list');
+    Route::post('/campaigns/{campaignId}/send-reminder', [\App\Http\Controllers\CampaignController::class, 'sendReminder'])->name('employee.campaigns.sendReminder');
     
     // Campaign Conversations routes
     Route::get('/campaigns/{campaignId}/conversations', [\App\Http\Controllers\CampaignController::class, 'conversations'])->name('campaigns.conversations');
@@ -143,6 +145,7 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
     Route::get('/bookings/{bookingId}/payment-history', [\App\Http\Controllers\InvoiceController::class, 'getPaymentHistory'])->name('employee.bookings.payment-history');
     Route::get('/bookings/{bookingId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generate'])->name('employee.bookings.invoice');
     Route::post('/bookings/{bookingId}/release', [\App\Http\Controllers\InvoiceController::class, 'releaseTable'])->name('employee.bookings.release');
+    Route::get('/bookings/remaining-balance', [\App\Http\Controllers\InvoiceController::class, 'getRemainingBalanceBookings'])->name('employee.bookings.remainingBalance');
 });
 
 // Admin Company Dashboard Routes

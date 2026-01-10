@@ -27,9 +27,10 @@ class ConversationController extends Controller
     /**
      * Display a listing of conversations
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('conversations.index');
+        $status = $request->get('status', '');
+        return view('conversations.index', compact('status'));
     }
 
     /**
@@ -195,6 +196,16 @@ class ConversationController extends Controller
     public function getAllConversationsList(Request $request)
     {
         $query = Conversation::with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'campaign']);
+
+        // Filter by status if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('outcome', $request->status);
+        }
+
+        // Filter by employee if logged in as employee
+        if (auth()->user()->role === 'employee') {
+            $query->where('employee_id', auth()->id());
+        }
 
         return DataTables::of($query)
             ->addIndexColumn()

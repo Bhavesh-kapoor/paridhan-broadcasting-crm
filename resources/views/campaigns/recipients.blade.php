@@ -616,6 +616,46 @@
             </div>
         </div>
     </div>
+
+    <!-- Reminder Modal -->
+    <div class="modal fade" id="reminderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--sidebar-start, #1e3a8a) 0%, var(--sidebar-end, #3b82f6) 100%); color: white; border-radius: 12px 12px 0 0;">
+                    <h5 class="modal-title">
+                        <i class="bx bx-bell me-2"></i>Send Reminder
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="reminderForm">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <input type="hidden" name="recipient_id" id="reminder_recipient_id">
+                        <input type="hidden" name="campaign_id" value="{{ $campaign->id }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Recipient</label>
+                            <input type="text" class="form-control bg-light" id="reminder_recipient_name" readonly style="cursor: not-allowed;">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Reminder Template <span class="text-danger">*</span></label>
+                            <select name="template_name" id="reminder_template_name" class="form-select" required>
+                                <option value="">-- Select Template --</option>
+                            </select>
+                            <small class="text-muted">Only approved reminder templates are shown</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-send me-1"></i>Send Reminder
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -708,12 +748,11 @@
                                 </button>`;
                             }
                             
-                            // Show invoice button if booking exists and has conversation
-                            if (row.has_invoice && row.conversation_id) {
-                                const invoiceUrl = '{{ route("conversations.invoice", ":id") }}'.replace(':id', row.conversation_id);
-                                actions += `<a href="${invoiceUrl}" class="btn btn-sm btn-quick-action btn-warning" title="View Invoice" target="_blank">
-                                    <i class="bx bx-file"></i> <span class="d-none d-md-inline">Invoice</span>
-                                </a>`;
+                            // Show reminder button if recipient has phone
+                            if (row.phone) {
+                                actions += `<button onclick="openReminderModal('${row.recipient_id}', '${row.name || row.email || row.phone}')" class="btn btn-sm btn-quick-action btn-info" title="Send Reminder">
+                                    <i class="bx bx-bell"></i> <span class="d-none d-md-inline">Reminder</span>
+                                </button>`;
                             }
                             
                             if (row.has_conversation || row.has_booking) {
@@ -1361,6 +1400,69 @@
                         errorMsg = Object.values(errors).flat().join(', ');
                     }
                     toastr.error(errorMsg);
+                }
+            });
+        });
+
+        // Load reminder templates
+        function loadReminderTemplates() {
+            $.ajax({
+                url: '{{ route("templates.fetch") }}',
+                type: 'GET',
+                success: function(response) {
+                    const select = $('#reminder_template_name');
+                    select.empty().append('<option value="">-- Select Template --</option>');
+                    
+                    if (response.data && Array.isArray(response.data)) {
+                        response.data.forEach(function(template) {
+                            // Only show approved templates with "reminder" in name (case-insensitive)
+                            if (template.status === 'APPROVED' && 
+                                template.name.toLowerCase().includes('reminder')) {
+                                select.append(`<option value="${template.name}">${template.name}</option>`);
+                            }
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Failed to load templates');
+                }
+            });
+        }
+
+        // Open reminder modal
+        function openReminderModal(recipientId, recipientName) {
+            $('#reminder_recipient_id').val(recipientId);
+            $('#reminder_recipient_name').val(recipientName);
+            loadReminderTemplates();
+            $('#reminderModal').modal('show');
+        }
+
+        // Submit reminder form
+        $('#reminderForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                recipient_id: $('#reminder_recipient_id').val(),
+                template_name: $('#reminder_template_name').val(),
+                _token: $('meta[name="csrf-token"]').attr('content')
+            };
+
+            $.ajax({
+                url: '{{ route("employee.campaigns.sendReminder", $campaign->id) }}',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.status) {
+                        toastr.success(response.message);
+                        $('#reminderModal').modal('hide');
+                        $('#reminderForm')[0].reset();
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.message || 'Failed to send reminder';
+                    toastr.error(error);
                 }
             });
         });

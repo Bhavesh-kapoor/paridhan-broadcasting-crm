@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Conversation;
 use App\Models\PaymentHistory;
+use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
@@ -98,7 +99,12 @@ class InvoiceController extends Controller
      */
     public function employeeBookings(): View
     {
-        return view('bookings.employee_index');
+        $employeeId = auth()->id();
+        $campaigns = Campaign::whereHas('bookings', function($q) use ($employeeId) {
+            $q->where('employee_id', $employeeId);
+        })->orderBy('name')->get();
+        
+        return view('bookings.employee_index', compact('campaigns'));
     }
 
     /**
@@ -112,15 +118,19 @@ class InvoiceController extends Controller
             ->with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'campaign', 'conversation']);
 
         // Apply filters
-        if ($request->has('status') && $request->status) {
+        if ($request->has('status') && $request->status && $request->status !== '') {
             $query->where('amount_status', $request->status);
         }
 
-        if ($request->has('date_from') && $request->date_from) {
+        if ($request->has('campaign_id') && $request->campaign_id && $request->campaign_id !== '') {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+
+        if ($request->has('date_from') && $request->date_from && $request->date_from !== '') {
             $query->where('booking_date', '>=', $request->date_from);
         }
 
-        if ($request->has('date_to') && $request->date_to) {
+        if ($request->has('date_to') && $request->date_to && $request->date_to !== '') {
             $query->where('booking_date', '<=', $request->date_to);
         }
 
@@ -247,63 +257,89 @@ class InvoiceController extends Controller
      */
     public function adminBookings(): View
     {
-        return view('bookings.admin_index');
+        $campaigns = Campaign::whereHas('bookings')->orderBy('name')->get();
+        $employees = \App\Models\User::where('role', 'employee')->where('status', 'active')->orderBy('name')->get();
+        
+        return view('bookings.admin_index', compact('campaigns', 'employees'));
     }
 
     /**
      * Get admin bookings for DataTable (AJAX) - shows all bookings with filters
+     * Admin can see ALL bookings including released ones
      */
     public function getAdminBookings(Request $request): JsonResponse
     {
-        $query = Booking::with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'campaign', 'conversation']);
+        try {
+            // Verify user is admin (extra check for security)
+            if (auth()->user()->role !== 'admin') {
+                return response()->json([
+                    'data' => [],
+                    'error' => 'Unauthorized access'
+                ], 403);
+            }
 
-        // Apply filters
-        if ($request->has('status') && $request->status) {
-            $query->where('amount_status', $request->status);
+            // Get all bookings - no restrictions for admin (includes released bookings)
+            $query = Booking::with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'campaign', 'conversation']);
+
+            // Apply filters only if provided
+            if ($request->has('status') && $request->status && $request->status !== '') {
+                $query->where('amount_status', $request->status);
+            }
+
+            if ($request->has('campaign_id') && $request->campaign_id && $request->campaign_id !== '') {
+                $query->where('campaign_id', $request->campaign_id);
+            }
+
+            if ($request->has('employee_id') && $request->employee_id && $request->employee_id !== '') {
+                $query->where('employee_id', $request->employee_id);
+            }
+
+            if ($request->has('date_from') && $request->date_from && $request->date_from !== '') {
+                $query->where('booking_date', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && $request->date_to && $request->date_to !== '') {
+                $query->where('booking_date', '<=', $request->date_to);
+            }
+
+            // Order by booking date descending (newest first)
+            $bookings = $query->orderBy('booking_date', 'desc')->orderBy('created_at', 'desc')->get();
+
+            $data = [];
+            foreach ($bookings as $index => $booking) {
+                $balance = ($booking->price ?? 0) - ($booking->amount_paid ?? 0);
+                
+                $data[] = [
+                    'id' => $booking->id,
+                    'invoice_no' => substr($booking->id, 0, 12),
+                    'booking_date' => $booking->booking_date ? $booking->booking_date->format('M d, Y') : 'N/A',
+                    'exhibitor' => $booking->exhibitor->name ?? 'N/A',
+                    'visitor' => $booking->visitor->name ?? ($booking->phone ?? 'N/A'),
+                    'employee' => $booking->employee->name ?? 'N/A',
+                    'location' => $booking->location->loc_name ?? $booking->booking_location ?? 'N/A',
+                    'table' => $booking->table->table_no ?? $booking->table_no ?? 'N/A',
+                    'price' => number_format($booking->price ?? 0, 2),
+                    'amount_paid' => number_format($booking->amount_paid ?? 0, 2),
+                    'balance' => number_format($balance, 2),
+                    'amount_status' => $booking->amount_status ?? 'pending',
+                    'campaign' => $booking->campaign->name ?? 'N/A',
+                    'conversation_id' => $booking->conversation->id ?? null,
+                    'created_at' => $booking->created_at ? $booking->created_at->format('M d, Y') : 'N/A',
+                    'released_at' => $booking->released_at ? $booking->released_at->toIso8601String() : null,
+                    'released_at_formatted' => $booking->released_at ? $booking->released_at->format('M d, Y H:i') : null,
+                ];
+            }
+
+            return response()->json([
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getAdminBookings: ' . $e->getMessage());
+            return response()->json([
+                'data' => [],
+                'error' => 'An error occurred while loading bookings: ' . $e->getMessage()
+            ], 500);
         }
-
-        if ($request->has('employee_id') && $request->employee_id) {
-            $query->where('employee_id', $request->employee_id);
-        }
-
-        if ($request->has('date_from') && $request->date_from) {
-            $query->where('booking_date', '>=', $request->date_from);
-        }
-
-        if ($request->has('date_to') && $request->date_to) {
-            $query->where('booking_date', '<=', $request->date_to);
-        }
-
-        $bookings = $query->orderBy('booking_date', 'desc')->get();
-
-        $data = [];
-        foreach ($bookings as $index => $booking) {
-            $balance = ($booking->price ?? 0) - ($booking->amount_paid ?? 0);
-            
-            $data[] = [
-                'id' => $booking->id,
-                'invoice_no' => substr($booking->id, 0, 12),
-                'booking_date' => $booking->booking_date->format('M d, Y'),
-                'exhibitor' => $booking->exhibitor->name ?? 'N/A',
-                'visitor' => $booking->visitor->name ?? ($booking->phone ?? 'N/A'),
-                'employee' => $booking->employee->name ?? 'N/A',
-                'location' => $booking->location->loc_name ?? $booking->booking_location ?? 'N/A',
-                'table' => $booking->table->table_no ?? $booking->table_no ?? 'N/A',
-                'price' => number_format($booking->price ?? 0, 2),
-                'amount_paid' => number_format($booking->amount_paid ?? 0, 2),
-                'balance' => number_format($balance, 2),
-                'amount_status' => $booking->amount_status ?? 'pending',
-                'campaign' => $booking->campaign->name ?? 'N/A',
-                'conversation_id' => $booking->conversation->id ?? null,
-                'created_at' => $booking->created_at->format('M d, Y'),
-                'released_at' => $booking->released_at ? $booking->released_at->toIso8601String() : null,
-                'released_at_formatted' => $booking->released_at ? $booking->released_at->format('M d, Y H:i') : null,
-            ];
-        }
-
-        return response()->json([
-            'data' => $data
-        ]);
     }
 
     /**
@@ -486,6 +522,97 @@ class InvoiceController extends Controller
                 'message' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get bookings with remaining balance (for employee)
+     */
+    public function getRemainingBalanceBookings(Request $request): JsonResponse
+    {
+        $employeeId = auth()->id();
+        
+        $query = Booking::where('employee_id', $employeeId)
+            ->whereNull('released_at')
+            ->with(['exhibitor', 'visitor', 'location', 'campaign']);
+        
+        // Only bookings with remaining balance
+        $query->whereRaw('(price - COALESCE(amount_paid, 0)) > 0');
+        
+        // Filter by campaign if provided
+        if ($request->has('campaign_id') && $request->campaign_id) {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+        
+        $bookings = $query->orderBy('booking_date', 'desc')->get();
+        
+        $data = $bookings->map(function($booking) {
+            $balance = ($booking->price ?? 0) - ($booking->amount_paid ?? 0);
+            return [
+                'id' => $booking->id,
+                'booking_date' => $booking->booking_date->format('M d, Y'),
+                'exhibitor' => $booking->exhibitor->name ?? 'N/A',
+                'visitor' => $booking->visitor->name ?? ($booking->phone ?? 'N/A'),
+                'campaign' => $booking->campaign->name ?? 'N/A',
+                'location' => $booking->location->loc_name ?? $booking->booking_location ?? 'N/A',
+                'price' => number_format($booking->price ?? 0, 2),
+                'amount_paid' => number_format($booking->amount_paid ?? 0, 2),
+                'balance' => number_format($balance, 2),
+                'amount_status' => $booking->amount_status ?? 'pending',
+            ];
+        });
+        
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+            'total_balance' => number_format($bookings->sum(function($b) { return ($b->price ?? 0) - ($b->amount_paid ?? 0); }), 2)
+        ]);
+    }
+
+    /**
+     * Get bookings with remaining balance (for admin)
+     */
+    public function getAdminRemainingBalanceBookings(Request $request): JsonResponse
+    {
+        $query = Booking::whereNull('released_at')
+            ->with(['exhibitor', 'visitor', 'location', 'campaign', 'employee']);
+        
+        // Only bookings with remaining balance
+        $query->whereRaw('(price - COALESCE(amount_paid, 0)) > 0');
+        
+        // Filter by campaign if provided
+        if ($request->has('campaign_id') && $request->campaign_id) {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+        
+        // Filter by employee if provided
+        if ($request->has('employee_id') && $request->employee_id) {
+            $query->where('employee_id', $request->employee_id);
+        }
+        
+        $bookings = $query->orderBy('booking_date', 'desc')->get();
+        
+        $data = $bookings->map(function($booking) {
+            $balance = ($booking->price ?? 0) - ($booking->amount_paid ?? 0);
+            return [
+                'id' => $booking->id,
+                'booking_date' => $booking->booking_date->format('M d, Y'),
+                'exhibitor' => $booking->exhibitor->name ?? 'N/A',
+                'visitor' => $booking->visitor->name ?? ($booking->phone ?? 'N/A'),
+                'employee' => $booking->employee->name ?? 'N/A',
+                'campaign' => $booking->campaign->name ?? 'N/A',
+                'location' => $booking->location->loc_name ?? $booking->booking_location ?? 'N/A',
+                'price' => number_format($booking->price ?? 0, 2),
+                'amount_paid' => number_format($booking->amount_paid ?? 0, 2),
+                'balance' => number_format($balance, 2),
+                'amount_status' => $booking->amount_status ?? 'pending',
+            ];
+        });
+        
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+            'total_balance' => number_format($bookings->sum(function($b) { return ($b->price ?? 0) - ($b->amount_paid ?? 0); }), 2)
+        ]);
     }
 
 }

@@ -112,6 +112,33 @@
                         </div>
                     </div>
                 </div>
+                
+                @php
+                    $remainingBalance = \App\Models\Booking::where('employee_id', $employeeId)
+                        ->whereNull('released_at')
+                        ->get()
+                        ->sum(function($b) { return ($b->price ?? 0) - ($b->amount_paid ?? 0); });
+                    $remainingCount = \App\Models\Booking::where('employee_id', $employeeId)
+                        ->whereNull('released_at')
+                        ->whereRaw('(price - COALESCE(amount_paid, 0)) > 0')
+                        ->count();
+                @endphp
+                <div class="col-md-3">
+                    <div class="card revenue-summary-card" style="border-left-color: #ef4444; cursor: pointer;" onclick="openRemainingBalanceModal()">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">Remaining Balance</h6>
+                                    <h3 class="mb-0" style="color: #ef4444;">₹{{ number_format($remainingBalance, 2) }}</h3>
+                                    <small class="text-muted">{{ $remainingCount }} booking(s)</small>
+                                </div>
+                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <i class="bx bx-money fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Bookings Table -->
@@ -129,7 +156,7 @@
                     <!-- Filters Section -->
                     <div class="collapse" id="filtersCollapse">
                         <div class="row g-3 pb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Status</label>
                                 <select class="form-select form-select-sm" id="filterStatus">
                                     <option value="">All Status</option>
@@ -138,11 +165,25 @@
                                     <option value="pending">Pending</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label class="form-label small">Campaign</label>
+                                <select class="form-select form-select-sm" id="filterCampaign">
+                                    <option value="">All Campaigns</option>
+                                    @php
+                                        $campaigns = \App\Models\Campaign::whereHas('bookings', function($q) use ($employeeId) {
+                                            $q->where('employee_id', $employeeId);
+                                        })->orderBy('name')->get();
+                                    @endphp
+                                    @foreach($campaigns as $campaign)
+                                        <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label small">Date From</label>
                                 <input type="date" class="form-control form-control-sm" id="filterDateFrom">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small">Date To</label>
                                 <input type="date" class="form-control form-control-sm" id="filterDateTo">
                             </div>
@@ -270,6 +311,76 @@
             </div>
         </div>
     </div>
+
+    <!-- Remaining Balance Modal -->
+    <div class="modal fade" id="remainingBalanceModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bx bx-money me-2"></i>Remaining Balance Bookings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small">Filter by Campaign</label>
+                            <select class="form-select form-select-sm" id="rbFilterCampaign">
+                                <option value="">All Campaigns</option>
+                                @foreach($campaigns as $campaign)
+                                    <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Search</label>
+                            <input type="text" class="form-control form-control-sm" id="rbSearch" placeholder="Search by name...">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-primary me-2" onclick="loadRemainingBalance()">
+                                <i class="bx bx-search me-1"></i>Search
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearRbFilters()">
+                                <i class="bx bx-x me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="remainingBalanceLoader" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="remainingBalanceContent">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="remainingBalanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Exhibitor</th>
+                                        <th>Visitor</th>
+                                        <th>Campaign</th>
+                                        <th>Location</th>
+                                        <th>Price</th>
+                                        <th>Paid</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="remainingBalanceTableBody">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                                <tfoot id="remainingBalanceTableFooter">
+                                    <!-- Total will be shown here -->
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -285,9 +396,10 @@
                     type: 'POST',
                     data: function(d) {
                         return {
-                            status: $('#filterStatus').val(),
-                            date_from: $('#filterDateFrom').val(),
-                            date_to: $('#filterDateTo').val()
+                            status: $('#filterStatus').val() || '',
+                            campaign_id: $('#filterCampaign').val() || '',
+                            date_from: $('#filterDateFrom').val() || '',
+                            date_to: $('#filterDateTo').val() || ''
                         };
                     },
                     dataSrc: 'data',
@@ -527,9 +639,10 @@
         
         function clearFilters() {
             $('#filterStatus').val('');
+            $('#filterCampaign').val('');
             $('#filterDateFrom').val('');
             $('#filterDateTo').val('');
-            bookingsTable.ajax.reload();
+            bookingsTable.ajax.reload(null, false);
         }
         
         function releaseTable(bookingId) {
@@ -561,6 +674,111 @@
                 }
             });
         }
+
+        // Remaining Balance Modal Functions
+        function openRemainingBalanceModal() {
+            $('#remainingBalanceModal').modal('show');
+            loadRemainingBalance();
+        }
+
+        function loadRemainingBalance() {
+            const campaignId = $('#rbFilterCampaign').val() || '';
+            const search = $('#rbSearch').val() || '';
+            
+            $('#remainingBalanceLoader').show();
+            $('#remainingBalanceContent').hide();
+            
+            $.ajax({
+                url: '{{ route("employee.bookings.remainingBalance") }}',
+                type: 'GET',
+                data: {
+                    campaign_id: campaignId
+                },
+                success: function(response) {
+                    $('#remainingBalanceLoader').hide();
+                    $('#remainingBalanceContent').show();
+                    
+                    if (response.status && response.data && response.data.length > 0) {
+                        let html = '';
+                        let filteredData = response.data;
+                        
+                        // Apply search filter
+                        if (search) {
+                            const searchLower = search.toLowerCase();
+                            filteredData = filteredData.filter(function(item) {
+                                return (item.exhibitor && item.exhibitor.toLowerCase().includes(searchLower)) ||
+                                       (item.visitor && item.visitor.toLowerCase().includes(searchLower)) ||
+                                       (item.campaign && item.campaign.toLowerCase().includes(searchLower));
+                            });
+                        }
+                        
+                        filteredData.forEach(function(booking) {
+                            const badgeClass = booking.amount_status === 'paid' ? 'bg-success' : 
+                                             booking.amount_status === 'partial' ? 'bg-warning' : 'bg-danger';
+                            html += `
+                                <tr>
+                                    <td>${booking.booking_date}</td>
+                                    <td>${booking.exhibitor}</td>
+                                    <td>${booking.visitor}</td>
+                                    <td>${booking.campaign}</td>
+                                    <td>${booking.location}</td>
+                                    <td>₹${booking.price}</td>
+                                    <td>₹${booking.amount_paid}</td>
+                                    <td class="fw-bold text-danger">₹${booking.balance}</td>
+                                    <td><span class="badge ${badgeClass}">${booking.amount_status.toUpperCase()}</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="openSettleModal('${booking.id}')">
+                                            <i class="bx bx-money"></i> Settle
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        $('#remainingBalanceTableBody').html(html);
+                        
+                        // Calculate total balance
+                        const totalBalance = filteredData.reduce(function(sum, item) {
+                            return sum + parseFloat(item.balance.replace(/,/g, ''));
+                        }, 0);
+                        
+                        $('#remainingBalanceTableFooter').html(`
+                            <tr class="table-info">
+                                <th colspan="7" class="text-end">Total Remaining Balance:</th>
+                                <th class="text-danger">₹${totalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        `);
+                    } else {
+                        $('#remainingBalanceTableBody').html('<tr><td colspan="10" class="text-center py-4 text-muted">No bookings with remaining balance found</td></tr>');
+                        $('#remainingBalanceTableFooter').html('');
+                    }
+                },
+                error: function() {
+                    $('#remainingBalanceLoader').hide();
+                    $('#remainingBalanceContent').show();
+                    $('#remainingBalanceTableBody').html('<tr><td colspan="10" class="text-center py-4 text-danger">Failed to load data</td></tr>');
+                }
+            });
+        }
+
+        function clearRbFilters() {
+            $('#rbFilterCampaign').val('');
+            $('#rbSearch').val('');
+            loadRemainingBalance();
+        }
+
+        // Load remaining balance on modal show
+        $('#remainingBalanceModal').on('shown.bs.modal', function() {
+            loadRemainingBalance();
+        });
+
+        // Search on enter key
+        $('#rbSearch').on('keypress', function(e) {
+            if (e.which === 13) {
+                loadRemainingBalance();
+            }
+        });
     </script>
 @endsection
 

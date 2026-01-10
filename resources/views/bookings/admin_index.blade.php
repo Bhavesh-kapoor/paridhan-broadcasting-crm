@@ -8,14 +8,74 @@
         .revenue-summary-card {
             border-radius: 12px;
             background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
+            box-shadow: 0 2px 8px rgba(236, 38, 143, 0.08);
             border-left: 4px solid transparent;
             transition: all 0.3s ease;
         }
         
         .revenue-summary-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(30, 58, 138, 0.12);
+            box-shadow: 0 4px 16px rgba(236, 38, 143, 0.12);
+        }
+        
+        /* Table Scrollable Container */
+        .table-responsive {
+            position: relative;
+        }
+        
+        .table-responsive::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ec268f 0%, #f06292 100%);
+            border-radius: 4px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #c2185b 0%, #ec268f 100%);
+        }
+        
+        /* Sticky Header */
+        .table-header-gradient {
+            background: linear-gradient(135deg, #ec268f 0%, #f06292 100%) !important;
+            color: white !important;
+        }
+        
+        .table-header-gradient th {
+            color: white !important;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 12px 8px !important;
+        }
+        
+        /* DataTables Scroll Container */
+        .dataTables_scrollBody {
+            max-height: calc(100vh - 350px) !important;
+        }
+        
+        .dataTables_scrollHead {
+            overflow: visible !important;
+        }
+        
+        /* Table Cell Padding */
+        #bookingsTable td {
+            padding: 10px 8px !important;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        /* Action Buttons */
+        .btn-action {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            margin: 2px;
         }
     </style>
 @endsection
@@ -111,6 +171,31 @@
                         </div>
                     </div>
                 </div>
+                
+                @php
+                    $remainingBalance = \App\Models\Booking::whereNull('released_at')
+                        ->get()
+                        ->sum(function($b) { return ($b->price ?? 0) - ($b->amount_paid ?? 0); });
+                    $remainingCount = \App\Models\Booking::whereNull('released_at')
+                        ->whereRaw('(price - COALESCE(amount_paid, 0)) > 0')
+                        ->count();
+                @endphp
+                <div class="col-md-3">
+                    <div class="card revenue-summary-card" style="border-left-color: #ef4444; cursor: pointer;" onclick="openRemainingBalanceModal()">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-1">Remaining Balance</h6>
+                                    <h3 class="mb-0" style="color: #ef4444;">₹{{ number_format($remainingBalance, 2) }}</h3>
+                                    <small class="text-muted">{{ $remainingCount }} booking(s)</small>
+                                </div>
+                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <i class="bx bx-money fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Bookings Table -->
@@ -128,13 +213,31 @@
                     <!-- Filters Section -->
                     <div class="collapse" id="filtersCollapse">
                         <div class="row g-3 pb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small">Status</label>
                                 <select class="form-select form-select-sm" id="filterStatus">
                                     <option value="">All Status</option>
                                     <option value="paid">Paid</option>
                                     <option value="partial">Partial</option>
                                     <option value="pending">Pending</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Campaign</label>
+                                <select class="form-select form-select-sm" id="filterCampaign">
+                                    <option value="">All Campaigns</option>
+                                    @foreach($campaigns as $campaign)
+                                        <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Employee</label>
+                                <select class="form-select form-select-sm" id="filterEmployee">
+                                    <option value="">All Employees</option>
+                                    @foreach($employees as $emp)
+                                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -144,15 +247,6 @@
                             <div class="col-md-3">
                                 <label class="form-label small">Date To</label>
                                 <input type="date" class="form-control form-control-sm" id="filterDateTo">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Employee</label>
-                                <select class="form-select form-select-sm" id="filterEmployee">
-                                    <option value="">All Employees</option>
-                                    @foreach(\App\Models\User::where('role', 'employee')->get() as $emp)
-                                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
-                                    @endforeach
-                                </select>
                             </div>
                             <div class="col-md-12">
                                 <button type="button" class="btn btn-sm btn-primary" onclick="applyFilters()">
@@ -165,23 +259,24 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table id="bookingsTable" class="table table-hover" style="width:100%">
-                            <thead class="table-header-gradient">
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: calc(100vh - 350px); overflow-y: auto; overflow-x: auto;">
+                        <table id="bookingsTable" class="table table-hover table-striped mb-0" style="width:100%; min-width: 1200px;">
+                            <thead class="table-header-gradient sticky-top" style="position: sticky; top: 0; z-index: 10; background: linear-gradient(135deg, #ec268f 0%, #f06292 100%); color: white;">
                                 <tr>
-                                    <th><i class="bx bx-hash"></i> #</th>
-                                    <th><i class="bx bx-calendar"></i> Booking Date</th>
-                                    <th><i class="bx bx-building"></i> Exhibitor</th>
-                                    <th><i class="bx bx-user"></i> Visitor</th>
-                                    <th><i class="bx bx-user-circle"></i> Employee</th>
-                                    <th><i class="bx bx-map"></i> Location</th>
-                                    <th><i class="bx bx-table"></i> Table</th>
-                                    <th class="text-end"><i class="bx bx-rupee"></i> Total Price</th>
-                                    <th class="text-end"><i class="bx bx-wallet"></i> Amount Paid</th>
-                                    <th class="text-end"><i class="bx bx-calculator"></i> Balance</th>
-                                    <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
-                                    <th class="text-center"><i class="bx bx-cog"></i> Actions</th>
+                                    <th style="min-width: 50px;"><i class="bx bx-hash"></i> #</th>
+                                    <th style="min-width: 120px;"><i class="bx bx-calendar"></i> Booking Date</th>
+                                    <th style="min-width: 150px;"><i class="bx bx-building"></i> Exhibitor</th>
+                                    <th style="min-width: 150px;"><i class="bx bx-user"></i> Visitor</th>
+                                    <th style="min-width: 120px;"><i class="bx bx-user-circle"></i> Employee</th>
+                                    <th style="min-width: 150px;"><i class="bx bx-megaphone"></i> Campaign</th>
+                                    <th style="min-width: 120px;"><i class="bx bx-map"></i> Location</th>
+                                    <th style="min-width: 80px;"><i class="bx bx-table"></i> Table</th>
+                                    <th class="text-end" style="min-width: 100px;"><i class="bx bx-rupee"></i> Total Price</th>
+                                    <th class="text-end" style="min-width: 100px;"><i class="bx bx-wallet"></i> Amount Paid</th>
+                                    <th class="text-end" style="min-width: 100px;"><i class="bx bx-calculator"></i> Balance</th>
+                                    <th class="text-center" style="min-width: 100px;"><i class="bx bx-info-circle"></i> Status</th>
+                                    <th class="text-center" style="min-width: 200px;"><i class="bx bx-cog"></i> Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -279,6 +374,86 @@
             </div>
         </div>
     </div>
+
+    <!-- Remaining Balance Modal -->
+    <div class="modal fade" id="remainingBalanceModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bx bx-money me-2"></i>Remaining Balance Bookings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label small">Filter by Campaign</label>
+                            <select class="form-select form-select-sm" id="rbFilterCampaign">
+                                <option value="">All Campaigns</option>
+                                @foreach($campaigns as $campaign)
+                                    <option value="{{ $campaign->id }}">{{ $campaign->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Filter by Employee</label>
+                            <select class="form-select form-select-sm" id="rbFilterEmployee">
+                                <option value="">All Employees</option>
+                                @foreach($employees as $emp)
+                                    <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Search</label>
+                            <input type="text" class="form-control form-control-sm" id="rbSearch" placeholder="Search by name...">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-primary me-2" onclick="loadRemainingBalance()">
+                                <i class="bx bx-search me-1"></i>Search
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearRbFilters()">
+                                <i class="bx bx-x me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="remainingBalanceLoader" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="remainingBalanceContent">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="remainingBalanceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Exhibitor</th>
+                                        <th>Visitor</th>
+                                        <th>Employee</th>
+                                        <th>Campaign</th>
+                                        <th>Location</th>
+                                        <th>Price</th>
+                                        <th>Paid</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="remainingBalanceTableBody">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                                <tfoot id="remainingBalanceTableFooter">
+                                    <!-- Total will be shown here -->
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -286,74 +461,168 @@
         let bookingsTable;
         
         $(document).ready(function() {
+            // Destroy existing DataTable if it exists
+            if ($.fn.DataTable.isDataTable('#bookingsTable')) {
+                $('#bookingsTable').DataTable().destroy();
+                $('#bookingsTable').empty();
+            }
+            
             bookingsTable = $('#bookingsTable').DataTable({
                 processing: true,
                 serverSide: false,
+                autoWidth: false,
+                scrollX: true,
+                scrollY: 'calc(100vh - 350px)',
+                scrollCollapse: true,
+                fixedHeader: false,
+                responsive: false,
+                paging: true,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 ajax: {
                     url: '{{ route("admin.bookings.list") }}',
                     type: 'POST',
                     data: function(d) {
                         return {
-                            status: $('#filterStatus').val(),
-                            employee_id: $('#filterEmployee').val(),
-                            date_from: $('#filterDateFrom').val(),
-                            date_to: $('#filterDateTo').val()
+                            status: $('#filterStatus').val() || '',
+                            campaign_id: $('#filterCampaign').val() || '',
+                            employee_id: $('#filterEmployee').val() || '',
+                            date_from: $('#filterDateFrom').val() || '',
+                            date_to: $('#filterDateTo').val() || ''
                         };
                     },
-                    dataSrc: 'data',
+                    dataSrc: function(json) {
+                        console.log('AJAX Response:', json);
+                        if (json && json.data) {
+                            console.log('Data array length:', json.data.length);
+                            return json.data;
+                        }
+                        console.error('No data array found in response');
+                        return [];
+                    },
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTable Error:', error, thrown);
+                        console.error('Response:', xhr.responseText);
+                        console.error('Status:', xhr.status);
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            console.error('Error Message:', xhr.responseJSON.error);
+                        }
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Failed to load bookings: ' + (xhr.responseJSON?.error || error));
+                        } else {
+                            alert('Failed to load bookings: ' + (xhr.responseJSON?.error || error));
+                        }
                     }
                 },
                 columns: [
                     { 
-                        data: null, 
+                        data: null,
+                        name: 'sl_no',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center',
                         render: function(data, type, row, meta) { 
                             return meta.row + 1; 
                         } 
                     },
-                    { data: 'booking_date' },
-                    { data: 'exhibitor' },
-                    { data: 'visitor' },
-                    { data: 'employee' },
-                    { data: 'location' },
-                    { data: 'table' },
+                    { 
+                        data: 'booking_date',
+                        name: 'booking_date',
+                        defaultContent: '-'
+                    },
+                    { 
+                        data: 'exhibitor',
+                        name: 'exhibitor',
+                        defaultContent: '-'
+                    },
+                    { 
+                        data: 'visitor',
+                        name: 'visitor',
+                        defaultContent: '-'
+                    },
+                    { 
+                        data: 'employee',
+                        name: 'employee',
+                        defaultContent: '-'
+                    },
+                    { 
+                        data: 'campaign',
+                        name: 'campaign',
+                        defaultContent: '-',
+                        render: function(data, type, row) {
+                            if (!data || data === '-') return '<span class="text-muted">-</span>';
+                            return '<span class="badge bg-info">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'location',
+                        name: 'location',
+                        defaultContent: '-'
+                    },
+                    { 
+                        data: 'table',
+                        name: 'table',
+                        defaultContent: '-'
+                    },
                     { 
                         data: 'price', 
+                        name: 'price',
                         className: 'text-end',
-                        render: function(data) {
+                        defaultContent: '-',
+                        render: function(data, type, row) {
+                            if (!data || data === '-') return '-';
                             return '<strong>₹' + data + '</strong>';
                         }
                     },
                     { 
                         data: 'amount_paid', 
+                        name: 'amount_paid',
                         className: 'text-end',
-                        render: function(data) {
+                        defaultContent: '-',
+                        render: function(data, type, row) {
+                            if (!data || data === '-') return '-';
                             return '<strong class="text-success">₹' + data + '</strong>';
                         }
                     },
                     { 
                         data: 'balance', 
+                        name: 'balance',
                         className: 'text-end',
-                        render: function(data) {
-                            const balance = parseFloat(data.replace(/,/g, ''));
-                            const colorClass = balance > 0 ? 'text-danger' : 'text-success';
-                            return '<strong class="' + colorClass + '">₹' + data + '</strong>';
+                        defaultContent: '-',
+                        render: function(data, type, row) {
+                            if (!data || data === '-') return '-';
+                            try {
+                                const balance = parseFloat(data.toString().replace(/,/g, ''));
+                                const colorClass = balance > 0 ? 'text-danger' : 'text-success';
+                                return '<strong class="' + colorClass + '">₹' + data + '</strong>';
+                            } catch(e) {
+                                return '<strong>₹' + data + '</strong>';
+                            }
                         }
                     },
                     { 
                         data: 'amount_status', 
+                        name: 'amount_status',
                         className: 'text-center',
-                        render: function(data) {
+                        defaultContent: '-',
+                        render: function(data, type, row) {
+                            if (!data || data === '-') return '-';
                             const badgeClass = data === 'paid' ? 'bg-success' : (data === 'partial' ? 'bg-warning' : 'bg-danger');
-                            return '<span class="badge ' + badgeClass + '">' + data.toUpperCase() + '</span>';
+                            return '<span class="badge ' + badgeClass + '">' + (data ? data.toUpperCase() : 'N/A') + '</span>';
                         }
                     },
                     { 
                         data: 'id', 
+                        name: 'actions',
                         className: 'text-center',
                         orderable: false,
+                        searchable: false,
+                        defaultContent: '-',
                         render: function(data, type, row) {
+                            if (!row || !row.id) return '<span class="text-muted">-</span>';
+                            
                             let buttons = '';
                             
                             // View button - always show
@@ -362,18 +631,24 @@
                                       '</a>';
                             
                             // Check if booking is already released
-                            const isReleased = row.released_at !== null && row.released_at !== '';
+                            const isReleased = row.released_at !== null && row.released_at !== '' && row.released_at !== undefined;
                             
                             if (isReleased) {
                                 buttons += '<span class="badge bg-secondary me-2">Released</span>';
                                 buttons += '<small class="text-muted">' + (row.released_at_formatted || '') + '</small>';
                             } else {
                                 // Settle button - only show if not released
-                                const balance = parseFloat(row.balance.replace(/,/g, ''));
-                                if (balance > 0) {
-                                    buttons += '<button onclick="openSettleModal(\'' + row.id + '\', \'' + parseFloat(row.price.replace(/,/g, '')) + '\', \'' + parseFloat(row.amount_paid.replace(/,/g, '')) + '\', \'' + balance + '\')" class="btn btn-sm btn-action btn-warning me-1" title="Settle Amount">' +
-                                              '<i class="bx bx-wallet"></i> Settle' +
-                                              '</button>';
+                                try {
+                                    const balance = row.balance ? parseFloat(row.balance.toString().replace(/,/g, '')) : 0;
+                                    if (balance > 0) {
+                                        const price = row.price ? parseFloat(row.price.toString().replace(/,/g, '')) : 0;
+                                        const amountPaid = row.amount_paid ? parseFloat(row.amount_paid.toString().replace(/,/g, '')) : 0;
+                                        buttons += '<button onclick="openSettleModal(\'' + row.id + '\', \'' + price + '\', \'' + amountPaid + '\', \'' + balance + '\')" class="btn btn-sm btn-action btn-warning me-1" title="Settle Amount">' +
+                                                  '<i class="bx bx-wallet"></i> Settle' +
+                                                  '</button>';
+                                    }
+                                } catch(e) {
+                                    console.error('Error parsing balance:', e);
                                 }
                                 
                                 // Release button - only show if not released
@@ -387,8 +662,29 @@
                     }
                 ],
                 order: [[1, 'desc']],
-                pageLength: 25,
-                responsive: true
+                language: {
+                    emptyTable: "No bookings found",
+                    zeroRecords: "No matching bookings found",
+                    processing: "Loading bookings...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    search: "Search:",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                },
+                initComplete: function(settings, json) {
+                    console.log('DataTable initialized successfully');
+                    console.log('Data received:', json);
+                    if (json && json.data) {
+                        console.log('Total records:', json.data.length);
+                    }
+                }
             });
 
             // Handle settle amount form submission
@@ -535,19 +831,131 @@
                     $('#paymentHistoryContainer').html('<div class="text-center text-danger py-3">Failed to load payment history</div>');
                 }
             });
-        });
+        };
+        
         
         function applyFilters() {
-            bookingsTable.ajax.reload();
+            bookingsTable.ajax.reload(null, false);
         }
         
         function clearFilters() {
             $('#filterStatus').val('');
+            $('#filterCampaign').val('');
             $('#filterEmployee').val('');
             $('#filterDateFrom').val('');
             $('#filterDateTo').val('');
-            bookingsTable.ajax.reload();
+            bookingsTable.ajax.reload(null, false);
         }
+
+        // Remaining Balance Modal Functions
+        function openRemainingBalanceModal() {
+            $('#remainingBalanceModal').modal('show');
+            loadRemainingBalance();
+        }
+
+        function loadRemainingBalance() {
+            const campaignId = $('#rbFilterCampaign').val() || '';
+            const employeeId = $('#rbFilterEmployee').val() || '';
+            const search = $('#rbSearch').val() || '';
+            
+            $('#remainingBalanceLoader').show();
+            $('#remainingBalanceContent').hide();
+            
+            $.ajax({
+                url: '{{ route("admin.bookings.remainingBalance") }}',
+                type: 'GET',
+                data: {
+                    campaign_id: campaignId,
+                    employee_id: employeeId
+                },
+                success: function(response) {
+                    $('#remainingBalanceLoader').hide();
+                    $('#remainingBalanceContent').show();
+                    
+                    if (response.status && response.data && response.data.length > 0) {
+                        let html = '';
+                        let filteredData = response.data;
+                        
+                        // Apply search filter
+                        if (search) {
+                            const searchLower = search.toLowerCase();
+                            filteredData = filteredData.filter(function(item) {
+                                return (item.exhibitor && item.exhibitor.toLowerCase().includes(searchLower)) ||
+                                       (item.visitor && item.visitor.toLowerCase().includes(searchLower)) ||
+                                       (item.campaign && item.campaign.toLowerCase().includes(searchLower)) ||
+                                       (item.employee && item.employee.toLowerCase().includes(searchLower));
+                            });
+                        }
+                        
+                        filteredData.forEach(function(booking) {
+                            const badgeClass = booking.amount_status === 'paid' ? 'bg-success' : 
+                                             booking.amount_status === 'partial' ? 'bg-warning' : 'bg-danger';
+                            html += `
+                                <tr>
+                                    <td>${booking.booking_date}</td>
+                                    <td>${booking.exhibitor}</td>
+                                    <td>${booking.visitor}</td>
+                                    <td>${booking.employee}</td>
+                                    <td>${booking.campaign}</td>
+                                    <td>${booking.location}</td>
+                                    <td>₹${booking.price}</td>
+                                    <td>₹${booking.amount_paid}</td>
+                                    <td class="fw-bold text-danger">₹${booking.balance}</td>
+                                    <td><span class="badge ${badgeClass}">${booking.amount_status.toUpperCase()}</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="openSettleModal('${booking.id}')">
+                                            <i class="bx bx-money"></i> Settle
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        $('#remainingBalanceTableBody').html(html);
+                        
+                        // Calculate total balance
+                        const totalBalance = filteredData.reduce(function(sum, item) {
+                            return sum + parseFloat(item.balance.replace(/,/g, ''));
+                        }, 0);
+                        
+                        $('#remainingBalanceTableFooter').html(`
+                            <tr class="table-info">
+                                <th colspan="8" class="text-end">Total Remaining Balance:</th>
+                                <th class="text-danger">₹${totalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        `);
+                    } else {
+                        $('#remainingBalanceTableBody').html('<tr><td colspan="11" class="text-center py-4 text-muted">No bookings with remaining balance found</td></tr>');
+                        $('#remainingBalanceTableFooter').html('');
+                    }
+                },
+                error: function() {
+                    $('#remainingBalanceLoader').hide();
+                    $('#remainingBalanceContent').show();
+                    $('#remainingBalanceTableBody').html('<tr><td colspan="11" class="text-center py-4 text-danger">Failed to load data</td></tr>');
+                }
+            });
+        }
+
+        function clearRbFilters() {
+            $('#rbFilterCampaign').val('');
+            $('#rbFilterEmployee').val('');
+            $('#rbSearch').val('');
+            loadRemainingBalance();
+        }
+
+        // Load remaining balance on modal show
+        $('#remainingBalanceModal').on('shown.bs.modal', function() {
+            loadRemainingBalance();
+        });
+
+        // Search on enter key
+        $('#rbSearch').on('keypress', function(e) {
+            if (e.which === 13) {
+                loadRemainingBalance();
+            }
+        });
         
         function releaseTable(bookingId) {
             if (!confirm('Are you sure you want to release this table? This action cannot be undone.')) {

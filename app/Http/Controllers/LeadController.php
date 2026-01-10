@@ -148,8 +148,8 @@ class LeadController extends Controller
                 $results = $tables->map(function($table) {
                     // Check if table is booked or in use (exclude released bookings)
                     $isBooked = Booking::where('table_id', $table->id)
-                        ->where('booking_date', '>=', now()->toDateString())
                         ->whereNull('released_at') // Exclude released bookings
+                        ->where('booking_date', '>=', now()->toDateString())
                         ->exists();
                     $isInUse = \App\Models\Conversation::where('table_id', $table->id)
                         ->where('conversation_date', '>=', now()->subDays(1))
