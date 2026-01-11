@@ -1,371 +1,523 @@
-@extends("layout.master")
-@section('title','Campaign Management')
+@extends('layouts.app_layout')
+@section('style')
+    <link rel="stylesheet" href="{{ asset('/assets/css/enhanced-tables.css') }}">
+    <style>
+        /* Campaigns table specific styling */
+        #data_table {
+            margin-top: 0 !important;
+        }
+        
+        #data_table thead th {
+            padding: 10px 8px !important;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        #data_table tbody td {
+            padding: 6px 8px !important;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        
+        #data_table tbody tr {
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        #data_table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Responsive table wrapper */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            #data_table {
+                font-size: 0.8rem;
+            }
+            
+            #data_table thead th,
+            #data_table tbody td {
+                padding: 5px 6px !important;
+            }
+            
+            #data_table .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Compact action buttons */
+        #data_table .btn-action {
+            padding: 0.25rem 0.5rem;
+            margin: 0 1px;
+            font-size: 0.8rem;
+            min-width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #data_table .btn-action i {
+            font-size: 0.9rem;
+        }
+        
+        /* Compact badges in table */
+        #data_table .badge {
+            padding: 0.35em 0.65em;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Better spacing for DataTables controls */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            margin: 10px 0;
+        }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0.3rem 0.6rem;
+            margin: 0 2px;
+        }
+        
+        /* Ensure revenue field text is always black */
+        #data_table tbody td .badge.bg-gradient-primary {
+            color: #000000 !important;
+        }
+        
+        #data_table .revenue-cell {
+            color: #000000 !important;
+        }
+        
+        #data_table .revenue-cell * {
+            color: #000000 !important;
+        }
+    </style>
+@endsection
+@section('wrapper')
+    <div class="page-wrapper">
+        <div class="page-content">
+            <!--breadcrumb-->
+            <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-2">
+                <div class="breadcrumb-title pe-3">Campaign Management</div>
+                <div class="ps-3">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role . '.dashboard')}}"><i class="bx bx-home-alt"></i></a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">All Campaigns</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <!--end breadcrumb-->
 
-@section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center" style="margin-left: 20px;padding:10px 2px">
-                        <div>
-                            <h5 class="mb-2 fw-bold text-dark">
-                                <i class="ph ph-megaphone me-3 text-primary"></i>Campaign Management
-                            </h5>
-                            <p class="text-muted mb-0 fs-9">Manage your marketing campaigns and messaging</p>
+            <!-- Summary Cards -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-2 mb-3">
+                <div class="col">
+                    <div class="card radius-10 bg-gradient-ohhappiness">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <h5 class="mb-0 text-white">₹{{ number_format($totalRevenue, 2) }}</h5>
+                                <div class="ms-auto">
+                                    <i class='bx bx-rupee fs-3 text-white'></i>
+                                </div>
+                            </div>
+                            <div class="progress my-3 bg-opacity-25 bg-white" style="height:4px;">
+                                <div class="progress-bar bg-white" role="progressbar" style="width: 55%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex align-items-center text-white">
+                                <p class="mb-0">Total Revenue</p>
+                            </div>
                         </div>
-                        <a href="{{ route('campaigns.create') }}" class="btn btn-primary btn-lg shadow-sm">
-                            <i class="ph ph-plus-circle me-2"></i>Create Campaign
-                        </a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10 bg-gradient-ibiza">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <h5 class="mb-0 text-white">₹{{ number_format($totalBalance, 2) }}</h5>
+                                <div class="ms-auto">
+                                    <i class='bx bx-wallet fs-3 text-white'></i>
+                                </div>
+                            </div>
+                            <div class="progress my-3 bg-opacity-25 bg-white" style="height:4px;">
+                                <div class="progress-bar bg-white" role="progressbar" style="width: 55%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex align-items-center text-white">
+                                <p class="mb-0">Total Balance</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Search and Filter Section -->
-    <div class="row mb-4" style="margin-top:20px;">
-        <div class="col-12">
-            <div class="card border-0">
-                <div class="card-body p-3">
-                    <div class="row g-2 align-items-end" style="padding:10px">
-                        <div class="col-md-5">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-magnifying-glass me-1"></i>Search Campaigns
-                            </label>
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control form-control-sm border-start-0 py-1" id="searchInput" 
-                                       placeholder="Search by name or subject..." 
-                                       style="border-left: none;">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-check-circle me-1"></i>Status Filter
-                            </label>
-                            <select class="form-select form-select-sm py-1" id="statusFilter">
-                                <option value="">All Status</option>
-                                <option value="draft">Draft</option>
-                                <option value="scheduled">Scheduled</option>
-                                <option value="sent">Sent</option>
-                                <option value="failed">Failed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold text-muted mb-1 small">
-                                <i class="ph ph-gear me-1"></i>Actions
-                            </label>
-                            <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-primary btn-sm py-1 px-2" id="filterBtn">
-                                    <i class="ph ph-funnel me-1 small"></i>Apply Filter
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm py-1 px-2" id="resetBtn">
-                                    <i class="ph ph-arrow-clockwise me-1 small"></i>Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Campaigns Table Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-0 py-3" style="margin-top: 20px;">
+            <!--table wrapper -->
+            <div class="card mb-0 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-semibold text-dark">
-                            <i class="ph ph-list me-2 text-primary"></i>Campaign List
-                        </h6>
-                        <span class="badge bg-primary px-3 py-2">
-                            <i class="ph ph-megaphone me-1"></i>{{ $campaigns->total() }} Campaigns
-                        </span>
+                        <h5 class="mb-0">
+                            <i class="bx bx-megaphone me-2"></i>Campaigns List
+                        </h5>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="campaignsTable">
-                            <thead class="bg-light">
+                        <table id="data_table" class="table table-hover mb-0" style="width:100%">
+                            <thead class="table-header-gradient">
                                 <tr>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center" style="width: 60px;">
-                                        <i class="ph ph-hash me-1 text-muted"></i>#
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-megaphone me-2 text-muted"></i>Campaign
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-users me-2 text-muted"></i>Recipients
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-tag me-2 text-muted"></i>Type
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-check-circle me-2 text-muted"></i>Status
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark">
-                                        <i class="ph ph-calendar me-2 text-muted"></i>Created
-                                    </th>
-                                    <th class="border-0 px-3 py-3 fw-semibold text-dark text-center">
-                                        <i class="ph ph-gear me-2 text-muted"></i>Actions
-                                    </th>
+                                    <th class="text-center" style="width: 60px;"><i class="bx bx-hash"></i> #</th>
+                                    <th><i class="bx bx-rename"></i> Campaign Name</th>
+                                    <th><i class="bx bx-text"></i> Subject</th>
+                                    <th class="text-center"><i class="bx bx-send"></i> Sent</th>
+                                    <th class="text-center"><i class="bx bx-check-circle"></i> Bookings</th>
+                                    <th class="text-end"><i class="bx bx-rupee"></i> Revenue</th>
+                                    <th class="text-end"><i class="bx bx-wallet"></i> Balance</th>
+                                    <th class="text-center"><i class="bx bx-category"></i> Type</th>
+                                    <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
+                                    <th class="text-center"><i class="bx bx-calendar"></i> Created</th>
+                                    <th class="text-center" style="width: 150px;"><i class="bx bx-cog"></i> Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($campaigns as $index => $campaign)
-                                <tr class="border-bottom">
-                                    <td class="px-3 py-3 text-center">
-                                        <span class="badge bg-light text-dark px-2 py-1 fw-semibold">
-                                            {{ $campaigns->firstItem() + $index }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <div class="d-flex flex-column">
-                                            <h6 class="mb-1 fw-semibold text-dark fs-6">{{ $campaign->name }}</h6>
-                                            <small class="text-muted">{{ $campaign->subject }}</small>
-                                        </div>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <span class="badge bg-info px-3 py-2">
-                                            <i class="ph ph-users me-1"></i>{{ $campaign->recipient_count }} Recipients
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <span class="badge bg-light text-dark px-3 py-2 border">
-                                            <i class="ph ph-tag me-1"></i>{{ ucfirst($campaign->type) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <span class="badge {{ $campaign->status_badge_class }} px-3 py-2">
-                                            <i class="ph ph-{{ $campaign->status === 'draft' ? 'file-text' : ($campaign->status === 'sent' ? 'check-circle' : 'clock') }} me-1"></i>
-                                            {{ ucfirst($campaign->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-3 py-3">
-                                        <small class="text-muted">{{ $campaign->created_at->format('M d, Y') }}</small>
-                                    </td>
-                                    <td class="px-3 py-3 text-center">
-                                        <div class="btn-group btn-group-sm shadow-sm" role="group">
-                                            <a href="{{ route('campaigns.show', $campaign->id) }}" 
-                                               class="btn btn-info btn-sm border" 
-                                               title="View Campaign"
-                                               style="min-width: 40px;">
-                                                <i class="ph ph-eye"></i>
-                                            </a>
-                                            <a href="{{ route('campaigns.edit', $campaign->id) }}" 
-                                               class="btn btn-primary btn-sm border" 
-                                               title="Edit Campaign"
-                                               style="min-width: 40px;">
-                                                <i class="ph ph-pencil"></i>
-                                            </a>
-                                            @if($campaign->isDraft())
-                                            <button type="button" 
-                                                    class="btn btn-success btn-sm border" 
-                                                    onclick="sendCampaign('{{ $campaign->id }}')"
-                                                    title="Send Campaign"
-                                                    style="min-width: 40px;">
-                                                <i class="ph ph-paper-plane"></i>
-                                            </button>
-                                            @endif
-                                            <button type="button" 
-                                                    class="btn btn-danger btn-sm border" 
-                                                    onclick="deleteCampaign('{{ $campaign->id }}')"
-                                                    title="Delete Campaign"
-                                                    style="min-width: 40px;">
-                                                <i class="ph ph-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="7" class="text-center py-5">
-                                        <div class="d-flex flex-column align-items-center">
-                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" 
-                                                 style="width: 80px; height: 80px;">
-                                                <i class="ph ph-megaphone text-muted" style="font-size: 2rem;"></i>
-                                            </div>
-                                            <h5 class="text-muted mb-2">No campaigns found</h5>
-                                            <p class="text-muted mb-3">Get started by creating your first campaign</p>
-                                            <a href="{{ route('campaigns.create') }}" class="btn btn-primary btn-lg shadow-sm">
-                                                <i class="ph ph-plus-circle me-2"></i>Create First Campaign
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
+                                <!-- DataTables will populate this -->
                             </tbody>
+                            <tfoot class="bg-light fw-bold">
+                                <tr>
+                                    <td colspan="5" class="text-end">Page Total:</td>
+                                    <td class="text-end" id="footerRevenue">₹0.00</td>
+                                    <td class="text-end" id="footerBalance">₹0.00</td>
+                                    <td colspan="4"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
+            <!--end table wrapper-->
         </div>
     </div>
 
-    <!-- Pagination Section -->
-    @if($campaigns->hasPages())
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted">
-                            Showing {{ $campaigns->firstItem() ?? 0 }} to {{ $campaigns->lastItem() ?? 0 }} of {{ $campaigns->total() }} entries
-                        </div>
-                        <div>
-                            {{ $campaigns->links() }}
-                        </div>
+    <div class="modal fade" id="progressModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sending Campaign...</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="progress">
+                        <div class="progress-bar" id="modalUploadProgressBar" style="width:0%">0%</div>
                     </div>
+                    <div class="mt-2 text-center" id="modalProgressText">Sent: 0 / 0 | Failed: 0 | Pending: 0</div>
                 </div>
             </div>
         </div>
     </div>
-    @endif
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white border-0">
-                <h5 class="modal-title text-white">
-                    <i class="ph ph-warning me-2 text-white"></i>Confirm Delete
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="text-center mb-3">
-                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" 
-                         style="width: 80px; height: 80px;">
-                        <i class="ph ph-trash text-danger" style="font-size: 2rem;"></i>
-                    </div>
-                </div>
-                <h6 class="text-center mb-2">Are you sure?</h6>
-                <p class="text-center text-muted mb-0">This action cannot be undone. The campaign will be permanently removed from the system.</p>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-                    <i class="ph ph-x me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" id="confirmDelete">
-                    <i class="ph ph-trash me-2"></i>Delete Campaign
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
+@section('script')
+    <script>
+        let campaignId;
+        // $(document).ready(function() {
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+        const dataTableList = $('#data_table').DataTable({
+            processing: true,
+            serverSide: true,
+            autoWidth: false,
+            scrollX: false,
+            scrollCollapse: false,
+            responsive: true,
+            pagination: true,
+            pageLength: 25,
+            deferRender: true,
+            ajax: {
+                url: `${base_url}/admin/ajax/get/all-campaigns`,
+                type: 'POST',
+                global: false,
+            },
+            columns: [{
+                    data: null,
+                    name: 'id',
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false,
+                    render: (data, type, row, meta) => meta.row + meta.settings._iDisplayStart + 1
+                },
+                {
+                    data: 'name',
+                    name: 'name'
+                },
+                {
+                    data: 'subject',
+                    name: 'subject'
+                },
+                {
+                    data: 'messages_sent',
+                    name: 'messages_sent',
+                    className: "text-center",
+                    orderable: false
+                },
+                {
+                    data: 'bookings_created',
+                    name: 'bookings_created',
+                    className: "text-center",
+                    orderable: false
+                },
+                {
+                    data: 'revenue',
+                    name: 'revenue',
+                    className: "text-end",
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return '<div style="color: #000000 !important;">' + data + '</div>';
+                    }
+                },
+                {
+                    data: 'balance',
+                    name: 'balance',
+                    className: "text-end",
+                    orderable: false
+                },
+                {
+                    data: 'full_type',
+                    name: 'full_type',
+                    className: "text-center"
+                },
+                {
+                    data: 'full_status',
+                    name: 'full_status',
+                    className: "text-center"
+                },
+                {
+                    data: 'created_at',
+                    name: 'created_at',
+                    className: "text-center"
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    className: "text-center",
+                    width: '12%',
+                    orderable: false,
+                    searchable: false
+                },
+            ],
+            "columnDefs": [{
+                "targets": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                "orderable": false,
+                "sorting": false
+            }],
+            footerCallback: function (row, data, start, end, display) {
+                var api = this.api();
 
-@push('scripts')
-<script>
-let campaignToDelete = null;
+                // Helper to parse currency
+                var intVal = function (i) {
+                    if (typeof i === 'string') {
+                        // Remove HTML tags and currency symbols/commas
+                        return parseFloat(i.replace(/<[^>]+>/g, '').replace(/[\₹,]/g, '').trim()) || 0;
+                    }
+                    return typeof i === 'number' ? i : 0;
+                };
 
-// Search functionality
-$('#searchInput').on('keyup', function() {
-    applyFilters();
-});
+                // Calculate totals for current page
+                // Revenue is column 5
+                var totalRevenue = api
+                    .column(5, { page: 'current' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
 
-// Status filter functionality
-$('#statusFilter').on('change', function() {
-    applyFilters();
-});
+                // Balance is column 6
+                var totalBalance = api
+                    .column(6, { page: 'current' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
 
-// Combined filter function
-function applyFilters() {
-    const searchTerm = $('#searchInput').val().toLowerCase();
-    const selectedStatus = $('#statusFilter').val().toLowerCase();
-    
-    $('#campaignsTable tbody tr').each(function() {
-        const campaignName = $(this).find('td:nth-child(2) h6').text().toLowerCase();
-        const campaignSubject = $(this).find('td:nth-child(2) small').text().toLowerCase();
-        const statusBadge = $(this).find('td:nth-child(5) .badge');
-        const status = statusBadge.text().toLowerCase().replace(/\s+/g, '');
+                // Update footer
+                $(api.column(5).footer()).html('₹' + totalRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                $(api.column(6).footer()).html('₹' + totalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            },
+            dom: "<'row g-2 mb-2'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
+                "<'row'<'col-12'tr>>" +
+                "<'row g-2 mt-2'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+            language: {
+                emptyTable: "No campaigns found",
+                zeroRecords: "No matching campaigns found"
+            },
+            buttons: [],
+
+        });
+
+        $(window).on('load', function() {
+            $('.dataTables_wrapper .dt-buttons').append(
+                `<button type="button" class="btn btn-primary" type="button"  onClick="createCampaign()"><i
+                    class="lni lni-circle-plus mx-1"></i>Add New Campaign</button>`
+            );
+        });
         
-        // Check if row matches search term
-        const matchesSearch = !searchTerm || 
-            campaignName.includes(searchTerm) || 
-            campaignSubject.includes(searchTerm);
-        
-        // Check if row matches status filter
-        const matchesStatus = !selectedStatus || status.includes(selectedStatus);
-        
-        // Show row only if it matches both filters
-        if (matchesSearch && matchesStatus) {
-            $(this).show();
-        } else {
-            $(this).hide();
+        // Handle view balance click
+        $(document).on('click', '.view-balance', function() {
+            const id = $(this).data('id');
+            window.location.href = '{{ route("admin.bookings.index") }}?campaign_id=' + id + '&min_balance=1';
+        });
+
+        // handle table action button click
+        $(document).on('click', '.editBtn', function() {
+            window.location.href = $(this).attr('editRoute');
+        });
+        $(document).on('click', '.btnView', function() {
+            window.location.href = $(this).attr('route');
+        });
+        $(document).on('click', '.deleteBtn', function() {
+            var id = $(this).attr('id');
+            if (id) {
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Are you sure?',
+                    text: 'You want to delete this record?',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#555',
+                    confirmButtonText: 'Delete',
+                    cancelButtonText: 'Cancel',
+                }).then((result) => {
+
+                    /* Read more about isConfirmed, isDenied below */
+                    if (result.value) {
+                        $.ajax({
+                            url: base_url + `/admin/campaigns/${id}`,
+                            type: 'DELETE',
+                            success: function(response) {
+                                if (response.status == true) {
+                                    toastr.success(response.message);
+                                    dataTableList.ajax.reload();
+                                } else if (response.status == false) {
+                                    toastr.error(response.message);
+                                } else {
+                                    toastr.error(response.message);
+                                }
+                            },
+                            error: function(errors) {
+                                toastr.error(error)
+                            }
+                        });
+                    }
+
+                });
+            } else {
+                toastr.error('Something went wrong. Please try again.');
+            }
+
+        });
+        $(document).on('click', '.sendCampaign', function() {
+            var id = $(this).attr('id');
+
+            if (!id) {
+                toastr.error('Something went wrong. Please try again.');
+                return;
+            }
+
+            Swal.fire({
+                icon: 'question',
+                title: 'Send Campaign?',
+                text: 'Are you sure you want to send this campaign? This action cannot be undone.',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Send Now',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true,
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: base_url + `/admin/campaigns/${id}/send`,
+                        type: 'POST',
+                        success: function(response) {
+                            if (response.status === true) {
+                                // // Show modal
+                                // campaignId = id; // set current campaign ID
+                                // let progressModal = new bootstrap.Modal(document
+                                //     .getElementById('progressModal'));
+                                // progressModal.show();
+                                toastr.success(response.message);
+                                dataTableList.ajax.reload();
+
+                                // campaignId = id; // set current campaign ID
+                                // let progressModal = new bootstrap.Modal(document.getElementById(
+                                //     'progressModal'));
+                                // progressModal.show();
+                            } else {
+                                toastr.error(response.message ||
+                                    "Something went wrong!");
+                            }
+                        },
+                        error: function(errors) {
+                            toastr.error("Server error! Please try again.");
+                        }
+                    });
+                }
+
+            });
+        });
+        // });
+
+        function createCampaign() {
+            window.location.href = `{{ route('campaigns.create') }}`;
         }
-    });
-}
 
-// Filter button
-$('#filterBtn').on('click', function() {
-    applyFilters();
-});
 
-// Reset button
-$('#resetBtn').on('click', function() {
-    $('#searchInput').val('');
-    $('#statusFilter').val('');
-    $('#campaignsTable tbody tr').show();
-});
 
-function deleteCampaign(campaignId) {
-    campaignToDelete = campaignId;
-    $('#deleteModal').modal('show');
-}
 
-function sendCampaign(campaignId) {
-    if (confirm('Are you sure you want to send this campaign? This action cannot be undone.')) {
-        $.ajax({
-            url: `/admin/campaigns/${campaignId}/send`,
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success) {
-                    showNotification('success', response.message);
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON;
-                showNotification('error', response.message || 'Something went wrong!');
-            }
-        });
-    }
-}
 
-$('#confirmDelete').click(function() {
-    if (campaignToDelete) {
-        $.ajax({
-            url: `/admin/campaigns/${campaignToDelete}`,
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#deleteModal').modal('hide');
-                    showNotification('success', response.message);
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON;
-                showNotification('error', response.message || 'Something went wrong!');
-            }
-        });
-    }
-});
+        // let maxTime = 50; // in seconds
+        // let elapsed = 0;
 
-// Notification function is now available globally from master layout
-</script>
-@endpush
+        // let interval = setInterval(() => {
+        //     if (!campaignId) return;
+
+        //     $.ajax({
+        //         url: base_url + `/admin/campaigns/${campaignId}/progress`,
+        //         type: 'GET',
+        //         global: false,
+        //         success: function(res) {
+        //             // Update progress bar and text
+        //             $('#modalUploadProgressBar').css('width', res.percent + '%').text(res.percent +
+        //             '%');
+        //             $('#modalProgressText').text(
+        //                 `Sent: ${res.sent} / ${res.total} | Failed: ${res.failed} | Pending: ${res.pending}`
+        //             );
+
+        //             // Stop if all processed
+        //             if (res.sent + res.failed >= res.total) {
+        //                 clearInterval(interval);
+        //                 progressModal.hide();
+        //                 alert('All recipients processed!');
+        //             }
+        //         },
+        //         error: function(errors) {
+        //             console.log("Server error! Please try again.");
+        //         }
+        //     });
+
+        //     elapsed++;
+        //     if (elapsed >= maxTime) { // stop after 50 seconds
+        //         clearInterval(interval);
+        //         console.log("Stopped polling after 50 seconds.");
+        //     }
+        // }, 5000); // polling every 1 second
+    </script>
+@endsection

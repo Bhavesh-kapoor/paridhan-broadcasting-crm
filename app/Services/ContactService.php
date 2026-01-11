@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contacts;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Facades\DataTables;
 
 class ContactService
 {
@@ -12,16 +13,16 @@ class ContactService
      */
     public function getAllContacts($type = 'visitor', $filters = [])
     {
-        $query = Contacts::where('type', $type);
+        $query = Contacts::where('type', $type); //allocant orm
 
         // Apply search filter
         if (!empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
             });
         }
 
@@ -31,6 +32,55 @@ class ContactService
         }
 
         return $query->orderBy('created_at', 'desc')->paginate(10);
+    }
+
+
+    public function getAllContactsList($type)
+    {
+
+
+        $query  = DB::table('contacts')->where('type', $type);
+        if ($type === 'exhibitor') {
+            $query->select(
+                'id',
+                'name',
+                'email',
+                'phone',
+                'location',
+                'product_type',
+                'brand_name',
+                'business_type',
+                'gst_number',
+                'created_at'
+            );
+        } else {
+            $query->select('id', 'name', 'phone', 'location', 'created_at');
+        }
+
+        $query->orderByDesc('created_at');
+
+        return DataTables::query($query)
+            ->addIndexColumn()
+            ->addIndexColumn()
+            ->addColumn('action', function ($employee) {
+                $id = $employee->id;
+                $button = '<div class="d-flex gap-1 justify-content-center">';
+                
+                $button .= '<button class="btn btn-action btn-edit editBtn" editRoute="' . route('contacts.edit', $id) . '" updateRoute="' . route('contacts.update', $id) . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Contact">
+                    <i class="bx bx-edit"></i>
+                    <span class="d-none d-md-inline">Edit</span>
+                </button>';
+                
+                $button .= '<button class="btn btn-action btn-delete deleteBtn" id="' . $id . '" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Contact">
+                    <i class="bx bx-trash"></i>
+                    <span class="d-none d-md-inline">Delete</span>
+                </button>';
+                
+                $button .= '</div>';
+                return $button;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     /**
@@ -47,7 +97,7 @@ class ContactService
     public function createContact($data)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = Contacts::create([
                 'name' => $data['name'],
@@ -76,10 +126,10 @@ class ContactService
     public function updateContact($id, $data)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = $this->getContactById($id);
-            
+
             $updateData = [
                 'name' => $data['name'],
                 'location' => $data['location'],
@@ -108,11 +158,11 @@ class ContactService
     public function deleteContact($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $contact = $this->getContactById($id);
             $contact->delete();
-            
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -127,7 +177,7 @@ class ContactService
     public function getContactStats($type = null)
     {
         $query = Contacts::query();
-        
+
         if ($type) {
             $query->where('type', $type);
         }
@@ -154,11 +204,11 @@ class ContactService
     public function searchContacts($type, $searchTerm)
     {
         return Contacts::where('type', $type)
-            ->where(function($query) use ($searchTerm) {
+            ->where(function ($query) use ($searchTerm) {
                 $query->where('name', 'like', "%{$searchTerm}%")
-                      ->orWhere('email', 'like', "%{$searchTerm}%")
-                      ->orWhere('phone', 'like', "%{$searchTerm}%")
-                      ->orWhere('location', 'like', "%{$searchTerm}%");
+                    ->orWhere('email', 'like', "%{$searchTerm}%")
+                    ->orWhere('phone', 'like', "%{$searchTerm}%")
+                    ->orWhere('location', 'like', "%{$searchTerm}%");
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10);

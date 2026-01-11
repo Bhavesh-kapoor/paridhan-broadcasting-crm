@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CampaignRequest extends FormRequest
 {
@@ -14,6 +16,7 @@ class CampaignRequest extends FormRequest
         return true;
     }
 
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -21,15 +24,23 @@ class CampaignRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:5000'],
             'type' => ['required', 'in:email,sms,whatsapp'],
             'scheduled_at' => ['nullable', 'date', 'after:now'],
-            'recipients' => ['required', 'array', 'min:1'],
-            'recipients.*' => ['required', 'string', 'exists:contacts,id'],
+            'template_name' => ['nullable', 'string', 'max:512'],
+            // 'recipients' => ['required', 'array', 'min:1'],
+            // 'recipients.*' => ['required', 'string', 'exists:contacts,id'],
         ];
+
+        // Template name is required for WhatsApp campaigns
+        if ($this->input('type') === 'whatsapp') {
+            $rules['template_name'] = ['required', 'string', 'max:512'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -50,5 +61,17 @@ class CampaignRequest extends FormRequest
             'recipients.min' => 'Please select at least one recipient.',
             'recipients.*.exists' => 'One or more selected recipients are invalid.',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        // Throw JSON response instead of HTML redirect
+        throw new HttpResponseException(response()->json([
+            'status' => 'validation_error',
+            'message' => $validator->errors()->all(),
+        ]));
     }
 }

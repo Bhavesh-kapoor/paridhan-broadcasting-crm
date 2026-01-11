@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class EmployeeRequest extends FormRequest
@@ -22,8 +24,8 @@ class EmployeeRequest extends FormRequest
      */
     public function rules(): array
     {
+
         $userId = $this->route('employee');
-        
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($userId)],
@@ -55,5 +57,16 @@ class EmployeeRequest extends FormRequest
             'hire_date.before_or_equal' => 'Hire date cannot be in the future.',
             'salary.min' => 'Salary cannot be negative.',
         ];
+    }
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator)
+    {
+        // Throw JSON response instead of HTML redirect
+        throw new HttpResponseException(response()->json([
+            'status' => 'validation_error',
+            'message' => $validator->errors()->all(),
+        ]));
     }
 }

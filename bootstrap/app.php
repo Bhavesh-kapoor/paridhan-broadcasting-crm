@@ -10,7 +10,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+
+        // Redirect users after login
         $middleware->redirectUsersTo('/admin/dashboard');
+
+        // Register Middleware Aliases
+        $middleware->alias([
+            'checkRole' => \App\Http\Middleware\CheckRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

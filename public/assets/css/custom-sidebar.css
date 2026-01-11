@@ -1,0 +1,208 @@
+/* ============================ Custom Sidebar Styling ============================ */
+
+/* Sidebar Background - Pink Gradient */
+.sidebar {
+    background: linear-gradient(180deg, #ec268f 0%, #f06292 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Metismenu Sidebar (for app_layout) - Pink Gradient */
+.sidebar-wrapper {
+    background: linear-gradient(180deg, #ec268f 0%, #f06292 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.sidebar-header {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar-header .toggle-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.sidebar-header .toggle-icon:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Metismenu Links */
+.sidebar-wrapper .metismenu a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    transition: all 0.3s ease !important;
+}
+
+.sidebar-wrapper .metismenu a:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
+.sidebar-wrapper .metismenu .mm-active > a,
+.sidebar-wrapper .metismenu a:active,
+.sidebar-wrapper .metismenu a:focus {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.sidebar-wrapper .metismenu .menu-title {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.sidebar-wrapper .metismenu .parent-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.sidebar-wrapper .metismenu .mm-active > a .menu-title,
+.sidebar-wrapper .metismenu .mm-active > a .parent-icon {
+    color: #ffffff !important;
+}
+
+/* Metismenu Submenu */
+.sidebar-wrapper .metismenu ul {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    margin: 8px 0 !important;
+    padding: 8px 0 !important;
+}
+
+.sidebar-wrapper .metismenu ul a {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 8px 20px !important;
+}
+
+.sidebar-wrapper .metismenu ul a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    padding-left: 28px !important;
+}
+
+.sidebar-wrapper .metismenu ul .mm-active > a {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Sidebar Logo Area */
+.sidebar__logo {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Sidebar Menu Links - White text for better contrast */
+.sidebar-menu__link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    transition: all 0.3s ease !important;
+}
+
+.sidebar-menu__link:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    transform: translateX(5px);
+}
+
+/* Active Menu Item */
+.sidebar-menu__item.activePage .sidebar-menu__link {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-left: 3px solid #ffffff;
+}
+
+/* Sidebar Icons */
+.sidebar-menu__link .icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.sidebar-menu__item.activePage .sidebar-menu__link .icon {
+    color: #ffffff !important;
+}
+
+/* Dropdown Arrow */
+.sidebar-menu__item.has-dropdown .sidebar-menu__link::before {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.sidebar-menu__item.activePage .sidebar-menu__link::before,
+.sidebar-menu__item:has(.sidebar-submenu__item.activePage) .sidebar-menu__link::before {
+    color: #ffffff !important;
+}
+
+/* Submenu Styling */
+.sidebar-submenu {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 8px 0 !important;
+    margin-top: 8px !important;
+}
+
+.sidebar-submenu__link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 6px 18px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.sidebar-submenu__link:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    padding-left: 24px !important;
+}
+
+.sidebar-submenu__item.activePage .sidebar-submenu__link {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.sidebar-submenu__link::before {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Settings Section Divider */
+.sidebar-menu__item span.text-gray-300 {
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-top-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Close Button */
+.sidebar-close-btn {
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.sidebar-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Scrollbar Styling for Sidebar */
+.sidebar-menu-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-menu-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.sidebar-menu-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.sidebar-menu-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 1199px) {
+    .sidebar {
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3) !important;
+    }
+}
+
