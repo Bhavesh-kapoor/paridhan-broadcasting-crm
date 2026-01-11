@@ -1648,3 +1648,5 @@ $bookings = Booking::where('location_id', $locationId)->get();
 
 
 
+
+

@@ -82,6 +82,13 @@
                     <div class="menu-title">Bookings</div>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('admin.logs.index') }}">
+                    <div class="parent-icon"><i class="bx bx-file-blank"></i>
+                    </div>
+                    <div class="menu-title">System Logs</div>
+                </a>
+            </li>
         @endif
         @if (auth()->user()->role == 'employee')
             <li>
@@ -102,13 +109,13 @@
                     <div class="menu-title">Conversations</div>
                 </a>
                 <ul>
-                    <li> <a href="{{ route('conversations.index') }}"><i class='bx bx-radio-circle'></i>All Conversations</a>
+                    <li> <a href="{{ route('employee.conversations.index') }}"><i class='bx bx-radio-circle'></i>All Conversations</a>
                     </li>
-                    <li> <a href="{{ route('conversations.index', ['status' => 'interested']) }}"><i class='bx bx-radio-circle'></i>Interested</a>
+                    <li> <a href="{{ route('employee.conversations.index', ['status' => 'interested']) }}"><i class='bx bx-radio-circle'></i>Interested</a>
                     </li>
-                    <li> <a href="{{ route('conversations.index', ['status' => 'materialised']) }}"><i class='bx bx-radio-circle'></i>Materialised</a>
+                    <li> <a href="{{ route('employee.conversations.index', ['status' => 'materialised']) }}"><i class='bx bx-radio-circle'></i>Materialised</a>
                     </li>
-                    <li> <a href="{{ route('conversations.index', ['status' => 'busy']) }}"><i class='bx bx-radio-circle'></i>Busy</a>
+                    <li> <a href="{{ route('employee.conversations.index', ['status' => 'busy']) }}"><i class='bx bx-radio-circle'></i>Busy</a>
                     </li>
                 </ul>
             </li>
@@ -124,6 +131,13 @@
                     <div class="parent-icon"><i class="bx bx-calendar-check"></i>
                     </div>
                     <div class="menu-title">My Bookings</div>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('employee.logs.index') }}">
+                    <div class="parent-icon"><i class="bx bx-file-blank"></i>
+                    </div>
+                    <div class="menu-title">System Logs</div>
                 </a>
             </li>
         @endif

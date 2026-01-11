@@ -78,7 +78,15 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     // Conversation Management routes (Admin only)
     Route::resource('conversations', \App\Http\Controllers\ConversationController::class);
     Route::post('/ajax/get/all-conversations', [\App\Http\Controllers\ConversationController::class, 'getAllConversationsList'])->name('conversations.list');
+    
+    // Logs routes
+    Route::get('/logs', [\App\Http\Controllers\LogController::class, 'index'])->name('admin.logs.index');
+    Route::get('/logs/{logFile}', [\App\Http\Controllers\LogController::class, 'show'])->name('admin.logs.show');
+    Route::get('/logs/{logFile}/download', [\App\Http\Controllers\LogController::class, 'download'])->name('admin.logs.download');
+    Route::delete('/logs/{logFile}/clear', [\App\Http\Controllers\LogController::class, 'clear'])->name('admin.logs.clear');
     Route::get('/conversations/location/{locationId}/tables', [\App\Http\Controllers\ConversationController::class, 'getTables'])->name('conversations.getTables');
+    Route::get('/conversations/{id}/data', [\App\Http\Controllers\ConversationController::class, 'getConversationData'])->name('conversations.data');
+    Route::post('/conversations/for-contact', [\App\Http\Controllers\ConversationController::class, 'getConversationsForContact'])->name('conversations.forContact');
     
     // Invoice Management routes
     Route::get('/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
@@ -89,6 +97,7 @@ Route::middleware(['web', 'auth:web', 'checkRole:admin'])->prefix('admin')->grou
     // Admin Bookings routes
     Route::get('/bookings', [\App\Http\Controllers\InvoiceController::class, 'adminBookings'])->name('admin.bookings.index');
     Route::post('/bookings/list', [\App\Http\Controllers\InvoiceController::class, 'getAdminBookings'])->name('admin.bookings.list');
+    Route::post('/bookings/stats', [\App\Http\Controllers\InvoiceController::class, 'getAdminBookingsStats'])->name('admin.bookings.stats');
     Route::get('/bookings/remaining-balance', [\App\Http\Controllers\InvoiceController::class, 'getAdminRemainingBalanceBookings'])->name('admin.bookings.remainingBalance');
     Route::post('/bookings/settle', [\App\Http\Controllers\InvoiceController::class, 'settleAdminBookingAmount'])->name('admin.bookings.settle');
     Route::get('/bookings/{bookingId}/payment-history', [\App\Http\Controllers\InvoiceController::class, 'getPaymentHistory'])->name('admin.bookings.payment-history');
@@ -135,12 +144,31 @@ Route::prefix('employee')->middleware(['web', 'auth:web', 'checkRole:employee'])
     Route::get('/campaigns/{campaignId}/conversations/create', [\App\Http\Controllers\CampaignController::class, 'createConversation'])->name('campaigns.conversations.create');
     Route::post('/campaigns/{campaignId}/conversations/visitor', [\App\Http\Controllers\CampaignController::class, 'getVisitorConversations'])->name('campaigns.conversations.visitor');
     
+    // Conversation Management routes for employees
+    Route::get('/conversations', [\App\Http\Controllers\ConversationController::class, 'index'])->name('employee.conversations.index');
+    Route::get('/conversations/create', [\App\Http\Controllers\ConversationController::class, 'create'])->name('employee.conversations.create');
+    Route::post('/conversations', [\App\Http\Controllers\ConversationController::class, 'store'])->name('employee.conversations.store');
+    Route::get('/conversations/{id}', [\App\Http\Controllers\ConversationController::class, 'show'])->name('employee.conversations.show');
+    Route::get('/conversations/{id}/edit', [\App\Http\Controllers\ConversationController::class, 'edit'])->name('employee.conversations.edit');
+    Route::put('/conversations/{id}', [\App\Http\Controllers\ConversationController::class, 'update'])->name('employee.conversations.update');
+    Route::delete('/conversations/{id}', [\App\Http\Controllers\ConversationController::class, 'destroy'])->name('employee.conversations.destroy');
+    Route::post('/ajax/get/all-conversations', [\App\Http\Controllers\ConversationController::class, 'getAllConversationsList'])->name('employee.conversations.list');
+    
+    // Logs routes for employees
+    Route::get('/logs', [\App\Http\Controllers\LogController::class, 'index'])->name('employee.logs.index');
+    Route::get('/logs/{logFile}', [\App\Http\Controllers\LogController::class, 'show'])->name('employee.logs.show');
+    Route::get('/logs/{logFile}/download', [\App\Http\Controllers\LogController::class, 'download'])->name('employee.logs.download');
+    Route::get('/conversations/location/{locationId}/tables', [\App\Http\Controllers\ConversationController::class, 'getTables'])->name('employee.conversations.getTables');
+    Route::get('/conversations/{id}/data', [\App\Http\Controllers\ConversationController::class, 'getConversationData'])->name('employee.conversations.data');
+    Route::post('/conversations/for-contact', [\App\Http\Controllers\ConversationController::class, 'getConversationsForContact'])->name('employee.conversations.forContact');
+    
     // Invoice routes for employees
-    Route::get('/conversations/{conversationId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generateFromConversation'])->name('conversations.invoice');
+    Route::get('/conversations/{conversationId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generateFromConversation'])->name('employee.conversations.invoice');
     
     // Employee Bookings routes
     Route::get('/bookings', [\App\Http\Controllers\InvoiceController::class, 'employeeBookings'])->name('employee.bookings.index');
     Route::post('/bookings/list', [\App\Http\Controllers\InvoiceController::class, 'getEmployeeBookings'])->name('employee.bookings.list');
+    Route::post('/bookings/stats', [\App\Http\Controllers\InvoiceController::class, 'getEmployeeBookingsStats'])->name('employee.bookings.stats');
     Route::post('/bookings/settle', [\App\Http\Controllers\InvoiceController::class, 'settleBookingAmount'])->name('employee.bookings.settle');
     Route::get('/bookings/{bookingId}/payment-history', [\App\Http\Controllers\InvoiceController::class, 'getPaymentHistory'])->name('employee.bookings.payment-history');
     Route::get('/bookings/{bookingId}/invoice', [\App\Http\Controllers\InvoiceController::class, 'generate'])->name('employee.bookings.invoice');

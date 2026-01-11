@@ -49,6 +49,7 @@ class CampaignService
             'bookings as bookings_count',
         ])
         ->withSum(['bookings as total_revenue'], 'amount_paid')
+        ->withSum(['bookings as total_price'], 'price')
         ->orderBy('created_at', 'desc');
         
         return DataTables::of($result)
@@ -86,6 +87,28 @@ class CampaignService
                         <i class="bx bx-rupee me-1"></i> ₹' . number_format($revenue, 2) . '
                     </span>
                     ' . ($conversion > 0 ? '<small class="text-muted">' . $conversion . '% conversion</small>' : '') . '
+                </div>';
+            })
+            ->addColumn('balance', function ($data) {
+                $price = $data->total_price ?? 0;
+                $revenue = $data->total_revenue ?? 0;
+                $balance = $price - $revenue;
+                
+                $color = $balance > 0 ? 'text-danger' : 'text-success';
+                
+                // Always make balance clickable to view bookings for this campaign
+                if ($balance > 0) {
+                    return '<div style="cursor: pointer;" class="view-balance" data-id="' . $data->id . '" title="Click to view bookings for this campaign">
+                        <span class="badge bg-light ' . $color . ' px-3 py-2 border d-block">
+                            <i class="bx bx-rupee me-1"></i>' . number_format($balance, 2) . '
+                        </span>
+                    </div>';
+                }
+                
+                return '<div style="cursor: pointer;" class="view-balance" data-id="' . $data->id . '" title="Click to view bookings for this campaign">
+                    <span class="badge bg-light ' . $color . ' px-3 py-2 border d-block">
+                        <i class="bx bx-check-circle me-1"></i>Paid
+                    </span>
                 </div>';
             })
             ->editColumn('created_at', function ($data) {
@@ -130,7 +153,7 @@ class CampaignService
                                             ' . $data->status . '
                                         </span>';
             })
-            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count', 'messages_sent', 'bookings_created', 'revenue'])
+            ->rawColumns(['action', 'full_status', 'full_type', 'recipient_count', 'messages_sent', 'bookings_created', 'revenue', 'balance'])
             ->make(true);
     }
 

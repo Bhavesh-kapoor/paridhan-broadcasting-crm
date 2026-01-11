@@ -43,6 +43,90 @@ class SendCampaignJob implements ShouldQueue
     }
 
     /**
+     * Fetch templates from Meta API (Fallback logic)
+     */
+    private function fetchTemplatesFromAPI()
+    {
+        try {
+            // Get configuration
+            $apiKey = config('services.whatsapp.api_key');
+            $bearerToken = config('services.whatsapp.bearer_token');
+            $wabaId = config('services.whatsapp.waba_id');
+            $apiVersion = config('services.whatsapp.api_version', 'v23.0');
+            $baseUrl = config('services.whatsapp.base_url');
+            $templateEndpoint = config('services.whatsapp.template_endpoint');
+
+            if (empty($apiKey) && empty($bearerToken)) {
+                Log::channel('campaign_progress')->error('WhatsApp API Key is not configured.');
+                return [];
+            }
+
+            if (empty($wabaId)) {
+                Log::channel('campaign_progress')->error('WABA ID is not configured.');
+                return [];
+            }
+            
+            // Build endpoint URL
+            if (!empty($templateEndpoint)) {
+                $endpoint = str_replace(
+                    ['{version}', '{wabaId}', '{apiVersion}', '{waba_id}'],
+                    [$apiVersion, $wabaId, $apiVersion, $wabaId],
+                    $templateEndpoint
+                );
+            } else {
+                if (empty($baseUrl)) {
+                    Log::channel('campaign_progress')->error('WhatsApp Base URL is not configured.');
+                    return [];
+                }
+                $baseUrl = rtrim($baseUrl, '/');
+                $endpoint = "{$baseUrl}/{$apiVersion}/{$wabaId}/message_templates";
+            }
+            
+            // Set headers
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ];
+
+            if (!empty($bearerToken)) {
+                $headers['Authorization'] = 'Bearer ' . $bearerToken;
+            } elseif (!empty($apiKey)) {
+                $headers['X-API-KEY'] = $apiKey;
+            }
+
+            // Fetch templates
+            $response = Http::withHeaders($headers)
+                ->timeout(60)
+                ->get($endpoint, [
+                    'limit' => 1000,
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                $templates = [];
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $templates = $data['data'];
+                } elseif (is_array($data)) {
+                    if (isset($data[0]) && is_array($data[0])) {
+                        $templates = $data;
+                    } else {
+                        $templates = [$data];
+                    }
+                }
+                
+                return $templates;
+            } else {
+                Log::channel('campaign_progress')->error('Failed to fetch templates from API: ' . $response->status() . ' - ' . $response->body());
+                return ['error' => 'API Error: ' . $response->status()];
+            }
+        } catch (\Exception $e) {
+            Log::channel('campaign_progress')->error('Exception fetching templates: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Execute the job.
      */
     public function handle(): void
@@ -88,9 +172,22 @@ class SendCampaignJob implements ShouldQueue
                         'template_name' => $templateName,
                     ]);
                     
-                    // You may want to fetch from API here if needed
-                    // For now, throw an error
-                    throw new \Exception("Template '{$templateName}' not found. Please refresh the templates list or ensure the template is approved.");
+                    // Fetch from API
+                    $fetchedTemplates = $this->fetchTemplatesFromAPI();
+                    
+                    if (isset($fetchedTemplates['error'])) {
+                         throw new \Exception("Template '{$templateName}' not found and API fetch failed: " . $fetchedTemplates['error']);
+                    }
+
+                    // Update cache
+                    Cache::put('whatsapp_templates', $fetchedTemplates, 300);
+                    
+                    // Find template in fetched results
+                    $template = collect($fetchedTemplates)->firstWhere('name', $templateName);
+
+                    if (!$template) {
+                        throw new \Exception("Template '{$templateName}' not found even after API refresh. Please ensure the template exists and is approved.");
+                    }
                 }
 
                 // Validate template is approved

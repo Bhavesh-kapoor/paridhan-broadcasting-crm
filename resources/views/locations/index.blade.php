@@ -228,7 +228,7 @@
                 $('.dataTables_wrapper .dt-buttons').append(
                     `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
                             class="lni lni-circle-plus mx-1"></i>Add New
-                        Visitor</button>`
+                        Location</button>`
                 );
             })
 

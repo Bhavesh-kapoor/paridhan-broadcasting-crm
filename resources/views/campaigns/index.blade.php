@@ -118,6 +118,47 @@
                 </div>
             </div>
             <!--end breadcrumb-->
+
+            <!-- Summary Cards -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-2 mb-3">
+                <div class="col">
+                    <div class="card radius-10 bg-gradient-ohhappiness">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <h5 class="mb-0 text-white">₹{{ number_format($totalRevenue, 2) }}</h5>
+                                <div class="ms-auto">
+                                    <i class='bx bx-rupee fs-3 text-white'></i>
+                                </div>
+                            </div>
+                            <div class="progress my-3 bg-opacity-25 bg-white" style="height:4px;">
+                                <div class="progress-bar bg-white" role="progressbar" style="width: 55%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex align-items-center text-white">
+                                <p class="mb-0">Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10 bg-gradient-ibiza">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <h5 class="mb-0 text-white">₹{{ number_format($totalBalance, 2) }}</h5>
+                                <div class="ms-auto">
+                                    <i class='bx bx-wallet fs-3 text-white'></i>
+                                </div>
+                            </div>
+                            <div class="progress my-3 bg-opacity-25 bg-white" style="height:4px;">
+                                <div class="progress-bar bg-white" role="progressbar" style="width: 55%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex align-items-center text-white">
+                                <p class="mb-0">Total Balance</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!--table wrapper -->
             <div class="card mb-0 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom">
@@ -138,6 +179,7 @@
                                     <th class="text-center"><i class="bx bx-send"></i> Sent</th>
                                     <th class="text-center"><i class="bx bx-check-circle"></i> Bookings</th>
                                     <th class="text-end"><i class="bx bx-rupee"></i> Revenue</th>
+                                    <th class="text-end"><i class="bx bx-wallet"></i> Balance</th>
                                     <th class="text-center"><i class="bx bx-category"></i> Type</th>
                                     <th class="text-center"><i class="bx bx-info-circle"></i> Status</th>
                                     <th class="text-center"><i class="bx bx-calendar"></i> Created</th>
@@ -147,6 +189,14 @@
                             <tbody>
                                 <!-- DataTables will populate this -->
                             </tbody>
+                            <tfoot class="bg-light fw-bold">
+                                <tr>
+                                    <td colspan="5" class="text-end">Page Total:</td>
+                                    <td class="text-end" id="footerRevenue">₹0.00</td>
+                                    <td class="text-end" id="footerBalance">₹0.00</td>
+                                    <td colspan="4"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -233,6 +283,12 @@
                     }
                 },
                 {
+                    data: 'balance',
+                    name: 'balance',
+                    className: "text-end",
+                    orderable: false
+                },
+                {
                     data: 'full_type',
                     name: 'full_type',
                     className: "text-center"
@@ -257,10 +313,43 @@
                 },
             ],
             "columnDefs": [{
-                "targets": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                "targets": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                 "orderable": false,
                 "sorting": false
             }],
+            footerCallback: function (row, data, start, end, display) {
+                var api = this.api();
+
+                // Helper to parse currency
+                var intVal = function (i) {
+                    if (typeof i === 'string') {
+                        // Remove HTML tags and currency symbols/commas
+                        return parseFloat(i.replace(/<[^>]+>/g, '').replace(/[\₹,]/g, '').trim()) || 0;
+                    }
+                    return typeof i === 'number' ? i : 0;
+                };
+
+                // Calculate totals for current page
+                // Revenue is column 5
+                var totalRevenue = api
+                    .column(5, { page: 'current' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+
+                // Balance is column 6
+                var totalBalance = api
+                    .column(6, { page: 'current' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+
+                // Update footer
+                $(api.column(5).footer()).html('₹' + totalRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                $(api.column(6).footer()).html('₹' + totalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            },
             dom: "<'row g-2 mb-2'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
                 "<'row'<'col-12'tr>>" +
                 "<'row g-2 mt-2'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
@@ -278,6 +367,13 @@
                     class="lni lni-circle-plus mx-1"></i>Add New Campaign</button>`
             );
         });
+        
+        // Handle view balance click
+        $(document).on('click', '.view-balance', function() {
+            const id = $(this).data('id');
+            window.location.href = '{{ route("admin.bookings.index") }}?campaign_id=' + id + '&min_balance=1';
+        });
+
         // handle table action button click
         $(document).on('click', '.editBtn', function() {
             window.location.href = $(this).attr('editRoute');

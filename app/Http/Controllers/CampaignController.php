@@ -30,10 +30,14 @@ class CampaignController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        // $campaigns = $this->campaignService->getAllCampaigns($filters);
-        // 'campaigns',
-
-        return view('campaigns.index', compact('filters'));
+        
+        // Calculate total revenue and balance for all campaigns
+        // We look at bookings that belong to any campaign
+        $totalRevenue = \App\Models\Booking::whereNotNull('campaign_id')->sum('amount_paid');
+        $totalExpected = \App\Models\Booking::whereNotNull('campaign_id')->sum('price');
+        $totalBalance = $totalExpected - $totalRevenue;
+        
+        return view('campaigns.index', compact('filters', 'totalRevenue', 'totalBalance'));
     }
 
     /**
@@ -241,12 +245,17 @@ class CampaignController extends Controller
                 
                 // Add selected recipients
                 foreach ($request->recipients as $contactId) {
-                    \App\Models\CampaignRecipient::create([
-                        'campaign_id' => $id,
-                        'contact_id' => $contactId,
-                        'status' => 'pending',
-                        'sent_at' => null
-                    ]);
+                    $contact = \App\Models\Contacts::find($contactId);
+                    if ($contact) {
+                        \App\Models\CampaignRecipient::create([
+                            'campaign_id' => $id,
+                            'contact_id' => $contactId,
+                            'email' => $contact->email,
+                            'phone' => $contact->phone,
+                            'status' => 'pending',
+                            'sent_at' => null
+                        ]);
+                    }
                 }
             }
             
@@ -298,13 +307,16 @@ class CampaignController extends Controller
     {
         $campaign = Campaign::findOrFail($campaignId);
         
+        // Get all conversations for this campaign - employees can see ALL conversations
+        // regardless of which employee created them, as long as they belong to this campaign
         $query = \App\Models\Conversation::where('campaign_id', $campaignId);
         
-        // Filter by visitor_id if provided
+        // Filter by visitor_id if provided (for viewing specific visitor's conversations)
         if ($request->has('visitor_id') && $request->visitor_id) {
             $query->where('visitor_id', $request->visitor_id);
         }
         
+        // Note: No employee_id filter - all employees can see all conversations for the campaign
         $conversations = $query->with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'booking'])
             ->orderBy('conversation_date', 'desc')
             ->get();

@@ -30,7 +30,15 @@ class ConversationController extends Controller
     public function index(Request $request): View
     {
         $status = $request->get('status', '');
-        return view('conversations.index', compact('status'));
+        
+        // Get data for modal form
+        $exhibitors = Contacts::where('type', 'exhibitor')->orderBy('name')->get();
+        $visitors = Contacts::where('type', 'visitor')->orderBy('name')->get();
+        $campaigns = Campaign::orderBy('name')->get();
+        $locations = LocationMngt::orderBy('loc_name')->get();
+        $employees = User::where('role', 'employee')->where('status', 'active')->orderBy('name')->get();
+        
+        return view('conversations.index', compact('status', 'exhibitors', 'visitors', 'campaigns', 'locations', 'employees'));
     }
 
     /**
@@ -53,7 +61,8 @@ class ConversationController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'exhibitor_id' => 'required|ulid|exists:contacts,id',
+            'exhibitor_id' => 'nullable|ulid|exists:contacts,id',
+            'exhibitor_name' => 'nullable|string|max:255',
             'visitor_id' => 'nullable|ulid|exists:contacts,id',
             'visitor_phone' => 'nullable|string|max:20',
             'employee_id' => 'required|ulid|exists:users,id',
@@ -68,6 +77,16 @@ class ConversationController extends Controller
         try {
             $validated['employee_id'] = $validated['employee_id'] ?? auth()->id();
             $validated['conversation_date'] = $validated['conversation_date'] ?? now();
+
+            // Handle exhibitor_name - if provided but no exhibitor_id, create or find contact
+            if (!empty($validated['exhibitor_name']) && empty($validated['exhibitor_id'])) {
+                $exhibitor = Contacts::firstOrCreate(
+                    ['name' => $validated['exhibitor_name'], 'type' => 'exhibitor'],
+                    ['phone' => null, 'email' => null]
+                );
+                $validated['exhibitor_id'] = $exhibitor->id;
+            }
+            unset($validated['exhibitor_name']);
 
             // Find campaign recipient if campaign_id and visitor_id are provided
             if (!empty($validated['campaign_id']) && !empty($validated['visitor_id'])) {
@@ -128,7 +147,8 @@ class ConversationController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'exhibitor_id' => 'required|ulid|exists:contacts,id',
+            'exhibitor_id' => 'nullable|ulid|exists:contacts,id',
+            'exhibitor_name' => 'nullable|string|max:255',
             'visitor_id' => 'nullable|ulid|exists:contacts,id',
             'visitor_phone' => 'nullable|string|max:20',
             'employee_id' => 'required|ulid|exists:users,id',
@@ -142,6 +162,16 @@ class ConversationController extends Controller
 
         try {
             $conversation = Conversation::findOrFail($id);
+
+            // Handle exhibitor_name - if provided but no exhibitor_id, create or find contact
+            if (!empty($validated['exhibitor_name']) && empty($validated['exhibitor_id'])) {
+                $exhibitor = Contacts::firstOrCreate(
+                    ['name' => $validated['exhibitor_name'], 'type' => 'exhibitor'],
+                    ['phone' => null, 'email' => null]
+                );
+                $validated['exhibitor_id'] = $exhibitor->id;
+            }
+            unset($validated['exhibitor_name']);
 
             // Find campaign recipient if campaign_id and visitor_id are provided
             if (!empty($validated['campaign_id']) && !empty($validated['visitor_id'])) {
@@ -238,13 +268,27 @@ class ConversationController extends Controller
             })
             ->addColumn('action', function ($conversation) {
                 $id = $conversation->id;
+                $userRole = auth()->user()->role;
+                $routePrefix = $userRole === 'admin' ? 'conversations' : 'employee.conversations';
+                $visitorId = $conversation->visitor_id ?? '';
+                $exhibitorId = $conversation->exhibitor_id ?? '';
+                $visitorName = ($conversation->visitor->name ?? $conversation->visitor_phone ?? 'Unknown');
+                $exhibitorName = $conversation->exhibitor->name ?? 'Unknown';
+                $visitorPhone = $conversation->visitor->phone ?? $conversation->visitor_phone ?? '';
+                $visitorEmail = $conversation->visitor->email ?? '';
+                $contactId = $visitorId ?: $exhibitorId;
+                $contactName = $visitorId ? $visitorName : $exhibitorName;
+                $safeName = htmlspecialchars($contactName, ENT_QUOTES, 'UTF-8');
+                
                 $button = '<div class="d-flex gap-1 justify-content-center">';
-                $button .= '<a href="' . route('conversations.show', $id) . '" class="btn btn-action btn-view" data-bs-toggle="tooltip" title="View">
-                    <i class="bx bx-show"></i>
-                </a>';
-                $button .= '<a href="' . route('conversations.edit', $id) . '" class="btn btn-action btn-edit" data-bs-toggle="tooltip" title="Edit">
+                if ($contactId) {
+                    $button .= '<button class="btn btn-action btn-info viewCanvasBtn" data-contact-id="' . $contactId . '" data-contact-name="' . $safeName . '" data-contact-phone="' . htmlspecialchars($visitorPhone, ENT_QUOTES, 'UTF-8') . '" data-contact-email="' . htmlspecialchars($visitorEmail, ENT_QUOTES, 'UTF-8') . '" data-visitor-id="' . $visitorId . '" data-exhibitor-id="' . $exhibitorId . '" data-bs-toggle="tooltip" title="View Conversations">
+                        <i class="bx bx-show"></i>
+                    </button>';
+                }
+                $button .= '<button class="btn btn-action btn-edit editBtn" data-id="' . $id . '" data-bs-toggle="tooltip" title="Edit">
                     <i class="bx bx-edit"></i>
-                </a>';
+                </button>';
                 $button .= '<button class="btn btn-action btn-delete deleteBtn" data-id="' . $id . '" data-bs-toggle="tooltip" title="Delete">
                     <i class="bx bx-trash"></i>
                 </button>';
@@ -265,5 +309,97 @@ class ConversationController extends Controller
     {
         $tables = LocationMngtTableDetail::where('location_mngt_id', $locationId)->get();
         return response()->json($tables);
+    }
+
+    /**
+     * Get conversation data for editing (AJAX)
+     */
+    public function getConversationData($id): JsonResponse
+    {
+        try {
+            $conversation = Conversation::with(['exhibitor', 'visitor', 'location', 'table', 'campaign', 'employee'])
+                ->findOrFail($id);
+            
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'id' => $conversation->id,
+                    'exhibitor_id' => $conversation->exhibitor_id,
+                    'visitor_id' => $conversation->visitor_id,
+                    'visitor_phone' => $conversation->visitor_phone,
+                    'employee_id' => $conversation->employee_id,
+                    'location_id' => $conversation->location_id,
+                    'table_id' => $conversation->table_id,
+                    'campaign_id' => $conversation->campaign_id,
+                    'outcome' => $conversation->outcome,
+                    'notes' => $conversation->notes,
+                    'conversation_date' => $conversation->conversation_date ? $conversation->conversation_date->format('Y-m-d\TH:i') : null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Conversation not found'
+            ], 404);
+        }
+    }
+
+    /**
+     * Get conversations for a specific visitor or exhibitor (AJAX)
+     */
+    public function getConversationsForContact(Request $request): JsonResponse
+    {
+        $request->validate([
+            'visitor_id' => 'nullable|ulid|exists:contacts,id',
+            'exhibitor_id' => 'nullable|ulid|exists:contacts,id',
+        ]);
+
+        $query = Conversation::with(['exhibitor', 'visitor', 'employee', 'location', 'table', 'campaign', 'booking']);
+
+        // Filter by visitor_id or exhibitor_id
+        if ($request->has('visitor_id') && $request->visitor_id) {
+            $query->where(function($q) use ($request) {
+                $q->where('visitor_id', $request->visitor_id)
+                  ->orWhere('exhibitor_id', $request->visitor_id);
+            });
+        } elseif ($request->has('exhibitor_id') && $request->exhibitor_id) {
+            $query->where('exhibitor_id', $request->exhibitor_id);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Either visitor_id or exhibitor_id is required'
+            ], 400);
+        }
+
+        // Filter by employee if logged in as employee
+        if (auth()->user()->role === 'employee') {
+            $query->where('employee_id', auth()->id());
+        }
+
+        $conversations = $query->orderBy('conversation_date', 'desc')->get();
+
+        $conversationsData = $conversations->map(function($conv) {
+            return [
+                'id' => $conv->id,
+                'exhibitor_name' => $conv->exhibitor->name ?? 'N/A',
+                'visitor_name' => $conv->visitor->name ?? $conv->visitor_phone ?? 'N/A',
+                'employee_name' => $conv->employee->name ?? 'N/A',
+                'location_name' => $conv->location->loc_name ?? 'N/A',
+                'table_no' => $conv->table->table_no ?? 'N/A',
+                'outcome' => $conv->outcome,
+                'notes' => $conv->notes,
+                'conversation_date' => $conv->conversation_date->format('M d, Y H:i'),
+                'has_booking' => $conv->booking ? true : false,
+                'booking_id' => $conv->booking ? $conv->booking->id : null,
+                'price' => $conv->booking ? number_format($conv->booking->price ?? 0, 2) : null,
+                'amount_paid' => $conv->booking ? number_format($conv->booking->amount_paid ?? 0, 2) : null,
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'conversations' => $conversationsData,
+            'total' => $conversations->count()
+        ]);
     }
 }

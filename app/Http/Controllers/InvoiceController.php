@@ -13,7 +13,7 @@ use Illuminate\Http\JsonResponse;
 class InvoiceController extends Controller
 {
     /**
-     * List all invoices (bookings)
+     * Display a listing of invoices (bookings)
      */
     public function index(): View
     {
@@ -99,12 +99,81 @@ class InvoiceController extends Controller
      */
     public function employeeBookings(): View
     {
-        $employeeId = auth()->id();
-        $campaigns = Campaign::whereHas('bookings', function($q) use ($employeeId) {
-            $q->where('employee_id', $employeeId);
-        })->orderBy('name')->get();
+        $campaigns = Campaign::orderBy('name')->get();
         
         return view('bookings.employee_index', compact('campaigns'));
+    }
+
+    /**
+     * Get employee bookings statistics (for cards)
+     */
+    public function getEmployeeBookingsStats(Request $request): JsonResponse
+    {
+        $employeeId = auth()->id();
+        
+        $query = Booking::where('employee_id', $employeeId);
+
+        // Apply same filters as getEmployeeBookings
+        if ($request->has('status') && $request->status && $request->status !== '') {
+            $query->where('amount_status', $request->status);
+        }
+
+        if ($request->has('campaign_id') && $request->campaign_id && $request->campaign_id !== '') {
+            $query->where('campaign_id', $request->campaign_id);
+        }
+
+        if ($request->has('min_price') && $request->min_price !== null && $request->min_price !== '') {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->has('max_price') && $request->max_price !== null && $request->max_price !== '') {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->has('min_balance') && $request->min_balance !== null && $request->min_balance !== '') {
+            $query->whereRaw('(price - COALESCE(amount_paid, 0)) >= ?', [$request->min_balance]);
+        }
+
+        if ($request->has('max_balance') && $request->max_balance !== null && $request->max_balance !== '') {
+            $query->whereRaw('(price - COALESCE(amount_paid, 0)) <= ?', [$request->max_balance]);
+        }
+
+        if ($request->has('date_from') && $request->date_from && $request->date_from !== '') {
+            $query->where('booking_date', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to && $request->date_to !== '') {
+            $query->where('booking_date', '<=', $request->date_to);
+        }
+
+        $bookings = $query->get();
+        
+        $totalBookings = $bookings->count();
+        $totalRevenue = $bookings->sum('amount_paid') ?? 0;
+        $paidRevenue = $bookings->where('amount_status', 'paid')->sum('amount_paid') ?? 0;
+        $pendingRevenue = $bookings->where('amount_status', 'pending')->sum('price') ?? 0;
+        $totalPrice = $bookings->sum('price') ?? 0;
+        $totalBalance = $totalPrice - $totalRevenue;
+        
+        $remainingBalance = $bookings->filter(function($b) { 
+            return is_null($b->released_at) && (($b->price ?? 0) - ($b->amount_paid ?? 0)) > 0;
+        })->sum(function($b) { 
+            return ($b->price ?? 0) - ($b->amount_paid ?? 0); 
+        });
+        $remainingCount = $bookings->filter(function($b) { 
+            return is_null($b->released_at) && (($b->price ?? 0) - ($b->amount_paid ?? 0)) > 0;
+        })->count();
+
+        return response()->json([
+            'total_bookings' => $totalBookings,
+            'total_revenue' => number_format($totalRevenue, 2),
+            'paid_revenue' => number_format($paidRevenue, 2),
+            'pending_revenue' => number_format($pendingRevenue, 2),
+            'total_price' => number_format($totalPrice, 2),
+            'total_balance' => number_format($totalBalance, 2),
+            'remaining_balance' => number_format($remainingBalance, 2),
+            'remaining_count' => $remainingCount
+        ]);
     }
 
     /**
@@ -124,6 +193,22 @@ class InvoiceController extends Controller
 
         if ($request->has('campaign_id') && $request->campaign_id && $request->campaign_id !== '') {
             $query->where('campaign_id', $request->campaign_id);
+        }
+
+        if ($request->has('min_price') && $request->min_price !== null && $request->min_price !== '') {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->has('max_price') && $request->max_price !== null && $request->max_price !== '') {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->has('min_balance') && $request->min_balance !== null && $request->min_balance !== '') {
+            $query->whereRaw('(price - COALESCE(amount_paid, 0)) >= ?', [$request->min_balance]);
+        }
+
+        if ($request->has('max_balance') && $request->max_balance !== null && $request->max_balance !== '') {
+            $query->whereRaw('(price - COALESCE(amount_paid, 0)) <= ?', [$request->max_balance]);
         }
 
         if ($request->has('date_from') && $request->date_from && $request->date_from !== '') {
@@ -174,16 +259,18 @@ class InvoiceController extends Controller
             'booking_id' => 'required|ulid|exists:bookings,id',
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'nullable|string|max:50',
-            'notes' => 'nullable|string|max:1000',
         ]);
 
         try {
-            $employeeId = auth()->id();
+            $booking = Booking::findOrFail($validated['booking_id']);
             
-            // Get the booking and ensure it belongs to the current employee
-            $booking = Booking::where('id', $validated['booking_id'])
-                ->where('employee_id', $employeeId)
-                ->firstOrFail();
+            // Check if employee owns this booking
+            if (auth()->user()->role === 'employee' && $booking->employee_id !== auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
             
             $totalPrice = (float) $booking->price;
             $currentAmountPaid = (float) $booking->amount_paid;
@@ -221,33 +308,24 @@ class InvoiceController extends Controller
             PaymentHistory::create([
                 'booking_id' => $booking->id,
                 'amount' => $settlementAmount,
-                'amount_before' => $currentAmountPaid,
-                'amount_after' => $newAmountPaid,
                 'payment_method' => $validated['payment_method'] ?? 'cash',
-                'notes' => $validated['notes'] ?? null,
-                'recorded_by' => $employeeId,
+                'recorded_by' => auth()->id(),
                 'payment_date' => now(),
             ]);
             
             return response()->json([
                 'success' => true,
-                'message' => 'Amount settled successfully! New balance: ₹' . number_format($totalPrice - $newAmountPaid, 2),
-                'data' => [
+                'message' => 'Amount settled successfully',
+                'booking' => [
                     'amount_paid' => number_format($newAmountPaid, 2),
-                    'balance' => number_format($totalPrice - $newAmountPaid, 2),
-                    'amount_status' => $newStatus
+                    'amount_status' => $newStatus,
+                    'remaining_balance' => number_format($totalPrice - $newAmountPaid, 2)
                 ]
             ]);
-            
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Booking not found or you do not have permission to settle this booking.'
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while settling the amount: ' . $e->getMessage()
+                'message' => 'Error settling amount: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -257,10 +335,98 @@ class InvoiceController extends Controller
      */
     public function adminBookings(): View
     {
-        $campaigns = Campaign::whereHas('bookings')->orderBy('name')->get();
+        $campaigns = Campaign::orderBy('name')->get();
         $employees = \App\Models\User::where('role', 'employee')->where('status', 'active')->orderBy('name')->get();
         
         return view('bookings.admin_index', compact('campaigns', 'employees'));
+    }
+
+    /**
+     * Get admin bookings statistics (for cards)
+     */
+    public function getAdminBookingsStats(Request $request): JsonResponse
+    {
+        try {
+            // Verify user is admin
+            if (auth()->user()->role !== 'admin') {
+                return response()->json([
+                    'error' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $query = Booking::query();
+
+            // Apply same filters as getAdminBookings
+            if ($request->has('status') && $request->status && $request->status !== '') {
+                $query->where('amount_status', $request->status);
+            }
+
+            if ($request->has('campaign_id') && $request->campaign_id && $request->campaign_id !== '') {
+                $query->where('campaign_id', $request->campaign_id);
+            }
+
+            if ($request->has('employee_id') && $request->employee_id && $request->employee_id !== '') {
+                $query->where('employee_id', $request->employee_id);
+            }
+
+            if ($request->has('min_price') && $request->min_price !== null && $request->min_price !== '') {
+                $query->where('price', '>=', $request->min_price);
+            }
+
+            if ($request->has('max_price') && $request->max_price !== null && $request->max_price !== '') {
+                $query->where('price', '<=', $request->max_price);
+            }
+
+            if ($request->has('min_balance') && $request->min_balance !== null && $request->min_balance !== '') {
+                $query->whereRaw('(price - COALESCE(amount_paid, 0)) >= ?', [$request->min_balance]);
+            }
+
+            if ($request->has('max_balance') && $request->max_balance !== null && $request->max_balance !== '') {
+                $query->whereRaw('(price - COALESCE(amount_paid, 0)) <= ?', [$request->max_balance]);
+            }
+
+            if ($request->has('date_from') && $request->date_from && $request->date_from !== '') {
+                $query->where('booking_date', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && $request->date_to && $request->date_to !== '') {
+                $query->where('booking_date', '<=', $request->date_to);
+            }
+
+            $bookings = $query->get();
+            
+            $totalBookings = $bookings->count();
+            $totalRevenue = $bookings->sum('amount_paid') ?? 0;
+            $paidRevenue = $bookings->where('amount_status', 'paid')->sum('amount_paid') ?? 0;
+            $pendingRevenue = $bookings->where('amount_status', 'pending')->sum('price') ?? 0;
+            $totalPrice = $bookings->sum('price') ?? 0;
+            $totalBalance = $totalPrice - $totalRevenue;
+            
+            $remainingBalance = $bookings->filter(function($b) { 
+                return is_null($b->released_at) && (($b->price ?? 0) - ($b->amount_paid ?? 0)) > 0;
+            })->sum(function($b) { 
+                return ($b->price ?? 0) - ($b->amount_paid ?? 0); 
+            });
+            $remainingCount = $bookings->filter(function($b) { 
+                return is_null($b->released_at) && (($b->price ?? 0) - ($b->amount_paid ?? 0)) > 0;
+            })->count();
+
+            return response()->json([
+                'total_bookings' => $totalBookings,
+                'total_revenue' => number_format($totalRevenue, 2),
+                'paid_revenue' => number_format($paidRevenue, 2),
+                'pending_revenue' => number_format($pendingRevenue, 2),
+                'total_price' => number_format($totalPrice, 2),
+                'total_balance' => number_format($totalBalance, 2),
+                'remaining_balance' => number_format($remainingBalance, 2),
+                'remaining_count' => $remainingCount
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getAdminBookingsStats: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'An error occurred while loading statistics'
+            ], 500);
+        }
     }
 
     /**
@@ -300,6 +466,22 @@ class InvoiceController extends Controller
 
             if ($request->has('date_to') && $request->date_to && $request->date_to !== '') {
                 $query->where('booking_date', '<=', $request->date_to);
+            }
+
+            if ($request->has('min_price') && $request->min_price !== null && $request->min_price !== '') {
+                $query->where('price', '>=', $request->min_price);
+            }
+
+            if ($request->has('max_price') && $request->max_price !== null && $request->max_price !== '') {
+                $query->where('price', '<=', $request->max_price);
+            }
+
+            if ($request->has('min_balance') && $request->min_balance !== null && $request->min_balance !== '') {
+                $query->whereRaw('(price - COALESCE(amount_paid, 0)) >= ?', [$request->min_balance]);
+            }
+
+            if ($request->has('max_balance') && $request->max_balance !== null && $request->max_balance !== '') {
+                $query->whereRaw('(price - COALESCE(amount_paid, 0)) <= ?', [$request->max_balance]);
             }
 
             // Order by booking date descending (newest first)
@@ -392,33 +574,24 @@ class InvoiceController extends Controller
             PaymentHistory::create([
                 'booking_id' => $booking->id,
                 'amount' => $settlementAmount,
-                'amount_before' => $currentAmountPaid,
-                'amount_after' => $newAmountPaid,
                 'payment_method' => $validated['payment_method'] ?? 'cash',
-                'notes' => $validated['notes'] ?? null,
                 'recorded_by' => auth()->id(),
                 'payment_date' => now(),
             ]);
             
             return response()->json([
                 'success' => true,
-                'message' => 'Amount settled successfully! New balance: ₹' . number_format($totalPrice - $newAmountPaid, 2),
-                'data' => [
+                'message' => 'Amount settled successfully',
+                'booking' => [
                     'amount_paid' => number_format($newAmountPaid, 2),
-                    'balance' => number_format($totalPrice - $newAmountPaid, 2),
-                    'amount_status' => $newStatus
+                    'amount_status' => $newStatus,
+                    'remaining_balance' => number_format($totalPrice - $newAmountPaid, 2)
                 ]
             ]);
-            
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Booking not found.'
-            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while settling the amount: ' . $e->getMessage()
+                'message' => 'Error settling amount: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -426,102 +599,66 @@ class InvoiceController extends Controller
     /**
      * Get payment history for a booking
      */
-    public function getPaymentHistory(Request $request, $bookingId): JsonResponse
+    public function getPaymentHistory($bookingId): JsonResponse
     {
-        try {
-            $booking = Booking::findOrFail($bookingId);
-            
-            // Check if user has permission (employee can only see their own bookings, admin can see all)
-            if (auth()->user()->role === 'employee' && $booking->employee_id !== auth()->id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have permission to view this booking.'
-                ], 403);
-            }
-            
-            $paymentHistory = PaymentHistory::where('booking_id', $bookingId)
-                ->with('recorder')
-                ->orderBy('payment_date', 'desc')
-                ->get();
-            
-            $data = [];
-            foreach ($paymentHistory as $payment) {
-                $data[] = [
-                    'id' => $payment->id,
-                    'amount' => number_format($payment->amount, 2),
-                    'amount_before' => number_format($payment->amount_before ?? 0, 2),
-                    'amount_after' => number_format($payment->amount_after, 2),
-                    'payment_method' => $payment->payment_method ?? 'Cash',
-                    'notes' => $payment->notes,
-                    'recorded_by' => $payment->recorder->name ?? 'N/A',
-                    'payment_date' => $payment->payment_date->format('M d, Y h:i A'),
-                    'created_at' => $payment->created_at->format('M d, Y h:i A'),
-                ];
-            }
-            
+        $booking = Booking::findOrFail($bookingId);
+        
+        // Check permissions
+        if (auth()->user()->role === 'employee' && $booking->employee_id !== auth()->id()) {
             return response()->json([
-                'success' => true,
-                'data' => $data
-            ]);
-            
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Booking not found.'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred: ' . $e->getMessage()
-            ], 500);
+                'error' => 'Unauthorized access'
+            ], 403);
         }
+        
+        $payments = PaymentHistory::where('booking_id', $bookingId)
+            ->with('recorder')
+            ->orderBy('payment_date', 'desc')
+            ->get();
+        
+        $data = $payments->map(function($payment) {
+            return [
+                'id' => $payment->id,
+                'amount' => number_format($payment->amount, 2),
+                'payment_method' => $payment->payment_method ?? 'N/A',
+                'payment_date' => $payment->payment_date->format('M d, Y H:i'),
+                'recorded_by' => $payment->recorder->name ?? 'N/A',
+            ];
+        });
+        
+        return response()->json([
+            'data' => $data
+        ]);
     }
 
     /**
-     * Release/Cancel a table booking (marks as released but keeps record for tracking)
+     * Release table for a booking
      */
     public function releaseTable(Request $request, $bookingId): JsonResponse
     {
-        try {
-            $booking = Booking::findOrFail($bookingId);
-            
-            // Check permissions
-            if (auth()->user()->role === 'employee' && $booking->employee_id !== auth()->id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have permission to release this booking.'
-                ], 403);
-            }
-            
-            // Check if already released
-            if ($booking->released_at !== null) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This table has already been released.'
-                ], 400);
-            }
-            
-            // Mark as released (keep the record for tracking)
-            $booking->update([
-                'released_at' => now()
-            ]);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Table released successfully! The booking record has been kept for tracking purposes.'
-            ]);
-            
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        $booking = Booking::findOrFail($bookingId);
+        
+        // Check permissions
+        if (auth()->user()->role === 'employee' && $booking->employee_id !== auth()->id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Booking not found.'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Unauthorized access'
+            ], 403);
         }
+        
+        if ($booking->released_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Table already released'
+            ], 422);
+        }
+        
+        $booking->released_at = now();
+        $booking->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Table released successfully'
+        ]);
     }
 
     /**
@@ -614,5 +751,4 @@ class InvoiceController extends Controller
             'total_balance' => number_format($bookings->sum(function($b) { return ($b->price ?? 0) - ($b->amount_paid ?? 0); }), 2)
         ]);
     }
-
 }

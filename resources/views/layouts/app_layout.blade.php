@@ -38,6 +38,12 @@
     <link href="{{ asset('/assets/plugins/select2/css/select2-bootstrap-5-theme.min.css') }}" rel="stylesheet" />
     <!-- Title -->
     <title> @yield('title', 'Paridhan Dashboard')</title>
+    <style>
+
+        .dataTables_length .form-select-sm{
+            padding: 10px 22px !important;
+        }
+    </style>
 
     @yield('style')
     <script>
