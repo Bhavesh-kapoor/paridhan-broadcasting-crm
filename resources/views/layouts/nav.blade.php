@@ -35,7 +35,7 @@
                 <a href="{{ route('contacts.index', ['type' => 'exhibitor']) }}">
                     <div class="parent-icon"><i class="bx bx-store-alt"></i>
                     </div>
-                    <div class="menu-title">Exhibitors</div>
+                    <div class="menu-title">Exhibitors Contacts</div>
                 </a>
             </li>
             <li>
@@ -49,7 +49,7 @@
                 <a href="{{ route('locations.index') }}">
                     <div class="parent-icon"><i class="bx bx-location-plus"></i>
                     </div>
-                    <div class="menu-title">Location Management</div>
+                    <div class="menu-title">Layout Management</div>
                 </a>
             </li>
 
