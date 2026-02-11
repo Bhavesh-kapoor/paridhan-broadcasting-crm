@@ -4,13 +4,13 @@
         <div class="page-content">
             <!--breadcrumb-->
             <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-2">
-                <div class="breadcrumb-title pe-3">Locations</div>
+                <div class="breadcrumb-title pe-3">All Layouts</div>
                 <div class="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0 p-0">
                             <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role . '.dashboard') }}"><i class="bx bx-home-alt"></i></a>
                             </li>
-                            <li class="breadcrumb-item active" aria-current="page">All Locations</li>
+                            <li class="breadcrumb-item active" aria-current="page">All Layouts</li>
                         </ol>
                     </nav>
                 </div>
@@ -59,7 +59,7 @@
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="loc_name" class="form-label">Location Name <span
+                                        <label for="loc_name" class="form-label">Location / Layout Name <span
                                                 class="text-danger">*</span>
                                         </label>
                                         <input type="text" class="form-control" id="loc_name" name="loc_name"

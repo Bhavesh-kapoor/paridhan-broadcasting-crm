@@ -72,3 +72,4 @@ echo "2. Configure cron jobs"
 echo "3. Install SSL certificate"
 echo "4. Configure firewall"
 
+

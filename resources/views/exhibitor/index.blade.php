@@ -4,13 +4,13 @@
         <div class="page-content">
             <!--breadcrumb-->
             <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-2">
-                <div class="breadcrumb-title pe-3">Exhibitors</div>
+                <div class="breadcrumb-title pe-3">Exhibitors Contact</div>
                 <div class="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0 p-0">
                             <li class="breadcrumb-item"><a href="{{ route(Auth::user()->role . '.dashboard') }}"><i class="bx bx-home-alt"></i></a>
                             </li>
-                            <li class="breadcrumb-item active" aria-current="page">All Exhibitors</li>
+                            <li class="breadcrumb-item active" aria-current="page">All Exhibitors Contact</li>
                         </ol>
                     </nav>
                 </div>
@@ -305,7 +305,7 @@
                 $('.dataTables_wrapper .dt-buttons').append(
                     `<button type="button" class="btn btn-primary" type="button" id="addNewBtn"><i
                     class="lni lni-circle-plus mx-1"></i>Add New
-                Exhibitor</button><button type="button" class="btn btn-warning" type="button" id="bulkImportBtn"><i
+                Exhibitor Contact</button><button type="button" class="btn btn-warning" type="button" id="bulkImportBtn"><i
                     class="bx bx-file mx-1"></i>
                 Bulk Import</button>`
                 );
