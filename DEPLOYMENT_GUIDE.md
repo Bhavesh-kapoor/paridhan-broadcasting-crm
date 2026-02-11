@@ -531,3 +531,4 @@ For issues specific to your application, check:
 - Nginx logs: `/var/log/nginx/error.log`
 - PHP-FPM logs: `/var/log/php8.2-fpm.log`
 
+
