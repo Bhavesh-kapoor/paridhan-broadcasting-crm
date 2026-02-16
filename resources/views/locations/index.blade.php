@@ -221,7 +221,18 @@
                 dom: "<'row'<'col-12 col-md-4'B><'col-12 col-md-4'l><'col-12 col-md-4'f>>" +
                     "<'row'<'col-12'tr>>" +
                     "<'row'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
-                buttons: []
+                buttons: [],
+                initComplete: function () {
+        if (!$('#addNewBtn').length) {
+            $('.dataTables_wrapper .dt-buttons').append(`
+                <button type="button" class="btn btn-primary" id="addNewBtn">
+                    <i class="lni lni-circle-plus mx-1"></i>
+                    Add New Location
+                </button>
+            `);
+        }
+    }
+
             });
 
             $(window).on('load', function() {
